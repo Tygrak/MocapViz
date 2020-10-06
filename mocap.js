@@ -1,5 +1,5 @@
 function MocapDrawStyle(bonesModel, boneRadius, jointRadius, headRadius, boneStyle, jointStyle) {
-    this.bones = bonesModel;
+    this.bonesModel = bonesModel;
     this.boneRadius = boneRadius;
     this.jointRadius = jointRadius;
     this.headRadius = headRadius;
@@ -7,8 +7,8 @@ function MocapDrawStyle(bonesModel, boneRadius, jointRadius, headRadius, boneSty
     this.jointStyle = jointStyle;
 }
 
-function drawSequence(canvas, frames, drawStyle) {
-    let ctx = canvas.ctx;
+function drawSequence(canvas, frames, numPositions, drawStyle) {
+    let ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     let firstFrame = moveOriginXBy(frames[0], frames[0][0].x);
     let minX = firstFrame[0].x;
@@ -27,21 +27,40 @@ function drawSequence(canvas, frames, drawStyle) {
     for (let i = 0; i < frames.length; i++) {
         if (Math.floor(i%(frames.length/(numPositions-1))) == 0 || i == frames.length-1) {
             let coreX = frames[i][0].x;
-            let jointStyle = 'rgba(0,0,0,0.75)';
-            let boneStyle = 'rgba(0,0,0,0.75)';
+            drawFrame(canvas, moveOriginXBy(frames[i], coreX), (i/frames.length)*(canvas.width+minX-maxX-20)-minX+20, 0, drawStyle);
+        }
+    }
+}
+
+function drawSequenceBlur(canvas, frames, numPositions, numBlurPositions, drawStyle, drawStyleBlur) {
+    let ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let firstFrame = moveOriginXBy(frames[0], frames[0][0].x);
+    let minX = firstFrame[0].x;
+    for (let i = 1; i < firstFrame.length; i++) {
+        if (firstFrame[i].x < minX) {
+            minX = firstFrame[i].x;
+        }
+    }
+    let lastFrame = moveOriginXBy(frames[frames.length-1], frames[frames.length-1][0].x);
+    let maxX = lastFrame[0].x;
+    for (let i = 1; i < lastFrame.length; i++) {
+        if (lastFrame[i].x > maxX) {
+            maxX = lastFrame[i].x;
+        }
+    }
+    for (let i = 0; i < frames.length; i++) {
+        if (Math.floor(i%(frames.length/(numPositions-1))) == 0 || i == frames.length-1) {
+            let coreX = frames[i][0].x;
             if (i > 0) {
-                jointStyle = 'rgba(0,0,0,0.10)';
-                boneStyle = 'rgba(0,0,0,0.10)';
-                for (let j = 1; j < numPrePositionMovement+1; j++) {
+                for (let j = 1; j < numBlurPositions+1; j++) {
                     if (i-j < 0) {
                         continue;
                     }
-                    drawFrame(canvas, moveOriginXBy(frames[i-j], coreX), (i/frames.length)*(canvas.width+minX-maxX-20)-minX+20, drawStyle);
+                    drawFrame(canvas, moveOriginXBy(frames[i-j], coreX), (i/frames.length)*(canvas.width+minX-maxX-20)-minX+20, 0, drawStyleBlur);
                 }
             }
-            jointStyle = 'rgba(0,0,0,0.75)';
-            boneStyle = 'rgba(0,0,0,0.75)';
-            drawFrame(canvas, moveOriginXBy(frames[i], coreX), (i/frames.length)*(canvas.width+minX-maxX-20)-minX+20, drawStyle);
+            drawFrame(canvas, moveOriginXBy(frames[i], coreX), (i/frames.length)*(canvas.width+minX-maxX-20)-minX+20, 0, drawStyle);
         }
     }
 }
@@ -57,10 +76,10 @@ function processSequenceToFrames(rawData) {
     return frames;
 }
 
-function moveOriginXBy(frame, moveBy) {
+function moveOriginXBy(frame, xMove) {
     let newFrame = [];
     for (let i = 0; i < frame.length; i++) {
-        newFrame[i] = {x:frame[i].x-moveBy, y:frame[i].y, z:frame[i].z};
+        newFrame[i] = {x:frame[i].x-xMove, y:frame[i].y, z:frame[i].z};
     }
     return newFrame;
 }
@@ -107,8 +126,4 @@ function drawFrame(canvas, frame, xShift, yShift, drawStyle) {
         ctx.closePath();
         ctx.fill();
     }
-}
-
-function drawFrame(canvas, frame, drawStyle) {
-    drawFrame(canvas, frame, 0, 0, drawStyle);
 }
