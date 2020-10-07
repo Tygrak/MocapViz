@@ -65,15 +65,44 @@ function drawSequenceBlur(canvas, frames, numPositions, numBlurPositions, drawSt
     }
 }
 
-function processSequenceToFrames(rawData) {
+function processSequenceToFrames(rawData, canvasHeight, figureScale) {
     let frames = rawData.split("\n").map((frame) => {
         return frame.replace(" ", "").split(';').map((joint) => {
             let xyz = joint.split(',');
-            return {x:parseFloat(xyz[0])*figureScale, y:parseFloat(xyz[1])*-1*figureScale + height-10, z:parseFloat(xyz[2])*figureScale};
+            return {x:parseFloat(xyz[0])*figureScale, y:parseFloat(xyz[1])*-1*figureScale + canvasHeight-10, z:parseFloat(xyz[2])*figureScale};
         });
     });
     frames = frames.filter((f) => {return f.length > 0 && !isNaN(f[0].x) && !isNaN(f[0].y) && !isNaN(f[0].z)});
     return frames;
+}
+
+function frameRotateY(frame, rad) {
+    let newFrame = [];
+    for (let i = 0; i < frame.length; i++) {
+        newFrame[i] = {
+            x: frame[i].z*Math.sin(rad) + frame[i].x*Math.cos(rad),
+            y: frame[i].y,
+            z: frame[i].z * Math.cos(rad) - frame[i].x * Math.sin(rad)
+        };
+    }
+    return newFrame;
+}
+
+function frameRotateYAroundOrigin(frame, rad) {
+    let newFrame = [];
+    for (let i = 0; i < frame.length; i++) {
+        newFrame[i] = {
+            x: frame[i].x - frame[0].x,
+            y: frame[i].y - frame[0].y,
+            z: frame[i].z - frame[0].z
+        };
+        newFrame[i].x = newFrame[i].z*Math.sin(rad) + newFrame[i].x*Math.cos(rad);
+        newFrame[i].z = newFrame[i].z * Math.cos(rad) - newFrame[i].x * Math.sin(rad);
+        newFrame[i].x += frame[0].x;
+        newFrame[i].y += frame[0].y;
+        newFrame[i].z += frame[0].z;
+    }
+    return newFrame;
 }
 
 function moveOriginXBy(frame, xMove) {

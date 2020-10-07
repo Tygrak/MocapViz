@@ -33,6 +33,7 @@ const sequenceNumberInput = document.getElementById("sequenceNumberInput");
 const sequenceInputLoadButton = document.getElementById("sequenceInputLoadButton");
 const sequenceInputPlayButton = document.getElementById("sequenceInputPlayButton");
 const dataFileInput = document.getElementById("dataFileInput");
+const yRotationInput = document.getElementById("yRotationInput");
 const loadButton = document.getElementById("dataInputLoadButton");
 loadButton.onclick = loadDataFile;
 sequenceInputLoadButton.onclick = loadSequence;
@@ -62,7 +63,11 @@ function loadSequence() {
     playingSequence = false;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     let selectedSequence = parseInt(sequenceNumberInput.value);
-    let frames = processSequenceToFrames(sequences[selectedSequence]);
+    let frames = processSequenceToFrames(sequences[selectedSequence], canvas.height, figureScale);
+    let yRotation = parseFloat(yRotationInput.value)*0.01745329;
+    for (let i = 0; i < frames.length; i++) {
+        frames[i] = frameRotateY(frames[i], yRotation);
+    }
     drawSequenceBlur(canvas, frames, numPositions, numBlurPositions, drawStyle, drawStyleBlur);
 }
 
@@ -73,7 +78,7 @@ function playSequence() {
     if (selectedSequence >= sequences.length) {
         return;
     }
-    currentPlayingFrames = processSequenceToFrames(sequences[selectedSequence]);
+    currentPlayingFrames = processSequenceToFrames(sequences[selectedSequence], canvas.height, figureScale);
     if (currentPlayingFrames.length == 0) {
         return;
     }
@@ -88,7 +93,8 @@ function update() {
         return;
     }
     clearCanvas(canvas);
-    drawFrame(canvas, currentPlayingFrames[currentFrame], width/2, 0, drawStyle);
+    let yRotation = parseFloat(yRotationInput.value)*0.01745329;
+    drawFrame(canvas, frameRotateY(currentPlayingFrames[currentFrame], yRotation), width/2, 0, drawStyle);
     currentFrame++;
     if (currentFrame >= currentPlayingFrames.length) {
         currentFrame = currentFrame%currentPlayingFrames.length;
