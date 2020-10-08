@@ -32,6 +32,31 @@ function drawSequence(canvas, frames, numPositions, drawStyle) {
     }
 }
 
+function drawSequenceKeyframes(canvas, frames, indexes, drawStyle, yShift = 0, clear = true) {
+    let ctx = canvas.getContext("2d");
+    if (clear) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    let firstFrame = moveOriginXBy(frames[0], frames[0][0].x);
+    let minX = firstFrame[0].x;
+    for (let i = 1; i < firstFrame.length; i++) {
+        if (firstFrame[i].x < minX) {
+            minX = firstFrame[i].x;
+        }
+    }
+    let lastFrame = moveOriginXBy(frames[frames.length-1], frames[frames.length-1][0].x);
+    let maxX = lastFrame[0].x;
+    for (let i = 1; i < lastFrame.length; i++) {
+        if (lastFrame[i].x > maxX) {
+            maxX = lastFrame[i].x;
+        }
+    }
+    for (let i = 0; i < indexes.length; i++) {
+        let coreX = frames[indexes[i]][0].x;
+        drawFrame(canvas, moveOriginXBy(frames[indexes[i]], coreX), (i/indexes.length)*(canvas.width+minX-maxX-20)-minX+20, yShift, drawStyle);
+    }
+}
+
 function drawSequenceBlur(canvas, frames, numPositions, numBlurPositions, drawStyle, drawStyleBlur) {
     let ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -76,6 +101,49 @@ function processSequenceToFrames(rawData, canvasHeight, figureScale) {
     return frames;
 }
 
+function findKeyframes(frames, numKeyframes) {
+    let result = [0, frames.length-1];
+    for (let k = 0; k < numKeyframes-2; k++) {
+        let dmax = 0;
+        let index = 0;
+        for (let i = 0; i < frames.length; i++) {
+            const frame = frames[i];
+            let dmin = Infinity;
+            for (let j = 0; j < result.length; j++) {
+                const keyframe = frames[result[j]];
+                let d = frameDistance(frame, keyframe);
+                if (d < dmin) {
+                    dmin = d;
+                }
+            }
+            if (dmin > dmax) {
+                dmax = dmin;
+                index = i;
+            }
+        }
+        result.push(index);
+    }
+    //result = result.splice(1, 1);
+    //result.push(frames.length-1);
+    return result.sort();
+}
+
+function frameDistance(a, b) {
+    let result = 0;
+    for (let i = 0; i < a.length; i++) {
+        result += (a[i].x-b[i].x)*(a[i].x-b[i].x)+(a[i].y-b[i].y)*(a[i].y-b[i].y)+(a[i].z-b[i].z)*(a[i].z-b[i].z);
+    }
+    return Math.sqrt(result);
+}
+
+function distance(a, b) {
+    let result = 0;
+    for (let i = 0; i < a.length; i++) {
+        result += (a[i]-b[i])*(a[i]-b[i]);
+    }
+    return Math.sqrt(result);
+}
+
 function frameRotateY(frame, rad) {
     let newFrame = [];
     for (let i = 0; i < frame.length; i++) {
@@ -84,23 +152,6 @@ function frameRotateY(frame, rad) {
             y: frame[i].y,
             z: frame[i].z * Math.cos(rad) - frame[i].x * Math.sin(rad)
         };
-    }
-    return newFrame;
-}
-
-function frameRotateYAroundOrigin(frame, rad) {
-    let newFrame = [];
-    for (let i = 0; i < frame.length; i++) {
-        newFrame[i] = {
-            x: frame[i].x - frame[0].x,
-            y: frame[i].y - frame[0].y,
-            z: frame[i].z - frame[0].z
-        };
-        newFrame[i].x = newFrame[i].z*Math.sin(rad) + newFrame[i].x*Math.cos(rad);
-        newFrame[i].z = newFrame[i].z * Math.cos(rad) - newFrame[i].x * Math.sin(rad);
-        newFrame[i].x += frame[0].x;
-        newFrame[i].y += frame[0].y;
-        newFrame[i].z += frame[0].z;
     }
     return newFrame;
 }

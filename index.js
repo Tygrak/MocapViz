@@ -18,7 +18,7 @@ let currentFrame = 0;
 let headRadius = 18;
 let jointRadius = 0;
 let boneRadius = 2;
-let numPositions = 7;
+let numPositions = 8;
 let numBlurPositions = 12;
 let jointStyle = 'rgba(0,0,0,0.75)';
 let boneStyle = 'rgba(0,0,0,0.75)';
@@ -68,7 +68,15 @@ function loadSequence() {
     for (let i = 0; i < frames.length; i++) {
         frames[i] = frameRotateY(frames[i], yRotation);
     }
-    drawSequenceBlur(canvas, frames, numPositions, numBlurPositions, drawStyle, drawStyleBlur);
+    let keyframes = findKeyframes(frames, numPositions);
+    console.log(keyframes);
+    let notKeyframes = [];
+    for (let i = 0; i < keyframes.length; i++) {
+        notKeyframes.push(Math.floor((i/keyframes.length)*frames.length));
+    }
+    drawSequenceKeyframes(canvas, frames, keyframes, drawStyle, 0, true);
+    drawSequenceKeyframes(canvas, frames, notKeyframes, drawStyle, -height/2, false);
+    //drawSequenceBlur(canvas, frames, numPositions, numBlurPositions, drawStyle, drawStyleBlur);
 }
 
 function playSequence() {
