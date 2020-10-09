@@ -57,6 +57,37 @@ function drawSequenceKeyframes(canvas, frames, indexes, drawStyle, yShift = 0, c
     }
 }
 
+function drawSequenceKeyframesBlur(canvas, frames, indexes, numBlurPositions, drawStyle, drawStyleBlur, yShift = 0, clear = true) {
+    let ctx = canvas.getContext("2d");
+    if (clear) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    let firstFrame = moveOriginXBy(frames[0], frames[0][0].x);
+    let minX = firstFrame[0].x;
+    for (let i = 1; i < firstFrame.length; i++) {
+        if (firstFrame[i].x < minX) {
+            minX = firstFrame[i].x;
+        }
+    }
+    let lastFrame = moveOriginXBy(frames[frames.length-1], frames[frames.length-1][0].x);
+    let maxX = lastFrame[0].x;
+    for (let i = 1; i < lastFrame.length; i++) {
+        if (lastFrame[i].x > maxX) {
+            maxX = lastFrame[i].x;
+        }
+    }
+    for (let i = 0; i < indexes.length; i++) {
+        let coreX = frames[indexes[i]][0].x;
+        for (let j = 1; j < numBlurPositions+1; j++) {
+            if (indexes[i]-j < 0) {
+                continue;
+            }
+            drawFrame(canvas, moveOriginXBy(frames[indexes[i]-j], coreX), (i/indexes.length)*(canvas.width+minX-maxX-20)-minX+20, yShift, drawStyleBlur);
+        }
+        drawFrame(canvas, moveOriginXBy(frames[indexes[i]], coreX), (i/indexes.length)*(canvas.width+minX-maxX-20)-minX+20, yShift, drawStyle);
+    }
+}
+
 function drawSequenceBlur(canvas, frames, numPositions, numBlurPositions, drawStyle, drawStyleBlur) {
     let ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);

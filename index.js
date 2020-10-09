@@ -19,7 +19,7 @@ let headRadius = 18;
 let jointRadius = 0;
 let boneRadius = 2;
 let numPositions = 8;
-let numBlurPositions = 12;
+let numBlurPositions = 10;
 let jointStyle = 'rgba(0,0,0,0.75)';
 let boneStyle = 'rgba(0,0,0,0.75)';
 let sequences = [];
@@ -33,6 +33,7 @@ const sequenceNumberInput = document.getElementById("sequenceNumberInput");
 const sequenceInputLoadButton = document.getElementById("sequenceInputLoadButton");
 const sequenceInputPlayButton = document.getElementById("sequenceInputPlayButton");
 const dataFileInput = document.getElementById("dataFileInput");
+const numFramesInput = document.getElementById("numFramesInput");
 const yRotationInput = document.getElementById("yRotationInput");
 const loadButton = document.getElementById("dataInputLoadButton");
 loadButton.onclick = loadDataFile;
@@ -60,6 +61,7 @@ function loadDataFile() {
 }
 
 function loadSequence() {
+    numPositions = parseInt(numFramesInput.value);
     playingSequence = false;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     let selectedSequence = parseInt(sequenceNumberInput.value);
@@ -74,12 +76,13 @@ function loadSequence() {
     for (let i = 0; i < keyframes.length; i++) {
         notKeyframes.push(Math.floor((i/keyframes.length)*frames.length));
     }
-    drawSequenceKeyframes(canvas, frames, keyframes, drawStyle, 0, true);
-    drawSequenceKeyframes(canvas, frames, notKeyframes, drawStyle, -height/2, false);
+    drawSequenceKeyframesBlur(canvas, frames, keyframes, numBlurPositions, drawStyle, drawStyleBlur, 0, true);
+    drawSequenceKeyframesBlur(canvas, frames, notKeyframes, numBlurPositions, drawStyle, drawStyleBlur, -height/2, false);
     //drawSequenceBlur(canvas, frames, numPositions, numBlurPositions, drawStyle, drawStyleBlur);
 }
 
 function playSequence() {
+    numPositions = parseInt(numFramesInput.value);
     currentFrame = 0;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     let selectedSequence = parseInt(sequenceNumberInput.value);
