@@ -33,10 +33,14 @@ const sequenceNumberInput = document.getElementById("sequenceNumberInput");
 const sequenceInputLoadButton = document.getElementById("sequenceInputLoadButton");
 const sequenceInputPlayButton = document.getElementById("sequenceInputPlayButton");
 const dataFileInput = document.getElementById("dataFileInput");
+const dataTextInput = document.getElementById("dataTextInput");
 const numFramesInput = document.getElementById("numFramesInput");
 const yRotationInput = document.getElementById("yRotationInput");
 const loadButton = document.getElementById("dataInputLoadButton");
+const loadTextButton = document.getElementById("dataTextLoadButton");
+const bonesModelInput = document.getElementById("bonesModelInput");
 loadButton.onclick = loadDataFile;
+loadTextButton.onclick = loadDataText;
 sequenceInputLoadButton.onclick = loadSequence;
 sequenceInputPlayButton.onclick = playSequence;
 const canvas = document.getElementById("drawBox");
@@ -60,12 +64,25 @@ function loadDataFile() {
     reader.readAsText(dataFileInput.files[0], "UTF-8");
 }
 
+function loadDataText() {
+    if (dataTextInput.value.length == 0) {
+        return;
+    } 
+    sequences = dataTextInput.value.split("#objectKey").filter((s) => {return s != "";});
+    availableSequencesText.innerText = sequences.length;
+}
+
 function loadSequence() {
     numPositions = parseInt(numFramesInput.value);
+    drawStyle.bonesModel = bonesModelInput.value == "Vicon" ? bonesVicon : bonesKinect;
+    drawStyleBlur.bonesModel = bonesModelInput.value == "Vicon" ? bonesVicon : bonesKinect;
     playingSequence = false;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     let selectedSequence = parseInt(sequenceNumberInput.value);
     let frames = processSequenceToFrames(sequences[selectedSequence], canvas.height, figureScale);
+    if (frames.length == 0) {
+        frames = processSequenceToFrames2d(sequences[selectedSequence], canvas.height, figureScale);
+    }
     let yRotation = parseFloat(yRotationInput.value)*0.01745329;
     for (let i = 0; i < frames.length; i++) {
         frames[i] = frameRotateY(frames[i], yRotation);
@@ -76,12 +93,15 @@ function loadSequence() {
     for (let i = 0; i < keyframes.length; i++) {
         notKeyframes.push(Math.floor((i/keyframes.length)*frames.length));
     }
+    console.log(frames);
     drawSequenceKeyframesBlur(canvas, frames, keyframes, numBlurPositions, drawStyle, drawStyleBlur, 0, true);
     drawSequenceKeyframesBlur(canvas, frames, notKeyframes, numBlurPositions, drawStyle, drawStyleBlur, -height/2, false);
     //drawSequenceBlur(canvas, frames, numPositions, numBlurPositions, drawStyle, drawStyleBlur);
 }
 
 function playSequence() {
+    drawStyle.bonesModel = bonesModelInput.value == "Vicon" ? bonesVicon : bonesKinect;
+    drawStyleBlur.bonesModel = bonesModelInput.value == "Vicon" ? bonesVicon : bonesKinect;
     numPositions = parseInt(numFramesInput.value);
     currentFrame = 0;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -90,6 +110,9 @@ function playSequence() {
         return;
     }
     currentPlayingFrames = processSequenceToFrames(sequences[selectedSequence], canvas.height, figureScale);
+    if (currentPlayingFrames.length == 0) {
+        currentPlayingFrames = processSequenceToFrames2d(sequences[selectedSequence], canvas.height, figureScale);
+    }
     if (currentPlayingFrames.length == 0) {
         return;
     }

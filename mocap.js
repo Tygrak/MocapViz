@@ -125,11 +125,72 @@ function processSequenceToFrames(rawData, canvasHeight, figureScale) {
     let frames = rawData.split("\n").map((frame) => {
         return frame.replace(" ", "").split(';').map((joint) => {
             let xyz = joint.split(',');
-            return {x:parseFloat(xyz[0])*figureScale, y:parseFloat(xyz[1])*-1*figureScale + canvasHeight-10, z:parseFloat(xyz[2])*figureScale};
+            return {x:parseFloat(xyz[0])*figureScale, y:parseFloat(xyz[1])*-1*figureScale + canvasHeight, z:parseFloat(xyz[2])*figureScale};
         });
     });
     frames = frames.filter((f) => {return f.length > 0 && !isNaN(f[0].x) && !isNaN(f[0].y) && !isNaN(f[0].z)});
+    if (frames.length == 0) {
+        return frames;
+    } 
+    let yShift = -20+canvasHeight-Math.max(findMaximumsFromFrame(frames[0]).y, findMaximumsFromFrame(frames[frames.length-1]).y);
+    for (let i = 0; i < frames.length; i++) {
+        for (let j = 0; j < frames[i].length; j++) {
+            frames[i][j].y += yShift; 
+        }
+    }
     return frames;
+}
+
+function processSequenceToFrames2d(rawData, canvasHeight, figureScale) {
+    let frames = rawData.split("\n").map((frame) => {
+        return frame.replace(" ", "").split(';').map((joint) => {
+            let xy = joint.split(',');
+            return {x:parseFloat(xy[0])*figureScale, y:parseFloat(xy[1])*figureScale + canvasHeight-10, z:0};
+        });
+    });
+    frames = frames.filter((f) => {return f.length > 0 && !isNaN(f[0].x) && !isNaN(f[0].y)});
+    if (frames.length == 0) {
+        return frames;
+    } 
+    let yShift = -20+canvasHeight-Math.max(findMaximumsFromFrame(frames[0]).y, findMaximumsFromFrame(frames[frames.length-1]).y);
+    for (let i = 0; i < frames.length; i++) {
+        for (let j = 0; j < frames[i].length; j++) {
+            frames[i][j].y += yShift; 
+        }
+    }
+    return frames;
+}
+
+function findMinimumsFromFrame(frame) {
+    let xyz = {x:frame[0].x, y:frame[0].y, z:frame[0].z};
+    for (let i = 1; i < frame.length; i++) {
+        if (frame[i].x < xyz.x) {
+            xyz.x = frame[i].x;
+        }
+        if (frame[i].y < xyz.y) {
+            xyz.y = frame[i].y;
+        }
+        if (frame[i].z < xyz.z) {
+            xyz.z = frame[i].z;
+        }
+    }
+    return xyz;
+}
+
+function findMaximumsFromFrame(frame) {
+    let xyz = {x:frame[0].x, y:frame[0].y, z:frame[0].z};
+    for (let i = 1; i < frame.length; i++) {
+        if (frame[i].x > xyz.x) {
+            xyz.x = frame[i].x;
+        }
+        if (frame[i].y > xyz.y) {
+            xyz.y = frame[i].y;
+        }
+        if (frame[i].z > xyz.z) {
+            xyz.z = frame[i].z;
+        }
+    }
+    return xyz;
 }
 
 function findKeyframes(frames, numKeyframes) {
@@ -156,7 +217,7 @@ function findKeyframes(frames, numKeyframes) {
     }
     //result = result.splice(1, 1);
     //result.push(frames.length-1);
-    return result.sort();
+    return result.sort((a, b) => a-b);
 }
 
 function frameDistance(a, b) {
@@ -221,6 +282,9 @@ function drawFrame(canvas, frame, xShift, yShift, drawStyle) {
         ctx.fill();
     }
     for (let i = 0; i < drawStyle.bonesModel.length; i++) {
+        if (drawStyle.bonesModel[i].a >= frame.length || drawStyle.bonesModel[i].b >= frame.length) {
+            continue;
+        }
         let a = frame[drawStyle.bonesModel[i].a];
         let b = frame[drawStyle.bonesModel[i].b];
         let normal = {x:a.y-b.y, y:-(a.x-b.x)};
