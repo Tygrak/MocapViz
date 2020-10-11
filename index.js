@@ -1,9 +1,17 @@
 let bonesVicon = [
-    {a: 0, b: 1}, {a: 1, b: 2}, {a: 2, b: 3}, {a: 3, b: 4}, {a: 4, b: 5}, // leg
-    {a: 0, b: 6}, {a: 6, b: 7}, {a: 7, b: 8}, {a: 8, b: 9}, {a: 9, b: 10}, // leg
-    {a: 0, b: 11}, {a: 11, b: 12}, {a: 12, b: 13}, {a: 13, b: 14}, {a: 14, b: 15}, {a: 15, b: 16}, // torso + head
-    {a: 13, b: 17}, {a: 17, b: 18}, {a: 18, b: 19}, {a: 19, b: 20}, {a: 20, b: 21}, {a: 21, b: 22}, {a: 20, b: 23}, // hand
-    {a: 13, b: 24}, {a: 24, b: 25}, {a: 25, b: 26}, {a: 26, b: 27}, {a: 27, b: 28}, {a: 28, b: 29}, {a: 27, b: 30}]; // hand
+    {a: 0, b: 1, type: BoneType.rightLeg}, {a: 1, b: 2, type: BoneType.rightLeg}, {a: 2, b: 3, type: BoneType.rightLeg}, 
+    {a: 3, b: 4, type: BoneType.rightLeg}, {a: 4, b: 5, type: BoneType.rightLeg}, // leg
+    {a: 0, b: 6, type: BoneType.leftLeg}, {a: 6, b: 7, type: BoneType.leftLeg}, {a: 7, b: 8, type: BoneType.leftLeg}, 
+    {a: 8, b: 9, type: BoneType.leftLeg}, {a: 9, b: 10, type: BoneType.leftLeg}, // leg
+    {a: 0, b: 11, type: BoneType.torso}, {a: 11, b: 12, type: BoneType.torso}, {a: 12, b: 13, type: BoneType.torso}, 
+    {a: 13, b: 14, type: BoneType.torso}, {a: 14, b: 15, type: BoneType.torso}, {a: 15, b: 16, type: BoneType.torso}, // torso + head
+    {a: 13, b: 17, type: BoneType.rightHand}, {a: 17, b: 18, type: BoneType.rightHand}, {a: 18, b: 19, type: BoneType.rightHand}, 
+    {a: 19, b: 20, type: BoneType.rightHand}, {a: 20, b: 21, type: BoneType.rightHand}, {a: 21, b: 22, type: BoneType.rightHand}, 
+    {a: 20, b: 23, type: BoneType.rightHand}, // hand
+    {a: 13, b: 24, type: BoneType.leftHand}, {a: 24, b: 25, type: BoneType.leftHand}, {a: 25, b: 26, type: BoneType.leftHand}, 
+    {a: 26, b: 27, type: BoneType.leftHand}, {a: 27, b: 28, type: BoneType.leftHand}, {a: 28, b: 29, type: BoneType.leftHand}, 
+    {a: 27, b: 30, type: BoneType.leftHand} // hand
+]; 
 let bonesKinect = [
     {a: 0, b: 1}, {a: 1, b: 2}, {a: 2, b: 3}, {a: 3, b: 4}, // leg
     {a: 0, b: 6}, {a: 6, b: 7}, {a: 7, b: 8}, {a: 8, b: 9}, // leg
@@ -22,11 +30,14 @@ let numPositions = 8;
 let numBlurPositions = 10;
 let jointStyle = 'rgba(0,0,0,0.75)';
 let boneStyle = 'rgba(0,0,0,0.75)';
+let leftBoneStyle = 'rgba(128,0,0,0.75)';
+let rightBoneStyle = 'rgba(0,0,128,0.75)';
+let blurStyle = 'rgba(0,0,0,0.1)';
 let sequences = [];
 let currentPlayingFrames = [];
 let playingSequence = false;
-let drawStyle = new MocapDrawStyle(bonesVicon, boneRadius, jointRadius, headRadius, boneStyle, jointStyle);
-let drawStyleBlur = new MocapDrawStyle(bonesVicon, boneRadius, jointRadius, headRadius, 'rgba(0,0,0,0.1)', 'rgba(0,0,0,0.1)');
+let drawStyle = new MocapDrawStyle(bonesVicon, boneRadius, jointRadius, headRadius, boneStyle, leftBoneStyle, rightBoneStyle, jointStyle);
+let drawStyleBlur = new MocapDrawStyle(bonesVicon, boneRadius, jointRadius, headRadius, blurStyle, blurStyle, blurStyle, blurStyle);
 
 const availableSequencesText = document.getElementById("availableSequencesText");
 const sequenceNumberInput = document.getElementById("sequenceNumberInput");

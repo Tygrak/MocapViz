@@ -1,11 +1,21 @@
-function MocapDrawStyle(bonesModel, boneRadius, jointRadius, headRadius, boneStyle, jointStyle) {
+function MocapDrawStyle(bonesModel, boneRadius, jointRadius, headRadius, boneStyle, leftBoneStyle, rightBoneStyle, jointStyle) {
     this.bonesModel = bonesModel;
     this.boneRadius = boneRadius;
     this.jointRadius = jointRadius;
     this.headRadius = headRadius;
     this.boneStyle = boneStyle;
+    this.leftBoneStyle = leftBoneStyle;
+    this.rightBoneStyle = rightBoneStyle;
     this.jointStyle = jointStyle;
 }
+
+let BoneType = {
+    rightLeg: 0,
+    leftLeg: 1,
+    rightHand: 2,
+    leftHand: 3,
+    torso: 4
+};
 
 function drawSequence(canvas, frames, numPositions, drawStyle) {
     let ctx = canvas.getContext("2d");
@@ -242,7 +252,7 @@ function frameRotateY(frame, rad) {
         newFrame[i] = {
             x: frame[i].z*Math.sin(rad) + frame[i].x*Math.cos(rad),
             y: frame[i].y,
-            z: frame[i].z * Math.cos(rad) - frame[i].x * Math.sin(rad)
+            z: frame[i].z*Math.cos(rad) - frame[i].x*Math.sin(rad)
         };
     }
     return newFrame;
@@ -252,14 +262,6 @@ function moveOriginXBy(frame, xMove) {
     let newFrame = [];
     for (let i = 0; i < frame.length; i++) {
         newFrame[i] = {x:frame[i].x-xMove, y:frame[i].y, z:frame[i].z};
-    }
-    return newFrame;
-}
-
-function swapFrameXZ(frame) {
-    let newFrame = [];
-    for (let i = 0; i < frame.length; i++) {
-        newFrame[i] = {x:frame[i].z, y:frame[i].y, z:frame[i].x};
     }
     return newFrame;
 }
@@ -291,7 +293,13 @@ function drawFrame(canvas, frame, xShift, yShift, drawStyle) {
         let magnitude = Math.sqrt(normal.x**2+normal.y**2);
         normal.x = normal.x/magnitude;
         normal.y = normal.y/magnitude;
-        ctx.fillStyle = drawStyle.boneStyle;
+        if (drawStyle.bonesModel[i].type == BoneType.leftHand || drawStyle.bonesModel[i].type == BoneType.leftLeg) {
+            ctx.fillStyle = drawStyle.leftBoneStyle;
+        } else if (drawStyle.bonesModel[i].type == BoneType.rightHand || drawStyle.bonesModel[i].type == BoneType.rightLeg) {
+            ctx.fillStyle = drawStyle.rightBoneStyle;
+        } else {
+            ctx.fillStyle = drawStyle.boneStyle;
+        }
         ctx.beginPath();
         ctx.moveTo(a.x+drawStyle.boneRadius*normal.x+xShift, a.y+drawStyle.boneRadius*normal.y+yShift);
         ctx.lineTo(b.x+drawStyle.boneRadius*normal.x+xShift, b.y+drawStyle.boneRadius*normal.y+yShift);
