@@ -18,53 +18,11 @@ let BoneType = {
 };
 
 function drawSequence(canvas, frames, numPositions, drawStyle) {
-    let ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    let firstFrame = moveOriginXBy(frames[0], frames[0][0].x);
-    let minX = firstFrame[0].x;
-    for (let i = 1; i < firstFrame.length; i++) {
-        if (firstFrame[i].x < minX) {
-            minX = firstFrame[i].x;
-        }
-    }
-    let lastFrame = moveOriginXBy(frames[frames.length-1], frames[frames.length-1][0].x);
-    let maxX = lastFrame[0].x;
-    for (let i = 1; i < lastFrame.length; i++) {
-        if (lastFrame[i].x > maxX) {
-            maxX = lastFrame[i].x;
-        }
-    }
-    for (let i = 0; i < frames.length; i++) {
-        if (Math.floor(i%(frames.length/(numPositions-1))) == 0 || i == frames.length-1) {
-            let coreX = frames[i][0].x;
-            drawFrame(canvas, moveOriginXBy(frames[i], coreX), (i/frames.length)*(canvas.width+minX-maxX-20)-minX+20, 0, drawStyle);
-        }
-    }
+    drawSequenceBlur(canvas, frames, numPositions, 0, drawStyle, drawStyle);
 }
 
 function drawSequenceKeyframes(canvas, frames, indexes, drawStyle, yShift = 0, clear = true) {
-    let ctx = canvas.getContext("2d");
-    if (clear) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
-    let firstFrame = moveOriginXBy(frames[0], frames[0][0].x);
-    let minX = firstFrame[0].x;
-    for (let i = 1; i < firstFrame.length; i++) {
-        if (firstFrame[i].x < minX) {
-            minX = firstFrame[i].x;
-        }
-    }
-    let lastFrame = moveOriginXBy(frames[frames.length-1], frames[frames.length-1][0].x);
-    let maxX = lastFrame[0].x;
-    for (let i = 1; i < lastFrame.length; i++) {
-        if (lastFrame[i].x > maxX) {
-            maxX = lastFrame[i].x;
-        }
-    }
-    for (let i = 0; i < indexes.length; i++) {
-        let coreX = frames[indexes[i]][0].x;
-        drawFrame(canvas, moveOriginXBy(frames[indexes[i]], coreX), (i/indexes.length)*(canvas.width+minX-maxX-20)-minX+20, yShift, drawStyle);
-    }
+    drawSequenceKeyframesBlur(canvas, frames, indexes, 0, drawStyle, drawStyle, yShift, clear);
 }
 
 function drawSequenceKeyframesBlur(canvas, frames, indexes, numBlurPositions, drawStyle, drawStyleBlur, yShift = 0, clear = true) {
@@ -73,62 +31,29 @@ function drawSequenceKeyframesBlur(canvas, frames, indexes, numBlurPositions, dr
         ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
     let firstFrame = moveOriginXBy(frames[0], frames[0][0].x);
-    let minX = firstFrame[0].x;
-    for (let i = 1; i < firstFrame.length; i++) {
-        if (firstFrame[i].x < minX) {
-            minX = firstFrame[i].x;
-        }
-    }
-    let lastFrame = moveOriginXBy(frames[frames.length-1], frames[frames.length-1][0].x);
-    let maxX = lastFrame[0].x;
-    for (let i = 1; i < lastFrame.length; i++) {
-        if (lastFrame[i].x > maxX) {
-            maxX = lastFrame[i].x;
-        }
-    }
+    let minX = findMinimumsFromFrame(firstFrame).x;
+    //let lastFrame = moveOriginXBy(frames[frames.length-1], frames[frames.length-1][0].x);
+    //let maxX = findMaximumsFromFrame(lastFrame).x;
     for (let i = 0; i < indexes.length; i++) {
         let coreX = frames[indexes[i]][0].x;
         for (let j = 1; j < numBlurPositions+1; j++) {
             if (indexes[i]-j < 0) {
                 continue;
             }
-            drawFrame(canvas, moveOriginXBy(frames[indexes[i]-j], coreX), (i/indexes.length)*(canvas.width+minX-maxX-20)-minX+20, yShift, drawStyleBlur);
+            drawFrame(canvas, moveOriginXBy(frames[indexes[i]-j], coreX), (i/indexes.length)*(canvas.width+minX-20)-minX+20, yShift, drawStyleBlur);
         }
-        drawFrame(canvas, moveOriginXBy(frames[indexes[i]], coreX), (i/indexes.length)*(canvas.width+minX-maxX-20)-minX+20, yShift, drawStyle);
+        drawFrame(canvas, moveOriginXBy(frames[indexes[i]], coreX), (i/indexes.length)*(canvas.width+minX-20)-minX+20, yShift, drawStyle);
     }
 }
 
 function drawSequenceBlur(canvas, frames, numPositions, numBlurPositions, drawStyle, drawStyleBlur) {
-    let ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    let firstFrame = moveOriginXBy(frames[0], frames[0][0].x);
-    let minX = firstFrame[0].x;
-    for (let i = 1; i < firstFrame.length; i++) {
-        if (firstFrame[i].x < minX) {
-            minX = firstFrame[i].x;
-        }
-    }
-    let lastFrame = moveOriginXBy(frames[frames.length-1], frames[frames.length-1][0].x);
-    let maxX = lastFrame[0].x;
-    for (let i = 1; i < lastFrame.length; i++) {
-        if (lastFrame[i].x > maxX) {
-            maxX = lastFrame[i].x;
-        }
-    }
+    let indexes = [];
     for (let i = 0; i < frames.length; i++) {
         if (Math.floor(i%(frames.length/(numPositions-1))) == 0 || i == frames.length-1) {
-            let coreX = frames[i][0].x;
-            if (i > 0) {
-                for (let j = 1; j < numBlurPositions+1; j++) {
-                    if (i-j < 0) {
-                        continue;
-                    }
-                    drawFrame(canvas, moveOriginXBy(frames[i-j], coreX), (i/frames.length)*(canvas.width+minX-maxX-20)-minX+20, 0, drawStyleBlur);
-                }
-            }
-            drawFrame(canvas, moveOriginXBy(frames[i], coreX), (i/frames.length)*(canvas.width+minX-maxX-20)-minX+20, 0, drawStyle);
+            indexes.push(i);
         }
     }
+    drawSequenceKeyframesBlur(canvas, frames, indexes, numBlurPositions, drawStyle, drawStyleBlur, 0, false);
 }
 
 function processSequenceToFrames(rawData, canvasHeight, figureScale) {
@@ -228,6 +153,42 @@ function findKeyframes(frames, numKeyframes) {
     //result = result.splice(1, 1);
     //result.push(frames.length-1);
     return result.sort((a, b) => a-b);
+}
+
+function findBestRotation(frames, samples) {
+    samples = samples-1;
+    let framesMin = findMinimumsFromFrame(frames[0]);
+    let framesMax = findMaximumsFromFrame(frames[0]);
+    for (let i = 1; i < samples+1; i++) {
+        let index = Math.floor((i/samples)*frames.length);
+        if (index == frames.length) {
+            index = index-1;
+        }
+        let min = findMinimumsFromFrame(frames[index]);
+        if (framesMin.x > min.x) {
+            framesMin.x = min.x;
+        }
+        if (framesMin.y > min.y) {
+            framesMin.y = min.y;
+        }
+        if (framesMin.z > min.z) {
+            framesMin.z = min.z;
+        }
+        let max = findMaximumsFromFrame(frames[index]);
+        if (framesMax.x < max.x) {
+            framesMax.x = max.x;
+        }
+        if (framesMax.y < max.y) {
+            framesMax.y = max.y;
+        }
+        if (framesMax.z < max.z) {
+            framesMax.z = max.z;
+        }
+    }
+    let a = framesMax.x-framesMin.x;
+    let b = framesMax.z-framesMin.z;
+    let c = Math.sqrt(a**2+b**2);
+    return Math.asin(b/c);
 }
 
 function frameDistance(a, b) {

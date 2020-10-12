@@ -94,9 +94,11 @@ function loadSequence() {
     if (frames.length == 0) {
         frames = processSequenceToFrames2d(sequences[selectedSequence], canvas.height, figureScale);
     }
+    //let bestRotation = findBestRotation(frames, numPositions);
+    //yRotationInput.value = bestRotation*57.29578778556937;
     let yRotation = parseFloat(yRotationInput.value)*0.01745329;
     for (let i = 0; i < frames.length; i++) {
-        frames[i] = frameRotateY(frames[i], yRotation);
+        frames[i] = frameRotateY(frames[i], bestRotation);
     }
     let keyframes = findKeyframes(frames, numPositions);
     console.log(keyframes);
@@ -105,6 +107,7 @@ function loadSequence() {
         notKeyframes.push(Math.floor((i/keyframes.length)*frames.length));
     }
     console.log(frames);
+    console.log(findBestRotation(frames, numPositions));
     drawSequenceKeyframesBlur(canvas, frames, keyframes, numBlurPositions, drawStyle, drawStyleBlur, 0, true);
     drawSequenceKeyframesBlur(canvas, frames, notKeyframes, numBlurPositions, drawStyle, drawStyleBlur, -height/2, false);
     //drawSequenceBlur(canvas, frames, numPositions, numBlurPositions, drawStyle, drawStyleBlur);
