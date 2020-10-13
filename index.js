@@ -50,6 +50,9 @@ const yRotationInput = document.getElementById("yRotationInput");
 const loadButton = document.getElementById("dataInputLoadButton");
 const loadTextButton = document.getElementById("dataTextLoadButton");
 const bonesModelInput = document.getElementById("bonesModelInput");
+const scaleInput = document.getElementById("scaleInput");
+const autorotateInput = document.getElementById("autorotateInput");
+const autoscaleInput = document.getElementById("autoscaleInput");
 loadButton.onclick = loadDataFile;
 loadTextButton.onclick = loadDataText;
 sequenceInputLoadButton.onclick = loadSequence;
@@ -83,22 +86,42 @@ function loadDataText() {
     availableSequencesText.innerText = sequences.length;
 }
 
-function loadSequence() {
+function processSelectedSequence() {
     numPositions = parseInt(numFramesInput.value);
     drawStyle.bonesModel = bonesModelInput.value == "Vicon" ? bonesVicon : bonesKinect;
     drawStyleBlur.bonesModel = bonesModelInput.value == "Vicon" ? bonesVicon : bonesKinect;
     playingSequence = false;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     let selectedSequence = parseInt(sequenceNumberInput.value);
+    figureScale = parseFloat(scaleInput.value);
     let frames = processSequenceToFrames(sequences[selectedSequence], canvas.height, figureScale);
-    if (frames.length == 0) {
-        frames = processSequenceToFrames2d(sequences[selectedSequence], canvas.height, figureScale);
+    if (autoscaleInput.checked) {
+        if (frames.length == 0) {
+            frames = processSequenceToFrames2d(sequences[selectedSequence], canvas.height, figureScale);
+            figureScale = figureScale*findOptimalScale(frames, canvas, numPositions);
+            frames = processSequenceToFrames2d(sequences[selectedSequence], canvas.height, figureScale);
+        } else {
+            figureScale = figureScale*findOptimalScale(frames, canvas, numPositions);
+            frames = processSequenceToFrames(sequences[selectedSequence], canvas.height, figureScale);
+        }
+        scaleInput.value = figureScale;
+    } else {
+        if (frames.length == 0) {
+            frames = processSequenceToFrames2d(sequences[selectedSequence], canvas.height, figureScale);
+        }
     }
-    //let bestRotation = findBestRotation(frames, numPositions);
-    //yRotationInput.value = bestRotation*57.29578778556937;
+    if (autorotateInput.checked) {
+        let bestRotation = findBestRotation(frames, numPositions);
+        yRotationInput.value = bestRotation*57.29578778556937;
+    }
+    return frames;
+}
+
+function loadSequence() {
+    let frames = processSelectedSequence();
     let yRotation = parseFloat(yRotationInput.value)*0.01745329;
     for (let i = 0; i < frames.length; i++) {
-        frames[i] = frameRotateY(frames[i], bestRotation);
+        frames[i] = frameRotateY(frames[i], yRotation);
     }
     let keyframes = findKeyframes(frames, numPositions);
     console.log(keyframes);
@@ -114,19 +137,9 @@ function loadSequence() {
 }
 
 function playSequence() {
-    drawStyle.bonesModel = bonesModelInput.value == "Vicon" ? bonesVicon : bonesKinect;
-    drawStyleBlur.bonesModel = bonesModelInput.value == "Vicon" ? bonesVicon : bonesKinect;
-    numPositions = parseInt(numFramesInput.value);
     currentFrame = 0;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    let selectedSequence = parseInt(sequenceNumberInput.value);
-    if (selectedSequence >= sequences.length) {
-        return;
-    }
-    currentPlayingFrames = processSequenceToFrames(sequences[selectedSequence], canvas.height, figureScale);
-    if (currentPlayingFrames.length == 0) {
-        currentPlayingFrames = processSequenceToFrames2d(sequences[selectedSequence], canvas.height, figureScale);
-    }
+    clearCanvas(canvas);
+    currentPlayingFrames = processSelectedSequence();
     if (currentPlayingFrames.length == 0) {
         return;
     }

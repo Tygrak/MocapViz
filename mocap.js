@@ -9,7 +9,7 @@ function MocapDrawStyle(bonesModel, boneRadius, jointRadius, headRadius, boneSty
     this.jointStyle = jointStyle;
 }
 
-let BoneType = {
+const BoneType = {
     rightLeg: 0,
     leftLeg: 1,
     rightHand: 2,
@@ -155,12 +155,12 @@ function findKeyframes(frames, numKeyframes) {
     return result.sort((a, b) => a-b);
 }
 
-function findBestRotation(frames, samples) {
-    samples = samples-1;
+function findBestRotation(frames, numSamples) {
+    numSamples = numSamples-1;
     let framesMin = findMinimumsFromFrame(frames[0]);
     let framesMax = findMaximumsFromFrame(frames[0]);
-    for (let i = 1; i < samples+1; i++) {
-        let index = Math.floor((i/samples)*frames.length);
+    for (let i = 1; i < numSamples+1; i++) {
+        let index = Math.floor((i/numSamples)*frames.length);
         if (index == frames.length) {
             index = index-1;
         }
@@ -189,6 +189,30 @@ function findBestRotation(frames, samples) {
     let b = framesMax.z-framesMin.z;
     let c = Math.sqrt(a**2+b**2);
     return Math.asin(b/c);
+}
+
+function findOptimalScale(frames, canvas, numFrames) {
+    let maximums = findMaximumsFromFrame(frames[0]);
+    let minimums = findMinimumsFromFrame(frames[0]);
+    let maxWidth = maximums.x-minimums.x;
+    let maxHeight = maximums.y-minimums.y;
+    for (let i = 0; i < numFrames; i++) {
+        let index = Math.floor((i/numFrames)*frames.length);
+        maximums = findMaximumsFromFrame(frames[index]);
+        minimums = findMinimumsFromFrame(frames[index]);
+        let width = maximums.x-minimums.x;
+        let height = maximums.y-minimums.y;
+        if (width > maxWidth) {
+            maxWidth = width;
+        }
+        if (height > maxHeight) {
+            maxHeight = height;
+        }
+    }
+    console.log("h: "+((canvas.height)/2-100)/maxHeight);
+    console.log("w: "+(canvas.width/numFrames)/maxWidth);
+    //return Math.min(((canvas.height)/2-40)/maxHeight, (canvas.width/numFrames)/maxWidth);
+    return ((canvas.height)/2-40)/maxHeight
 }
 
 function frameDistance(a, b) {

@@ -78,8 +78,22 @@
                 <input type="number" id="numFramesInput" name="numFramesInput" value="8">
             </div>
             <div class="sideMenuItem">
+                <div class="sideMenuItemLabel">Scale:</div>
+                <input type="number" step="any" id="scaleInput" name="scaleInput" value="8">
+            </div>
+            <div class="sideMenuItem">
                 <div class="sideMenuItemLabel">Rotate Y:</div>
-                <input type="number" id="yRotationInput" name="yRotationInput" value="0">
+                <input type="number" step="any" id="yRotationInput" name="yRotationInput" value="0">
+            </div>
+            <div class="sideMenuItem">
+                <div>
+                    <input type="checkbox" id="autorotateInput" name="autorotateInput">
+                    <label for="autorotateInput">Automatically set rotation</label>
+                </div>
+                <div>
+                    <input type="checkbox" id="autoscaleInput" name="autoscaleInput">
+                    <label for="autoscaleInput">Automatically scale</label>
+                </div>
             </div>
         </div>
         <div id="drawContainer">
