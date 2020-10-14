@@ -31,18 +31,43 @@ function drawSequenceKeyframesBlur(canvas, frames, indexes, numBlurPositions, dr
         ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
     let firstFrame = moveOriginXBy(frames[0], frames[0][0].x);
-    let minX = findMinimumsFromFrame(firstFrame).x;
-    //let lastFrame = moveOriginXBy(frames[frames.length-1], frames[frames.length-1][0].x);
-    //let maxX = findMaximumsFromFrame(lastFrame).x;
+    let minimums = findMinimumsFromFrame(firstFrame);
+    let lastFrame = moveOriginXBy(frames[frames.length-1], frames[frames.length-1][0].x);
+    let maximums = findMaximumsFromFrame(lastFrame);
     for (let i = 0; i < indexes.length; i++) {
         let coreX = frames[indexes[i]][0].x;
         for (let j = 1; j < numBlurPositions+1; j++) {
             if (indexes[i]-j < 0) {
                 continue;
             }
-            drawFrame(canvas, moveOriginXBy(frames[indexes[i]-j], coreX), (i/indexes.length)*(canvas.width+minX-20)-minX+20, yShift, drawStyleBlur);
+            drawFrame(canvas, moveOriginXBy(frames[indexes[i]-j], coreX), (i/indexes.length)*(canvas.width+minimums.x-20)-minimums.x+20, yShift, drawStyleBlur);
         }
-        drawFrame(canvas, moveOriginXBy(frames[indexes[i]], coreX), (i/indexes.length)*(canvas.width+minX-20)-minX+20, yShift, drawStyle);
+        drawFrame(canvas, moveOriginXBy(frames[indexes[i]], coreX), (i/indexes.length)*(canvas.width+minimums.x-20)-minimums.x+20, yShift, drawStyle);
+        ctx.font = '12px serif';
+        ctx.fillStyle = 'black';
+        console.log((i/indexes.length)*(canvas.width+minimums.x-20)-minimums.x+20, maximums.y+yShift+20);
+        ctx.fillText(indexes[i], (i/indexes.length)*(canvas.width+minimums.x-20)-minimums.x+20, maximums.y+yShift+10);
+    }
+}
+
+function drawSequenceKeyframesBlurTrueTime(canvas, frames, indexes, numBlurPositions, drawStyle, drawStyleBlur, yShift = 0, clear = true) {
+    let ctx = canvas.getContext("2d");
+    if (clear) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    let firstFrame = moveOriginXBy(frames[0], frames[0][0].x);
+    let minX = findMinimumsFromFrame(firstFrame).x;
+    let lastFrame = moveOriginXBy(frames[frames.length-1], frames[frames.length-1][0].x);
+    let maxX = findMaximumsFromFrame(lastFrame).x;
+    for (let i = 0; i < indexes.length; i++) {
+        let coreX = frames[indexes[i]][0].x;
+        for (let j = 1; j < numBlurPositions+1; j++) {
+            if (indexes[i]-j < 0) {
+                continue;
+            }
+            drawFrame(canvas, moveOriginXBy(frames[indexes[i]-j], coreX), (indexes[i]/frames.length)*(canvas.width+minX-maxX-20)-minX+20, yShift, drawStyleBlur);
+        }
+        drawFrame(canvas, moveOriginXBy(frames[indexes[i]], coreX), (indexes[i]/frames.length)*(canvas.width+minX-maxX-20)-minX+20, yShift, drawStyle);
     }
 }
 
