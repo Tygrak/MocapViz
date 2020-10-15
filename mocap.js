@@ -45,7 +45,7 @@ function drawSequenceKeyframesBlur(canvas, frames, indexes, numBlurPositions, dr
         drawFrame(canvas, moveOriginXBy(frames[indexes[i]], coreX), (i/indexes.length)*(canvas.width+minimums.x-20)-minimums.x+20, yShift, drawStyle);
         ctx.font = '12px serif';
         ctx.fillStyle = 'black';
-        console.log((i/indexes.length)*(canvas.width+minimums.x-20)-minimums.x+20, maximums.y+yShift+20);
+        //console.log((i/indexes.length)*(canvas.width+minimums.x-20)-minimums.x+20, maximums.y+yShift+25);
         ctx.fillText(indexes[i], (i/indexes.length)*(canvas.width+minimums.x-20)-minimums.x+20, maximums.y+yShift+10);
     }
 }
@@ -281,11 +281,40 @@ function clearCanvas(canvas) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
+function clamp(a, b, value) {
+    if (value < a) {
+        return a;
+    } else if (value > b) {
+        return b;
+    } else {
+        return value;
+    }
+}
+
+function lerp(a, b, value) {
+    return (b-a)*value+a;
+}
+
+function inverseLerp(a, b, value) {
+    return (value-a)/(b-a);
+}
+
+function scaleRgbaColor(rgba, scalar) {
+    let result = {r:clamp(0, 255, rgba.r*scalar), g:clamp(0, 255, rgba.g*scalar), b:clamp(0, 255, rgba.b*scalar), a:rgba.a};
+    return result;
+}
+
+function rgbaToColorString(rgba) {
+    return "rgba("+rgba.r+","+rgba.g+","+rgba.b+","+rgba.a+")";
+}
+
 function drawFrame(canvas, frame, xShift, yShift, drawStyle) {
     let ctx = canvas.getContext("2d");
+    let minimums = findMinimumsFromFrame(frame);
+    let maximums = findMaximumsFromFrame(frame);
     for (let i = 0; i < frame.length; i++) {
         ctx.beginPath();
-        ctx.fillStyle = drawStyle.jointStyle;
+        ctx.fillStyle = rgbaToColorString(drawStyle.jointStyle);
         let radius = drawStyle.jointRadius;
         if (i == 16) {
             radius = drawStyle.headRadius;
@@ -304,11 +333,11 @@ function drawFrame(canvas, frame, xShift, yShift, drawStyle) {
         normal.x = normal.x/magnitude;
         normal.y = normal.y/magnitude;
         if (drawStyle.bonesModel[i].type == BoneType.leftHand || drawStyle.bonesModel[i].type == BoneType.leftLeg) {
-            ctx.fillStyle = drawStyle.leftBoneStyle;
+            ctx.fillStyle = rgbaToColorString(scaleRgbaColor(drawStyle.leftBoneStyle, 0.1+0.8*inverseLerp(minimums.z, maximums.z, (a.z+b.z)/2)));
         } else if (drawStyle.bonesModel[i].type == BoneType.rightHand || drawStyle.bonesModel[i].type == BoneType.rightLeg) {
-            ctx.fillStyle = drawStyle.rightBoneStyle;
+            ctx.fillStyle = rgbaToColorString(scaleRgbaColor(drawStyle.rightBoneStyle, 0.1+0.8*inverseLerp(minimums.z, maximums.z, (a.z+b.z)/2)));
         } else {
-            ctx.fillStyle = drawStyle.boneStyle;
+            ctx.fillStyle = rgbaToColorString(drawStyle.boneStyle);
         }
         ctx.beginPath();
         ctx.moveTo(a.x+drawStyle.boneRadius*normal.x+xShift, a.y+drawStyle.boneRadius*normal.y+yShift);

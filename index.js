@@ -28,11 +28,11 @@ let jointRadius = 0;
 let boneRadius = 2;
 let numPositions = 8;
 let numBlurPositions = 10;
-let jointStyle = 'rgba(0,0,0,0.75)';
-let boneStyle = 'rgba(0,0,0,0.75)';
-let leftBoneStyle = 'rgba(128,0,0,0.75)';
-let rightBoneStyle = 'rgba(0,0,128,0.75)';
-let blurStyle = 'rgba(0,0,0,0.1)';
+let jointStyle = {r:0, g:0, b:0, a:0.75};
+let boneStyle = {r:0, g:0, b:0, a:0.75};
+let leftBoneStyle = {r:255, g:0, b:0, a:0.75};
+let rightBoneStyle = {r:0, g:0, b:255, a:0.75};
+let blurStyle = {r:0, g:0, b:0, a:0.1};
 let sequences = [];
 let currentPlayingFrames = [];
 let playingSequence = false;
@@ -61,6 +61,10 @@ const canvas = document.getElementById("drawBox");
 canvas.width = width;
 canvas.height = height;
 let ctx = canvas.getContext("2d");
+
+//const queryString = window.location.search;
+//console.log(queryString);
+//const urlParams = new URLSearchParams(queryString);
 
 loadDataFile();
 setInterval(update, 10);
