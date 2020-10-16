@@ -145,11 +145,7 @@ function drawTopDownMap(canvas, frames, indexes, drawStyle, drawStyleBlur, topLe
         let x = frames[i][0].x-coreX;
         let z = frames[i][0].z-coreZ;
         let transformedX = inverseLerp(-canvas.width/2, canvas.width/2, x)*width;
-        let transformedZ = height-inverseLerp(-canvas.width/2, canvas.width/2, z)*height;
-        if (topLeft.x+transformedX > topRight.x || topLeft.y+transformedZ > bottomLeft.y ||
-            topLeft.x+transformedX < topLeft.x || topLeft.y+transformedZ < topLeft.y) {
-            continue;
-        }
+        let transformedZ = inverseLerp(-canvas.width/2, canvas.width/2, z)*height;
         if (indexes.includes(i)) {
             ctx.beginPath();
             ctx.fillStyle = rgbaToColorString({r: 0, g: 0, b: 0, a:1});
