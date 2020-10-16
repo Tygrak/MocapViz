@@ -1,5 +1,6 @@
-function MocapDrawStyle(bonesModel, boneRadius, jointRadius, headRadius, boneStyle, leftBoneStyle, rightBoneStyle, jointStyle) {
+function MocapDrawStyle(bonesModel, headJointIndex, boneRadius, jointRadius, headRadius, boneStyle, leftBoneStyle, rightBoneStyle, jointStyle) {
     this.bonesModel = bonesModel;
+    this.headJointIndex = headJointIndex;
     this.boneRadius = boneRadius;
     this.jointRadius = jointRadius;
     this.headRadius = headRadius;
@@ -28,7 +29,7 @@ function drawSequenceKeyframes(canvas, frames, indexes, drawStyle, yShift = 0, c
 function drawSequenceKeyframesBlur(canvas, frames, indexes, numBlurPositions, drawStyle, drawStyleBlur, yShift = 0, clear = true) {
     let ctx = canvas.getContext("2d");
     if (clear) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        clearCanvas(canvas);
     }
     let firstFrame = moveOriginXBy(frames[0], frames[0][0].x);
     let minimums = findMinimumsFromFrame(firstFrame);
@@ -36,24 +37,27 @@ function drawSequenceKeyframesBlur(canvas, frames, indexes, numBlurPositions, dr
     let maximums = findMaximumsFromFrame(lastFrame);
     for (let i = 0; i < indexes.length; i++) {
         let coreX = frames[indexes[i]][0].x;
+        let xShift = (i/indexes.length)*(canvas.width+minimums.x+maximums.x/2-20)-minimums.x+20;
         for (let j = 1; j < numBlurPositions+1; j++) {
             if (indexes[i]-j < 0) {
                 continue;
             }
-            drawFrame(canvas, moveOriginXBy(frames[indexes[i]-j], coreX), (i/indexes.length)*(canvas.width+minimums.x-20)-minimums.x+20, yShift, drawStyleBlur);
+            drawFrame(canvas, moveOriginXBy(frames[indexes[i]-j], coreX), xShift, yShift, drawStyleBlur);
         }
-        drawFrame(canvas, moveOriginXBy(frames[indexes[i]], coreX), (i/indexes.length)*(canvas.width+minimums.x-20)-minimums.x+20, yShift, drawStyle);
+        drawFrame(canvas, moveOriginXBy(frames[indexes[i]], coreX), xShift, yShift, drawStyle);
         ctx.font = '12px serif';
         ctx.fillStyle = 'black';
         //console.log((i/indexes.length)*(canvas.width+minimums.x-20)-minimums.x+20, maximums.y+yShift+25);
-        ctx.fillText(indexes[i], (i/indexes.length)*(canvas.width+minimums.x-20)-minimums.x+20, maximums.y+yShift+10);
+        ctx.fillText(indexes[i], xShift, maximums.y+yShift+14);
     }
+    ctx.fillStyle = 'black';
+    drawRectangle(ctx, {x: 0, y: maximums.y, z: 0}, {x: canvas.width, y: maximums.y, z: 0}, 1, 0, yShift+1);
 }
 
 function drawSequenceKeyframesBlurTrueTime(canvas, frames, indexes, numBlurPositions, drawStyle, drawStyleBlur, yShift = 0, clear = true) {
     let ctx = canvas.getContext("2d");
     if (clear) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        clearCanvas(canvas);
     }
     let firstFrame = moveOriginXBy(frames[0], frames[0][0].x);
     let minX = findMinimumsFromFrame(firstFrame).x;
@@ -119,6 +123,43 @@ function processSequenceToFrames2d(rawData, canvasHeight, figureScale) {
         }
     }
     return frames;
+}
+
+function drawTopDownMap(canvas, frames, indexes, drawStyle, drawStyleBlur, topLeft, bottomRight, clear = true) {
+    let ctx = canvas.getContext("2d");
+    if (clear) {
+        clearCanvas(canvas);
+    }
+    let topRight = {x: bottomRight.x, y: topLeft.y, z:0};
+    let bottomLeft = {x: topLeft.x, y: bottomRight.y, z:0};
+    ctx.fillStyle = 'black';
+    drawRectangle(ctx, topLeft, topRight, 1, 0, 0);
+    drawRectangle(ctx, topRight, bottomRight, 1, 0, 0);
+    drawRectangle(ctx, bottomRight, bottomLeft, 1, 0, 0);
+    drawRectangle(ctx, bottomLeft, topLeft, 1, 0, 0);
+    let coreX = frames[0][0].x;
+    let coreZ = frames[0][0].z;
+    let width = bottomRight.x-topLeft.x;
+    let height = bottomRight.y-topLeft.y;
+    for (let i = 0; i < frames.length; i++) {
+        let x = frames[i][0].x-coreX;
+        let z = frames[i][0].z-coreZ;
+        let transformedX = inverseLerp(-canvas.width/2, canvas.width/2, x)*width;
+        let transformedZ = inverseLerp(-canvas.width/2, canvas.width/2, z)*height;
+        if (indexes.includes(i)) {
+            ctx.beginPath();
+            ctx.fillStyle = rgbaToColorString({r: 0, g: 0, b: 0, a:1});
+            ctx.rect(topLeft.x+transformedX, topLeft.y+transformedZ, 5, 5);
+            ctx.closePath();
+            ctx.fill();
+        } else {
+            ctx.fillStyle = rgbaToColorString({r: (i/frames.length)*255, g: 0, b: 128, a:0.3});
+            ctx.beginPath();
+            ctx.rect(topLeft.x+transformedX, topLeft.y+transformedZ, 3, 3);
+            ctx.closePath();
+            ctx.fill();
+        }
+    }
 }
 
 function findMinimumsFromFrame(frame) {
@@ -236,8 +277,8 @@ function findOptimalScale(frames, canvas, numFrames) {
     }
     console.log("h: "+((canvas.height)/2-100)/maxHeight);
     console.log("w: "+(canvas.width/numFrames)/maxWidth);
-    //return Math.min(((canvas.height)/2-40)/maxHeight, (canvas.width/numFrames)/maxWidth);
-    return ((canvas.height)/2-40)/maxHeight
+    return Math.min(((canvas.height)/2-40)/maxHeight, (20+canvas.width/(numFrames-1))/maxWidth);
+    //return ((canvas.height)/2-40)/maxHeight;
 }
 
 function frameDistance(a, b) {
@@ -308,6 +349,21 @@ function rgbaToColorString(rgba) {
     return "rgba("+rgba.r+","+rgba.g+","+rgba.b+","+rgba.a+")";
 }
 
+function drawRectangle(ctx, a, b, radius, xShift, yShift) {
+    let normal = {x:a.y-b.y, y:-(a.x-b.x)};
+    let magnitude = Math.sqrt(normal.x**2+normal.y**2);
+    normal.x = normal.x/magnitude;
+    normal.y = normal.y/magnitude;
+    ctx.beginPath();
+    ctx.moveTo(a.x+radius*normal.x+xShift, a.y+radius*normal.y+yShift);
+    ctx.lineTo(b.x+radius*normal.x+xShift, b.y+radius*normal.y+yShift);
+    ctx.lineTo(b.x-radius*normal.x+xShift, b.y-radius*normal.y+yShift);
+    ctx.lineTo(a.x-radius*normal.x+xShift, a.y-radius*normal.y+yShift);
+    ctx.lineTo(a.x+radius*normal.x+xShift, a.y+radius*normal.y+yShift);
+    ctx.closePath();
+    ctx.fill();
+}
+
 function drawFrame(canvas, frame, xShift, yShift, drawStyle) {
     let ctx = canvas.getContext("2d");
     let minimums = findMinimumsFromFrame(frame);
@@ -316,7 +372,7 @@ function drawFrame(canvas, frame, xShift, yShift, drawStyle) {
         ctx.beginPath();
         ctx.fillStyle = rgbaToColorString(drawStyle.jointStyle);
         let radius = drawStyle.jointRadius;
-        if (i == 16) {
+        if (i == drawStyle.headJointIndex) {
             radius = drawStyle.headRadius;
         }
         ctx.arc(frame[i].x+xShift, frame[i].y+yShift, radius, 0, 2 * Math.PI);
@@ -328,24 +384,15 @@ function drawFrame(canvas, frame, xShift, yShift, drawStyle) {
         }
         let a = frame[drawStyle.bonesModel[i].a];
         let b = frame[drawStyle.bonesModel[i].b];
-        let normal = {x:a.y-b.y, y:-(a.x-b.x)};
-        let magnitude = Math.sqrt(normal.x**2+normal.y**2);
-        normal.x = normal.x/magnitude;
-        normal.y = normal.y/magnitude;
         if (drawStyle.bonesModel[i].type == BoneType.leftHand || drawStyle.bonesModel[i].type == BoneType.leftLeg) {
-            ctx.fillStyle = rgbaToColorString(scaleRgbaColor(drawStyle.leftBoneStyle, 0.1+0.8*inverseLerp(minimums.z, maximums.z, (a.z+b.z)/2)));
+            ctx.fillStyle = rgbaToColorString(drawStyle.leftBoneStyle);
+            //ctx.fillStyle = rgbaToColorString(scaleRgbaColor(drawStyle.leftBoneStyle, 0.1+0.8*inverseLerp(minimums.z, maximums.z, (a.z+b.z)/2)));
         } else if (drawStyle.bonesModel[i].type == BoneType.rightHand || drawStyle.bonesModel[i].type == BoneType.rightLeg) {
-            ctx.fillStyle = rgbaToColorString(scaleRgbaColor(drawStyle.rightBoneStyle, 0.1+0.8*inverseLerp(minimums.z, maximums.z, (a.z+b.z)/2)));
+            ctx.fillStyle = rgbaToColorString(drawStyle.rightBoneStyle);
+            //ctx.fillStyle = rgbaToColorString(scaleRgbaColor(drawStyle.rightBoneStyle, 0.1+0.8*inverseLerp(minimums.z, maximums.z, (a.z+b.z)/2)));
         } else {
             ctx.fillStyle = rgbaToColorString(drawStyle.boneStyle);
         }
-        ctx.beginPath();
-        ctx.moveTo(a.x+drawStyle.boneRadius*normal.x+xShift, a.y+drawStyle.boneRadius*normal.y+yShift);
-        ctx.lineTo(b.x+drawStyle.boneRadius*normal.x+xShift, b.y+drawStyle.boneRadius*normal.y+yShift);
-        ctx.lineTo(b.x-drawStyle.boneRadius*normal.x+xShift, b.y-drawStyle.boneRadius*normal.y+yShift);
-        ctx.lineTo(a.x-drawStyle.boneRadius*normal.x+xShift, a.y-drawStyle.boneRadius*normal.y+yShift);
-        ctx.lineTo(a.x+drawStyle.boneRadius*normal.x+xShift, a.y+drawStyle.boneRadius*normal.y+yShift);
-        ctx.closePath();
-        ctx.fill();
+        drawRectangle(ctx, a, b, drawStyle.boneRadius, xShift, yShift);
     }
 }
