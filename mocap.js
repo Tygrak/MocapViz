@@ -125,7 +125,7 @@ function processSequenceToFrames2d(rawData, canvasHeight, figureScale) {
     return frames;
 }
 
-function drawTopDownMap(canvas, frames, indexes, drawStyle, drawStyleBlur, topLeft, bottomRight, clear = true) {
+function drawTopDownMap(canvas, frames, indexes, topLeft, bottomRight, clear = true) {
     let ctx = canvas.getContext("2d");
     if (clear) {
         clearCanvas(canvas);
@@ -145,7 +145,11 @@ function drawTopDownMap(canvas, frames, indexes, drawStyle, drawStyleBlur, topLe
         let x = frames[i][0].x-coreX;
         let z = frames[i][0].z-coreZ;
         let transformedX = inverseLerp(-canvas.width/2, canvas.width/2, x)*width;
-        let transformedZ = inverseLerp(-canvas.width/2, canvas.width/2, z)*height;
+        let transformedZ = height-inverseLerp(-canvas.width/2, canvas.width/2, z)*height;
+        if (topLeft.x+transformedX > topRight.x || topLeft.y+transformedZ > bottomLeft.y ||
+            topLeft.x+transformedX < topLeft.x || topLeft.y+transformedZ < topLeft.y) {
+            continue;
+        }
         if (indexes.includes(i)) {
             ctx.beginPath();
             ctx.fillStyle = rgbaToColorString({r: 0, g: 0, b: 0, a:1});
@@ -159,6 +163,17 @@ function drawTopDownMap(canvas, frames, indexes, drawStyle, drawStyleBlur, topLe
             ctx.closePath();
             ctx.fill();
         }
+    }
+    ctx.fillStyle = "black";
+    for (let i = 1; i < 10; i++) {
+        ctx.beginPath();
+        ctx.rect(topLeft.x+i*width/10, bottomLeft.y-5, 4, 5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.rect(i*canvas.width/10, canvas.height-5, 4, 5);
+        ctx.closePath();
+        ctx.fill();
     }
 }
 
@@ -225,6 +240,8 @@ function findBestRotation(frames, numSamples) {
     numSamples = numSamples-1;
     let framesMin = findMinimumsFromFrame(frames[0]);
     let framesMax = findMaximumsFromFrame(frames[0]);
+    let distMax = 0;
+    let distIndex = 0;
     for (let i = 1; i < numSamples+1; i++) {
         let index = Math.floor((i/numSamples)*frames.length);
         if (index == frames.length) {
@@ -250,11 +267,22 @@ function findBestRotation(frames, numSamples) {
         if (framesMax.z < max.z) {
             framesMax.z = max.z;
         }
+        let distance = vecXZDistance(frames[0][0], frames[index][0]);
+        if (distance > distMax) {
+            distIndex = index;
+            distMax = distance;
+        }
     }
+    let vec = {x:frames[distIndex][0].x-frames[0][0].x, y: frames[distIndex][0].y-frames[0][0].y, z: frames[distIndex][0].z-frames[0][0].z};
     let a = framesMax.x-framesMin.x;
     let b = framesMax.z-framesMin.z;
     let c = Math.sqrt(a**2+b**2);
-    return Math.asin(b/c);
+    console.log(framesMin, framesMax, a, b, c, vec, distMax, framesMax.y-framesMin.y);
+    if (distMax > (framesMax.y-framesMin.y)/2 && ((vec.x > 0 && vec.z < 0) || (vec.x < 0 && vec.z > 0))) {
+        return -Math.asin(b/c);
+    } else {
+        return Math.asin(b/c);
+    }
 }
 
 function findOptimalScale(frames, canvas, numFrames) {
@@ -289,12 +317,8 @@ function frameDistance(a, b) {
     return Math.sqrt(result);
 }
 
-function distance(a, b) {
-    let result = 0;
-    for (let i = 0; i < a.length; i++) {
-        result += (a[i]-b[i])*(a[i]-b[i]);
-    }
-    return Math.sqrt(result);
+function vecXZDistance(a, b) {
+    return Math.sqrt((a.x-b.x)*(a.x-b.x)+(a.z-b.z)*(a.z-b.z));
 }
 
 function frameRotateY(frame, rad) {

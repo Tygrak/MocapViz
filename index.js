@@ -144,6 +144,7 @@ function processSelectedSequence() {
     if (autorotateInput.checked) {
         let bestRotation = findBestRotation(frames, numPositions);
         yRotationInput.value = bestRotation*57.29578778556937;
+        console.log(bestRotation);
     }
     return frames;
 }
@@ -161,9 +162,8 @@ function loadSequence() {
         notKeyframes.push(Math.floor((i/keyframes.length)*frames.length));
     }
     console.log(frames);
-    console.log(findBestRotation(frames, numPositions));
     drawSequenceKeyframesBlur(canvas, frames, keyframes, numBlurPositions, drawStyle, drawStyleBlur, 0, true);
-    drawTopDownMap(canvas, frames, keyframes, drawStyle, drawStyleBlur, {x:width/2-5*height/24, y:1*height/24, z:0}, {x:width/2+5*height/24, y:11*height/24, z:0}, false);
+    drawTopDownMap(canvas, frames, keyframes, {x:width/2-5*height/24, y:1*height/24, z:0}, {x:width/2+5*height/24, y:11*height/24, z:0}, false);
     //drawSequenceKeyframesBlur(canvas, frames, notKeyframes, numBlurPositions, drawStyle, drawStyleBlur, -height/2, false);
     //drawSequenceBlur(canvas, frames, numPositions, numBlurPositions, drawStyle, drawStyleBlur);
 }
