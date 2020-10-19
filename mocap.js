@@ -11,10 +11,10 @@ function MocapDrawStyle(bonesModel, headJointIndex, boneRadius, jointRadius, hea
 }
 
 const BoneType = {
-    rightLeg: 0,
-    leftLeg: 1,
-    rightHand: 2,
-    leftHand: 3,
+    leftLeg: 0,
+    rightLeg: 1,
+    leftHand: 2,
+    rightHand: 3,
     torso: 4
 };
 
@@ -132,11 +132,6 @@ function drawTopDownMap(canvas, frames, indexes, topLeft, bottomRight, clear = t
     }
     let topRight = {x: bottomRight.x, y: topLeft.y, z:0};
     let bottomLeft = {x: topLeft.x, y: bottomRight.y, z:0};
-    ctx.fillStyle = 'black';
-    drawRectangle(ctx, topLeft, topRight, 1, 0, 0);
-    drawRectangle(ctx, topRight, bottomRight, 1, 0, 0);
-    drawRectangle(ctx, bottomRight, bottomLeft, 1, 0, 0);
-    drawRectangle(ctx, bottomLeft, topLeft, 1, 0, 0);
     let coreX = frames[0][0].x;
     let coreZ = frames[0][0].z;
     let width = bottomRight.x-topLeft.x;
@@ -146,8 +141,8 @@ function drawTopDownMap(canvas, frames, indexes, topLeft, bottomRight, clear = t
         let z = frames[i][0].z-coreZ;
         let transformedX = inverseLerp(-canvas.width/2, canvas.width/2, x)*width;
         let transformedZ = height-inverseLerp(-canvas.width/2, canvas.width/2, z)*height;
-        if (topLeft.x+transformedX > topRight.x || topLeft.y+transformedZ > bottomLeft.y ||
-            topLeft.x+transformedX < topLeft.x || topLeft.y+transformedZ < topLeft.y) {
+        if (topLeft.x+transformedX >= topRight.x || topLeft.y+transformedZ >= bottomLeft.y ||
+            topLeft.x+transformedX <= topLeft.x || topLeft.y+transformedZ <= topLeft.y) {
             continue;
         }
         if (indexes.includes(i)) {
@@ -175,6 +170,11 @@ function drawTopDownMap(canvas, frames, indexes, topLeft, bottomRight, clear = t
         ctx.closePath();
         ctx.fill();
     }
+    ctx.fillStyle = 'black';
+    drawRectangle(ctx, topLeft, topRight, 1, 0, 0);
+    drawRectangle(ctx, topRight, bottomRight, 1, 0, 0);
+    drawRectangle(ctx, bottomRight, bottomLeft, 1, 0, 0);
+    drawRectangle(ctx, bottomLeft, topLeft, 1, 0, 0);
 }
 
 function findMinimumsFromFrame(frame) {
@@ -390,8 +390,8 @@ function drawRectangle(ctx, a, b, radius, xShift, yShift) {
 
 function drawFrame(canvas, frame, xShift, yShift, drawStyle) {
     let ctx = canvas.getContext("2d");
-    let minimums = findMinimumsFromFrame(frame);
-    let maximums = findMaximumsFromFrame(frame);
+    let bones = drawStyle.bonesModel.slice();
+    bones.sort((a, b) => (frame[a.a].z+frame[a.b].z)/2-(frame[b.a].z+frame[b.b].z)/2);
     for (let i = 0; i < frame.length; i++) {
         ctx.beginPath();
         ctx.fillStyle = rgbaToColorString(drawStyle.jointStyle);
@@ -402,21 +402,21 @@ function drawFrame(canvas, frame, xShift, yShift, drawStyle) {
         ctx.arc(frame[i].x+xShift, frame[i].y+yShift, radius, 0, 2 * Math.PI);
         ctx.fill();
     }
-    for (let i = 0; i < drawStyle.bonesModel.length; i++) {
-        if (drawStyle.bonesModel[i].a >= frame.length || drawStyle.bonesModel[i].b >= frame.length) {
+    for (let i = 0; i < bones.length; i++) {
+        if (bones[i].a >= frame.length || bones[i].b >= frame.length) {
             continue;
         }
-        let a = frame[drawStyle.bonesModel[i].a];
-        let b = frame[drawStyle.bonesModel[i].b];
-        if (drawStyle.bonesModel[i].type == BoneType.leftHand || drawStyle.bonesModel[i].type == BoneType.leftLeg) {
-            ctx.fillStyle = rgbaToColorString(drawStyle.leftBoneStyle);
-            //ctx.fillStyle = rgbaToColorString(scaleRgbaColor(drawStyle.leftBoneStyle, 0.1+0.8*inverseLerp(minimums.z, maximums.z, (a.z+b.z)/2)));
-        } else if (drawStyle.bonesModel[i].type == BoneType.rightHand || drawStyle.bonesModel[i].type == BoneType.rightLeg) {
-            ctx.fillStyle = rgbaToColorString(drawStyle.rightBoneStyle);
-            //ctx.fillStyle = rgbaToColorString(scaleRgbaColor(drawStyle.rightBoneStyle, 0.1+0.8*inverseLerp(minimums.z, maximums.z, (a.z+b.z)/2)));
+        let a = frame[bones[i].a];
+        let b = frame[bones[i].b];
+        if (bones[i].type == BoneType.rightHand || bones[i].type == BoneType.rightLeg) {
+            //ctx.fillStyle = rgbaToColorString(drawStyle.leftBoneStyle);
+            ctx.fillStyle = rgbaToColorString(scaleRgbaColor(drawStyle.rightBoneStyle, 0.35+0.65*(i/bones.length)));
+        } else if (bones[i].type == BoneType.leftHand || bones[i].type == BoneType.leftLeg) {
+            //ctx.fillStyle = rgbaToColorString(drawStyle.rightBoneStyle);
+            ctx.fillStyle = rgbaToColorString(scaleRgbaColor(drawStyle.leftBoneStyle, 0.35+0.65*(i/bones.length)));
         } else {
             ctx.fillStyle = rgbaToColorString(drawStyle.boneStyle);
         }
-        drawRectangle(ctx, a, b, drawStyle.boneRadius, xShift, yShift);
+        drawRectangle(ctx, a, b, drawStyle.boneRadius+1*(i/bones.length), xShift, yShift);
     }
 }
