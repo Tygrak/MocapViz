@@ -67,7 +67,7 @@ const autorotateInput = document.getElementById("autorotateInput");
 const autoscaleInput = document.getElementById("autoscaleInput");
 loadButton.onclick = loadDataFile;
 loadTextButton.onclick = loadDataText;
-sequenceInputLoadButton.onclick = loadSequence;
+sequenceInputLoadButton.onclick = loadSequenceMaps;
 sequenceInputPlayButton.onclick = playSequence;
 const canvas = document.getElementById("drawBox");
 canvas.width = width;
@@ -141,8 +141,6 @@ function processSelectedSequence() {
             frames = processSequenceToFrames2d(sequences[selectedSequence], canvas.height, figureScale);
         }
     }
-    drawStyle.headRadius = (figureScale/8)*headRadius;
-    drawStyleBlur.headRadius = (figureScale/8)*headRadius;
     if (autorotateInput.checked) {
         let bestRotation = findBestRotation(frames, numPositions);
         yRotationInput.value = bestRotation*57.29578778556937;
@@ -165,9 +163,29 @@ function loadSequence() {
     }
     console.log(frames);
     drawSequenceKeyframesBlur(canvas, frames, keyframes, numBlurPositions, drawStyle, drawStyleBlur, 0, true);
-    drawTopDownMap(canvas, frames, keyframes, {x:width/2-5*height/24, y:1*height/24, z:0}, {x:width/2+5*height/24, y:11*height/24, z:0}, false);
+    drawMapScale(canvas);
+    //drawTopDownMap(canvas, frames, keyframes, {x:width/2-5*height/24, y:1*height/24, z:0}, {x:width/2+5*height/24, y:11*height/24, z:0}, false);
+    drawTopDownMapParallelogram(canvas, frames, keyframes, 
+        {x:width/2-4*height/24, y:3*height/24, z:0}, {x:width/2-6*height/24, y:9*height/24, z:0}, {x:width/2+4*height/24, y:9*height/24, z:0}, frames.length, false);
     //drawSequenceKeyframesBlur(canvas, frames, notKeyframes, numBlurPositions, drawStyle, drawStyleBlur, -height/2, false);
     //drawSequenceBlur(canvas, frames, numPositions, numBlurPositions, drawStyle, drawStyleBlur);
+}
+
+//todo: make this optional
+function loadSequenceMaps() {
+    let frames = processSelectedSequence();
+    let yRotation = parseFloat(yRotationInput.value)*0.01745329;
+    for (let i = 0; i < frames.length; i++) {
+        frames[i] = frameRotateY(frames[i], yRotation);
+    }
+    let keyframes = findKeyframes(frames, numPositions);
+    console.log(keyframes);
+    let notKeyframes = [];
+    for (let i = 0; i < keyframes.length; i++) {
+        notKeyframes.push(Math.floor((i/keyframes.length)*frames.length));
+    }
+    console.log(frames);
+    drawSequenceKeyframesBlurWithMaps(canvas, frames, keyframes, numBlurPositions, drawStyle, drawStyleBlur, 0, true);
 }
 
 function playSequence() {

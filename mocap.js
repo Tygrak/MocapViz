@@ -54,6 +54,37 @@ function drawSequenceKeyframesBlur(canvas, frames, indexes, numBlurPositions, dr
     drawRectangle(ctx, {x: 0, y: maximums.y, z: 0}, {x: canvas.width, y: maximums.y, z: 0}, 1, 0, yShift+1);
 }
 
+function drawSequenceKeyframesBlurWithMaps(canvas, frames, indexes, numBlurPositions, drawStyle, drawStyleBlur, yShift = 0, clear = true) {
+    let ctx = canvas.getContext("2d");
+    if (clear) {
+        clearCanvas(canvas);
+    }
+    let firstFrame = moveOriginXBy(frames[0], frames[0][0].x);
+    let minimums = findMinimumsFromFrame(firstFrame);
+    let lastFrame = moveOriginXBy(frames[frames.length-1], frames[frames.length-1][0].x);
+    let maximums = findMaximumsFromFrame(lastFrame);
+    for (let i = 0; i < indexes.length; i++) {
+        let coreX = frames[indexes[i]][0].x;
+        let xShift = (i/indexes.length)*(canvas.width+minimums.x+maximums.x/2-20)-minimums.x+30;
+        for (let j = 1; j < numBlurPositions+1; j++) {
+            if (indexes[i]-j < 0) {
+                continue;
+            }
+            drawFrame(canvas, moveOriginXBy(frames[indexes[i]-j], coreX), xShift, yShift, drawStyleBlur);
+        }
+        drawFrame(canvas, moveOriginXBy(frames[indexes[i]], coreX), xShift, yShift, drawStyle);
+        ctx.font = '12px serif';
+        ctx.fillStyle = 'black';
+        //console.log((i/indexes.length)*(canvas.width+minimums.x-20)-minimums.x+20, maximums.y+yShift+25);
+        ctx.fillText(indexes[i], xShift, maximums.y+yShift+14);
+        drawTopDownMapParallelogram(canvas, frames, indexes, 
+            {x:xShift-1.5*height/24, y:9*height/24, z:0}, {x:xShift-2.5*height/24, y:12*height/24, z:0}, {x:xShift+1.5*height/24, y:12*height/24, z:0}, indexes[i]+1, false);
+    }
+    ctx.fillStyle = 'black';
+    drawRectangle(ctx, {x: 0, y: maximums.y, z: 0}, {x: canvas.width, y: maximums.y, z: 0}, 1, 0, yShift+1);
+    drawMapScale(canvas);
+}
+
 function drawSequenceKeyframesBlurTrueTime(canvas, frames, indexes, numBlurPositions, drawStyle, drawStyleBlur, yShift = 0, clear = true) {
     let ctx = canvas.getContext("2d");
     if (clear) {
@@ -125,6 +156,17 @@ function processSequenceToFrames2d(rawData, canvasHeight, figureScale) {
     return frames;
 }
 
+function drawMapScale(canvas) {
+    let ctx = canvas.getContext("2d");
+    ctx.fillStyle = "black";
+    for (let i = 1; i < 10; i++) {
+        ctx.beginPath();
+        ctx.rect(i*canvas.width/10, canvas.height-5, 4, 5);
+        ctx.closePath();
+        ctx.fill();
+    }
+}
+
 function drawTopDownMap(canvas, frames, indexes, topLeft, bottomRight, clear = true) {
     let ctx = canvas.getContext("2d");
     if (clear) {
@@ -141,8 +183,7 @@ function drawTopDownMap(canvas, frames, indexes, topLeft, bottomRight, clear = t
         let z = frames[i][0].z-coreZ;
         let transformedX = inverseLerp(-canvas.width/2, canvas.width/2, x)*width;
         let transformedZ = height-inverseLerp(-canvas.width/2, canvas.width/2, z)*height;
-        if (topLeft.x+transformedX >= topRight.x || topLeft.y+transformedZ >= bottomLeft.y ||
-            topLeft.x+transformedX <= topLeft.x || topLeft.y+transformedZ <= topLeft.y) {
+        if (transformedX < 2 || transformedZ < 2 || transformedX >= width-2 || transformedZ >= height-2) {
             continue;
         }
         if (indexes.includes(i)) {
@@ -165,10 +206,55 @@ function drawTopDownMap(canvas, frames, indexes, topLeft, bottomRight, clear = t
         ctx.rect(topLeft.x+i*width/10, bottomLeft.y-5, 4, 5);
         ctx.closePath();
         ctx.fill();
-        ctx.beginPath();
-        ctx.rect(i*canvas.width/10, canvas.height-5, 4, 5);
-        ctx.closePath();
-        ctx.fill();
+    }
+    ctx.fillStyle = 'black';
+    drawRectangle(ctx, topLeft, topRight, 1, 0, 0);
+    drawRectangle(ctx, topRight, bottomRight, 1, 0, 0);
+    drawRectangle(ctx, bottomRight, bottomLeft, 1, 0, 0);
+    drawRectangle(ctx, bottomLeft, topLeft, 1, 0, 0);
+}
+
+function drawTopDownMapParallelogram(canvas, frames, indexes, topLeft, bottomLeft, bottomRight, drawUntilFrame, clear = true) {
+    let ctx = canvas.getContext("2d");
+    if (clear) {
+        clearCanvas(canvas);
+    }
+    let shift = topLeft.x-bottomLeft.x;
+    let topRight = {x: bottomRight.x+shift, y: topLeft.y, z:0};
+    let width = topRight.x-topLeft.x;
+    let height = bottomRight.y-topLeft.y;
+    let coreX = frames[0][0].x;
+    let coreZ = frames[0][0].z;
+    ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+    for (let i = 1; i < 10; i++) {
+        drawRectangle(ctx, {x:topLeft.x+i*width/10, y:topLeft.y}, {x:bottomLeft.x+i*width/10, y:bottomLeft.y}, 0.75, 0, 0);
+    }
+    for (let i = 1; i < 10; i++) {
+        let startShiftX = shift-inverseLerp(0, height, i*height/10)*shift;
+        drawRectangle(ctx, {x:bottomLeft.x+startShiftX, y:topLeft.y+i*height/10}, {x:bottomRight.x+startShiftX, y:topLeft.y+i*height/10}, 0.75, 0, 0);
+    }
+    for (let i = 0; i < drawUntilFrame; i++) {
+        let x = frames[i][0].x-coreX;
+        let z = frames[i][0].z-coreZ;
+        let transformedX = inverseLerp(-canvas.width/2, canvas.width/2, x)*width;
+        let transformedZ = height-inverseLerp(-canvas.width/2, canvas.width/2, z)*height;
+        if (transformedX < 2 || transformedZ < 2 || transformedX >= width-2 || transformedZ >= height-2) {
+            continue;
+        }
+        let startShiftX = shift-inverseLerp(0, height, transformedZ)*shift;
+        if (indexes.includes(i)) {
+            ctx.beginPath();
+            ctx.fillStyle = rgbaToColorString({r: 0, g: 0, b: 0, a:1});
+            ctx.rect(bottomLeft.x+transformedX+startShiftX, topLeft.y+transformedZ, 5, 5);
+            ctx.closePath();
+            ctx.fill();
+        } else {
+            ctx.fillStyle = rgbaToColorString({r: (i/frames.length)*255, g: 0, b: 128, a:0.3});
+            ctx.beginPath();
+            ctx.rect(bottomLeft.x+transformedX+startShiftX, topLeft.y+transformedZ, 3, 3);
+            ctx.closePath();
+            ctx.fill();
+        }
     }
     ctx.fillStyle = 'black';
     drawRectangle(ctx, topLeft, topRight, 1, 0, 0);
