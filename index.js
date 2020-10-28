@@ -65,9 +65,10 @@ const bonesModelInput = document.getElementById("bonesModelInput");
 const scaleInput = document.getElementById("scaleInput");
 const autorotateInput = document.getElementById("autorotateInput");
 const autoscaleInput = document.getElementById("autoscaleInput");
+const mapPerKeyframeInput = document.getElementById("mapsPerKeyframeInput");
 loadButton.onclick = loadDataFile;
 loadTextButton.onclick = loadDataText;
-sequenceInputLoadButton.onclick = loadSequenceMaps;
+sequenceInputLoadButton.onclick = drawSequenceMain;
 sequenceInputPlayButton.onclick = playSequence;
 const canvas = document.getElementById("drawBox");
 canvas.width = width;
@@ -103,6 +104,7 @@ function loadDataText() {
 }
 
 function processSelectedSequence() {
+    figureScale = parseFloat(scaleInput.value);
     numPositions = parseInt(numFramesInput.value);
     if (bonesModelInput.value == "Vicon") {
         drawStyle.bonesModel = bonesVicon;
@@ -124,7 +126,6 @@ function processSelectedSequence() {
     playingSequence = false;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     let selectedSequence = parseInt(sequenceNumberInput.value);
-    figureScale = parseFloat(scaleInput.value);
     let frames = processSequenceToFrames(sequences[selectedSequence], canvas.height, figureScale);
     if (autoscaleInput.checked) {
         if (frames.length == 0) {
@@ -147,6 +148,14 @@ function processSelectedSequence() {
         console.log(bestRotation);
     }
     return frames;
+}
+
+function drawSequenceMain() {
+    if (mapPerKeyframeInput.checked) {
+        loadSequenceMaps();
+    } else {
+        loadSequence();
+    }
 }
 
 function loadSequence() {
