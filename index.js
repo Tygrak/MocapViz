@@ -74,6 +74,7 @@ const canvas = document.getElementById("drawBox");
 canvas.width = width;
 canvas.height = height;
 let ctx = canvas.getContext("2d");
+let defaultScale = 1;
 
 //const queryString = window.location.search;
 //console.log(queryString);
@@ -107,16 +108,19 @@ function processSelectedSequence() {
     figureScale = parseFloat(scaleInput.value);
     numPositions = parseInt(numFramesInput.value);
     if (bonesModelInput.value == "Vicon") {
+        defaultScale = 8;
         drawStyle.bonesModel = bonesVicon;
         drawStyle.headJointIndex = 16;
         drawStyleBlur.bonesModel = bonesVicon;
         drawStyleBlur.headJointIndex = 16;
     } else if (bonesModelInput.value == "Kinect") {
+        defaultScale = 180;
         drawStyle.bonesModel = bonesKinect;
         drawStyle.headJointIndex = 3;
         drawStyleBlur.bonesModel = bonesKinect;
         drawStyleBlur.headJointIndex = 3;
     } else if (bonesModelInput.value == "Kinect2d") {
+        defaultScale = 0.6;
         drawStyle.bonesModel = bonesKinect2d;
         drawStyle.headJointIndex = 9;
         drawStyleBlur.bonesModel = bonesKinect2d;
@@ -126,20 +130,20 @@ function processSelectedSequence() {
     playingSequence = false;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     let selectedSequence = parseInt(sequenceNumberInput.value);
-    let frames = processSequenceToFrames(sequences[selectedSequence], canvas.height, figureScale);
+    let frames = processSequenceToFrames(sequences[selectedSequence], canvas.height, figureScale*defaultScale);
     if (autoscaleInput.checked) {
         if (frames.length == 0) {
-            frames = processSequenceToFrames2d(sequences[selectedSequence], canvas.height, figureScale);
+            frames = processSequenceToFrames2d(sequences[selectedSequence], canvas.height, figureScale*defaultScale);
             figureScale = figureScale*findOptimalScale(frames, canvas, numPositions);
-            frames = processSequenceToFrames2d(sequences[selectedSequence], canvas.height, figureScale);
+            frames = processSequenceToFrames2d(sequences[selectedSequence], canvas.height, figureScale*defaultScale);
         } else {
             figureScale = figureScale*findOptimalScale(frames, canvas, numPositions);
-            frames = processSequenceToFrames(sequences[selectedSequence], canvas.height, figureScale);
+            frames = processSequenceToFrames(sequences[selectedSequence], canvas.height, figureScale*defaultScale);
         }
         scaleInput.value = figureScale;
     } else {
         if (frames.length == 0) {
-            frames = processSequenceToFrames2d(sequences[selectedSequence], canvas.height, figureScale);
+            frames = processSequenceToFrames2d(sequences[selectedSequence], canvas.height, figureScale*defaultScale);
         }
     }
     if (autorotateInput.checked) {
