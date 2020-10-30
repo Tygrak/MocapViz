@@ -31,8 +31,8 @@ let bonesKinect2d = [
 
 
 let figureScale = 8;
-let height = 600;
-let width = 1000;
+let defaultHeight = 600;
+let defaultWidth = 1000;
 let currentFrame = 0;
 let headRadius = 18;
 let jointRadius = 0;
@@ -71,8 +71,8 @@ loadTextButton.onclick = loadDataText;
 sequenceInputLoadButton.onclick = drawSequenceMain;
 sequenceInputPlayButton.onclick = playSequence;
 const canvas = document.getElementById("drawBox");
-canvas.width = width;
-canvas.height = height;
+canvas.width = defaultWidth;
+canvas.height = defaultHeight;
 let ctx = canvas.getContext("2d");
 let defaultScale = 1;
 
@@ -128,7 +128,7 @@ function processSelectedSequence() {
     }
     console.log(bonesModelInput.value);
     playingSequence = false;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    clearCanvas(canvas);
     let selectedSequence = parseInt(sequenceNumberInput.value);
     let frames = processSequenceToFrames(sequences[selectedSequence], canvas.height, figureScale*defaultScale);
     if (autoscaleInput.checked) {
@@ -145,6 +145,15 @@ function processSelectedSequence() {
         if (frames.length == 0) {
             frames = processSequenceToFrames2d(sequences[selectedSequence], canvas.height, figureScale*defaultScale);
         }
+    }
+    drawStyle.boneRadius = boneRadius*figureScale;
+    drawStyleBlur.boneRadius = boneRadius*figureScale;
+    if (figureScale < 0.5) {
+        drawStyle.headRadius = headRadius*figureScale*0.75;
+        drawStyleBlur.headRadius = headRadius*figureScale*0.75;
+    } else {
+        drawStyle.headRadius = headRadius*figureScale;
+        drawStyleBlur.headRadius = headRadius*figureScale;
     }
     if (autorotateInput.checked) {
         let bestRotation = findBestRotation(frames, numPositions);
@@ -179,7 +188,7 @@ function loadSequence() {
     drawMapScale(canvas);
     //drawTopDownMap(canvas, frames, keyframes, {x:width/2-5*height/24, y:1*height/24, z:0}, {x:width/2+5*height/24, y:11*height/24, z:0}, false);
     drawTopDownMapParallelogram(canvas, frames, keyframes, 
-        {x:width/2-4*height/24, y:3*height/24, z:0}, {x:width/2-6*height/24, y:9*height/24, z:0}, {x:width/2+4*height/24, y:9*height/24, z:0}, frames.length, false);
+        {x:defaultWidth/2-4*defaultHeight/24, y:3*defaultHeight/24, z:0}, {x:defaultWidth/2-6*defaultHeight/24, y:9*defaultHeight/24, z:0}, {x:defaultWidth/2+4*defaultHeight/24, y:9*defaultHeight/24, z:0}, frames.length, false);
     //drawSequenceKeyframesBlur(canvas, frames, notKeyframes, numBlurPositions, drawStyle, drawStyleBlur, -height/2, false);
     //drawSequenceBlur(canvas, frames, numPositions, numBlurPositions, drawStyle, drawStyleBlur);
 }
@@ -220,7 +229,7 @@ function update() {
     }
     clearCanvas(canvas);
     let yRotation = parseFloat(yRotationInput.value)*0.01745329;
-    drawFrame(canvas, frameRotateY(currentPlayingFrames[currentFrame], yRotation), width/2, 0, drawStyle);
+    drawFrame(canvas, frameRotateY(currentPlayingFrames[currentFrame], yRotation), defaultWidth/2, 0, drawStyle);
     currentFrame++;
     if (currentFrame >= currentPlayingFrames.length) {
         currentFrame = currentFrame%currentPlayingFrames.length;

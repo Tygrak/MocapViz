@@ -78,9 +78,9 @@ function drawSequenceKeyframesBlurWithMaps(canvas, frames, indexes, numBlurPosit
         //console.log((i/indexes.length)*(canvas.width+minimums.x-20)-minimums.x+20, maximums.y+yShift+25);
         ctx.fillText(indexes[i], xShift, maximums.y+yShift+14);
         drawTopDownMapParallelogram(canvas, frames, indexes, 
-            {x:xShift-1.5*height/24, y:minimums.y-10-4*height/24, z:0}, 
-            {x:xShift-2.5*height/24, y:minimums.y-10-1*height/24, z:0}, 
-            {x:xShift+1.5*height/24, y:minimums.y-10-1*height/24, z:0}, indexes[i]+1, false);
+            {x:xShift-1.5*canvas.height/24, y:minimums.y-10-4*canvas.height/24, z:0}, 
+            {x:xShift-2.5*canvas.height/24, y:minimums.y-10-1*canvas.height/24, z:0}, 
+            {x:xShift+1.5*canvas.height/24, y:minimums.y-10-1*canvas.height/24, z:0}, indexes[i]+1, false);
     }
     ctx.fillStyle = 'black';
     drawRectangle(ctx, {x: 0, y: maximums.y, z: 0}, {x: canvas.width, y: maximums.y, z: 0}, 1, 0, yShift+1);
