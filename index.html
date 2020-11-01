@@ -4,107 +4,71 @@
         <title>
             Mocap Vizualization
         </title>     
-        <style>
-            * {
-                box-sizing: border-box
-            }
-
-            body {
-                margin: 0px;
-                background-color: #39464e;
-            }
-
-            #drawBox {
-                position: relative;
-                display: block;
-                margin: 0 auto;
-                transform: scale(1.4);
-                background-color: white;
-                border: 2px solid black; 
-            }      
-
-            #drawContainer {
-                position: relative;
-                margin-top: 10em;
-            }
-
-            #sideMenu {
-                height: 100%;
-                width: 15em;
-                position: fixed;
-                z-index: 1;
-                top: 0;
-                left: 0;
-                background-color: rgb(146, 146, 146);
-                overflow-x: hidden;
-                padding-top: 1.5em;
-                padding-left: 1em;
-            }
-
-            .sideMenuItem {
-                padding-bottom: 1em;
-            }
-        </style>
+        <link rel="stylesheet" href="index.css">
     </head>
     
     <body>
-        <div id="sideMenu">
-            <div class="sideMenuItem">
-                <div class="sideMenuItemLabel">Select data file:</div>
-                <input type="file" id="dataFileInput" name="dataFileInput" accept=".data,.txt">
-                <button id="dataInputLoadButton">Load Data</button>
-            </div>
-            <div class="sideMenuItem">
-                <div class="sideMenuItemLabel">Enter data as text:</div>
-                <textarea id="dataTextInput" name="dataTextInput" value="" rows="1" wrap="soft"></textarea>
-                <button id="dataTextLoadButton">Load Data</button>
-            </div>
-            <div class="sideMenuItem">
-                <div class="sideMenuItemLabel">Bones model:</div>
-                <select id="bonesModelInput" name="bonesModelInput">
-                    <option value="Vicon">Vicon</option>
-                    <option value="Kinect">Kinect</option>
-                    <option value="Kinect2d">Kinect2d</option>
-                </select>
-            </div>
-            <div class="sideMenuItem">
-                <div class="sideMenuItemLabel">Select sequence:</div>
-                <input type="number" id="sequenceNumberInput" name="sequenceNumberInput" value="0" min=0>
-                <button id="sequenceInputLoadButton">Draw Sequence</button>
-                <button id="sequenceInputPlayButton">Play Sequence</button>
-                <div class="sideMenuItemLabel">Available sequences: <span id="availableSequencesText">0</span></div>
-            </div>
-            <div class="sideMenuItem">
-                <div class="sideMenuItemLabel">Number of frames to draw:</div>
-                <input type="number" id="numFramesInput" name="numFramesInput" value="8">
-            </div>
-            <div class="sideMenuItem">
-                <div class="sideMenuItemLabel">Scale:</div>
-                <input type="number" step="any" id="scaleInput" name="scaleInput" value="1">
-            </div>
-            <div class="sideMenuItem">
-                <div class="sideMenuItemLabel">Rotate Y:</div>
-                <input type="number" step="any" id="yRotationInput" name="yRotationInput" value="0">
-            </div>
-            <div class="sideMenuItem">
-                <div>
-                    <input type="checkbox" id="autorotateInput" name="autorotateInput">
-                    <label for="autorotateInput">Automatically set rotation</label>
+        <div id="gridWrapper">
+            <div id="sideMenu">
+                <div class="sideMenuItem">
+                    <div class="sideMenuItemLabel">Select data file:</div>
+                    <input type="file" id="dataFileInput" name="dataFileInput" accept=".data,.txt">
+                    <button id="dataInputLoadButton">Load Data</button>
                 </div>
-                <div>
-                    <input type="checkbox" id="autoscaleInput" name="autoscaleInput">
-                    <label for="autoscaleInput">Automatically scale</label>
+                <div class="sideMenuItem">
+                    <div class="sideMenuItemLabel">Enter data as text:</div>
+                    <textarea id="dataTextInput" name="dataTextInput" value="" rows="1" wrap="soft"></textarea>
+                    <button id="dataTextLoadButton">Load Data</button>
                 </div>
-                <div>
-                    <input type="checkbox" id="mapsPerKeyframeInput" name="mapsPerKeyframeInput">
-                    <label for="mapsPerKeyframeInput">Create map for each keyframe</label>
+                <div class="sideMenuItem">
+                    <div class="sideMenuItemLabel">Bones model:</div>
+                    <select id="bonesModelInput" name="bonesModelInput">
+                        <option value="Vicon">Vicon</option>
+                        <option value="Kinect">Kinect</option>
+                        <option value="Kinect2d">Kinect2d</option>
+                    </select>
+                </div>
+                <div class="sideMenuItem">
+                    <div class="sideMenuItemLabel">Select sequence:</div>
+                    <input type="number" id="sequenceNumberInput" name="sequenceNumberInput" value="0" min=0>
+                    <button id="sequenceInputLoadButton">Draw Sequence</button>
+                    <button id="sequenceInputPlayButton">Play Sequence</button>
+                    <div class="sideMenuItemLabel">Available sequences: <span id="availableSequencesText">0</span></div>
+                </div>
+                <div class="sideMenuItem">
+                    <div class="sideMenuItemLabel">Number of frames to draw:</div>
+                    <input type="number" id="numFramesInput" name="numFramesInput" value="8">
+                </div>
+                <div class="sideMenuItem">
+                    <div class="sideMenuItemLabel">Scale:</div>
+                    <input type="number" step="any" id="scaleInput" name="scaleInput" value="1">
+                </div>
+                <div class="sideMenuItem">
+                    <div class="sideMenuItemLabel">Rotate Y:</div>
+                    <input type="number" step="any" id="yRotationInput" name="yRotationInput" value="0">
+                </div>
+                <div class="sideMenuItem">
+                    <div>
+                        <input type="checkbox" id="autorotateInput" name="autorotateInput">
+                        <label for="autorotateInput">Automatically set rotation</label>
+                    </div>
+                    <div>
+                        <input type="checkbox" id="autoscaleInput" name="autoscaleInput">
+                        <label for="autoscaleInput">Automatically scale</label>
+                    </div>
+                    <div>
+                        <input type="checkbox" id="mapsPerKeyframeInput" name="mapsPerKeyframeInput">
+                        <label for="mapsPerKeyframeInput">Create map for each keyframe</label>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div id="drawContainer">
-            <canvas id="drawBox">
-
-            </canvas>
+            <div id="content">
+                <div id="drawContainer">
+                    <canvas id="drawBox">
+        
+                    </canvas>
+                </div>
+            </div>
         </div>
         <script src="mocap.js"></script>  
         <script src="index.js"></script>  

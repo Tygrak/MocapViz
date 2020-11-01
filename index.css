@@ -1,0 +1,38 @@
+* {
+    box-sizing: border-box
+}
+
+body {
+    margin: 0px;
+    background-color: #39464e;
+}
+
+#gridWrapper {
+    display: grid;
+    grid-template-columns: 15em 1fr;
+    grid-gap: 10px;
+    grid-auto-rows: 100%;
+}
+
+#drawBox {
+    background-color: white;
+    border: 2px solid black; 
+}      
+
+#drawContainer {
+    margin: 1em 1em 1em 1em;
+    height: 20%;
+}
+
+#sideMenu {
+    height: 100%;
+    width: 100%;
+    background-color: rgb(146, 146, 146);
+    overflow-x: hidden;
+    padding-top: 1.5em;
+    padding-left: 1em;
+}
+
+.sideMenuItem {
+    padding-bottom: 1em;
+}
