@@ -183,12 +183,28 @@ function loadSequence() {
     for (let i = 0; i < keyframes.length; i++) {
         notKeyframes.push(Math.floor((i/keyframes.length)*frames.length));
     }
+    let framesMin = findSequenceMinimums(frames, numPositions);
+    let framesMax = findSequenceMaximums(frames, numPositions);
+    let maxWidth = Math.max(framesMax.x-framesMin.x, framesMax.z-framesMin.z);
+    let mapScale = canvas.width;
+    if (maxWidth > canvas.width) {
+        mapScale = canvas.width*1.5;
+    } else if (maxWidth < canvas.width/10) {
+        mapScale = canvas.width/4.95;
+    } else if (maxWidth < canvas.width/8) {
+        mapScale = canvas.width/3.95;
+    } else if (maxWidth < canvas.width/6) {
+        mapScale = canvas.width/2.95;
+    } else if (maxWidth < canvas.width/4) {
+        mapScale = canvas.width/1.95;
+    }
     console.log(frames);
     drawSequenceKeyframesBlur(canvas, frames, keyframes, numBlurPositions, drawStyle, drawStyleBlur, 0, true);
-    drawMapScale(canvas);
-    //drawTopDownMap(canvas, frames, keyframes, {x:width/2-5*height/24, y:1*height/24, z:0}, {x:width/2+5*height/24, y:11*height/24, z:0}, false);
+    drawMapScale(canvas, mapScale/10);
     drawTopDownMapParallelogram(canvas, frames, keyframes, 
-        {x:defaultWidth/2-4*defaultHeight/24, y:3*defaultHeight/24, z:0}, {x:defaultWidth/2-6*defaultHeight/24, y:9*defaultHeight/24, z:0}, {x:defaultWidth/2+4*defaultHeight/24, y:9*defaultHeight/24, z:0}, frames.length, false);
+        {x:defaultWidth/2-4*defaultHeight/24, y:3*defaultHeight/24, z:0}, 
+        {x:defaultWidth/2-6*defaultHeight/24, y:9*defaultHeight/24, z:0}, 
+        {x:defaultWidth/2+4*defaultHeight/24, y:9*defaultHeight/24, z:0}, frames.length, figureScale, mapScale, false);
     //drawSequenceKeyframesBlur(canvas, frames, notKeyframes, numBlurPositions, drawStyle, drawStyleBlur, -height/2, false);
     //drawSequenceBlur(canvas, frames, numPositions, numBlurPositions, drawStyle, drawStyleBlur);
 }
@@ -206,8 +222,23 @@ function loadSequenceMaps() {
     for (let i = 0; i < keyframes.length; i++) {
         notKeyframes.push(Math.floor((i/keyframes.length)*frames.length));
     }
+    let framesMin = findSequenceMinimums(frames, numPositions);
+    let framesMax = findSequenceMaximums(frames, numPositions);
+    let maxWidth = Math.max(framesMax.x-framesMin.x, framesMax.z-framesMin.z);
+    let mapScale = canvas.width;
+    if (maxWidth > canvas.width) {
+        mapScale = canvas.width*1.5;
+    } else if (maxWidth < canvas.width/10) {
+        mapScale = canvas.width/4.95;
+    } else if (maxWidth < canvas.width/8) {
+        mapScale = canvas.width/3.95;
+    } else if (maxWidth < canvas.width/6) {
+        mapScale = canvas.width/2.95;
+    } else if (maxWidth < canvas.width/4) {
+        mapScale = canvas.width/1.95;
+    }
     console.log(frames);
-    drawSequenceKeyframesBlurWithMaps(canvas, frames, keyframes, numBlurPositions, drawStyle, drawStyleBlur, 0, true);
+    drawSequenceKeyframesBlurWithMaps(canvas, frames, keyframes, numBlurPositions, drawStyle, drawStyleBlur, mapScale, 0, true);
 }
 
 function playSequence() {

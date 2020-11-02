@@ -35,6 +35,8 @@ function drawSequenceKeyframesBlur(canvas, frames, indexes, numBlurPositions, dr
     let minimums = findMinimumsFromFrame(firstFrame);
     let lastFrame = moveOriginXBy(frames[frames.length-1], frames[frames.length-1][0].x);
     let maximums = findMaximumsFromFrame(lastFrame);
+    let sequenceMaximums = findSequenceMaximums(frames, indexes.length);
+    sequenceMaximums.y = sequenceMaximums.y-3;
     for (let i = 0; i < indexes.length; i++) {
         let coreX = frames[indexes[i]][0].x;
         let xShift = (i/indexes.length)*(canvas.width+minimums.x+maximums.x/2-20)-minimums.x+30;
@@ -47,14 +49,13 @@ function drawSequenceKeyframesBlur(canvas, frames, indexes, numBlurPositions, dr
         drawFrame(canvas, moveOriginXBy(frames[indexes[i]], coreX), xShift, yShift, drawStyle);
         ctx.font = '12px serif';
         ctx.fillStyle = 'black';
-        //console.log((i/indexes.length)*(canvas.width+minimums.x-20)-minimums.x+20, maximums.y+yShift+25);
-        ctx.fillText(indexes[i], xShift, maximums.y+yShift+14);
+        ctx.fillText(indexes[i], xShift, sequenceMaximums.y+yShift+14);
     }
     ctx.fillStyle = 'black';
-    drawRectangle(ctx, {x: 0, y: maximums.y, z: 0}, {x: canvas.width, y: maximums.y, z: 0}, 1, 0, yShift+1);
+    drawRectangle(ctx, {x: 0, y: sequenceMaximums.y, z: 0}, {x: canvas.width, y: sequenceMaximums.y, z: 0}, 1, 0, yShift+1);
 }
 
-function drawSequenceKeyframesBlurWithMaps(canvas, frames, indexes, numBlurPositions, drawStyle, drawStyleBlur, yShift = 0, clear = true) {
+function drawSequenceKeyframesBlurWithMaps(canvas, frames, indexes, numBlurPositions, drawStyle, drawStyleBlur, mapScale, yShift = 0, clear = true) {
     let ctx = canvas.getContext("2d");
     if (clear) {
         clearCanvas(canvas);
@@ -63,6 +64,9 @@ function drawSequenceKeyframesBlurWithMaps(canvas, frames, indexes, numBlurPosit
     let minimums = findMinimumsFromFrame(firstFrame);
     let lastFrame = moveOriginXBy(frames[frames.length-1], frames[frames.length-1][0].x);
     let maximums = findMaximumsFromFrame(lastFrame);
+    let sequenceMinimums = findSequenceMinimums(frames, indexes.length);
+    let sequenceMaximums = findSequenceMaximums(frames, indexes.length);
+    sequenceMaximums.y = sequenceMaximums.y-3;
     for (let i = 0; i < indexes.length; i++) {
         let coreX = frames[indexes[i]][0].x;
         let xShift = (i/indexes.length)*(canvas.width+minimums.x+maximums.x/2-20)-minimums.x+30;
@@ -75,16 +79,15 @@ function drawSequenceKeyframesBlurWithMaps(canvas, frames, indexes, numBlurPosit
         drawFrame(canvas, moveOriginXBy(frames[indexes[i]], coreX), xShift, yShift, drawStyle);
         ctx.font = '12px serif';
         ctx.fillStyle = 'black';
-        //console.log((i/indexes.length)*(canvas.width+minimums.x-20)-minimums.x+20, maximums.y+yShift+25);
-        ctx.fillText(indexes[i], xShift, maximums.y+yShift+14);
+        ctx.fillText(indexes[i], xShift, sequenceMaximums.y+yShift+14);
         drawTopDownMapParallelogram(canvas, frames, indexes, 
-            {x:xShift-1.5*canvas.height/24, y:minimums.y-10-4*canvas.height/24, z:0}, 
-            {x:xShift-2.5*canvas.height/24, y:minimums.y-10-1*canvas.height/24, z:0}, 
-            {x:xShift+1.5*canvas.height/24, y:minimums.y-10-1*canvas.height/24, z:0}, indexes[i]+1, false);
+            {x:xShift-1.5*figureScale*canvas.height/24, y:sequenceMinimums.y-10-4*figureScale*canvas.height/24, z:0}, 
+            {x:xShift-2.5*figureScale*canvas.height/24, y:sequenceMinimums.y-10-1*figureScale*canvas.height/24, z:0}, 
+            {x:xShift+1.5*figureScale*canvas.height/24, y:sequenceMinimums.y-10-1*figureScale*canvas.height/24, z:0}, indexes[i]+1, mapScale, false);
     }
     ctx.fillStyle = 'black';
-    drawRectangle(ctx, {x: 0, y: maximums.y, z: 0}, {x: canvas.width, y: maximums.y, z: 0}, 1, 0, yShift+1);
-    drawMapScale(canvas);
+    drawRectangle(ctx, {x: 0, y: sequenceMaximums.y, z: 0}, {x: canvas.width, y: sequenceMaximums.y, z: 0}, 1, 0, yShift+1);
+    drawMapScale(canvas, mapScale/10);
 }
 
 function drawSequenceKeyframesBlurTrueTime(canvas, frames, indexes, numBlurPositions, drawStyle, drawStyleBlur, yShift = 0, clear = true) {
@@ -158,65 +161,18 @@ function processSequenceToFrames2d(rawData, canvasHeight, figureScale) {
     return frames;
 }
 
-function drawMapScale(canvas) {
+function drawMapScale(canvas, markerDistance) {
     let ctx = canvas.getContext("2d");
     ctx.fillStyle = "black";
     for (let i = 1; i < 10; i++) {
         ctx.beginPath();
-        ctx.rect(i*canvas.width/10, canvas.height-5, 4, 5);
+        ctx.rect(i*markerDistance, canvas.height-5, 4, 5);
         ctx.closePath();
         ctx.fill();
     }
 }
 
-function drawTopDownMap(canvas, frames, indexes, topLeft, bottomRight, clear = true) {
-    let ctx = canvas.getContext("2d");
-    if (clear) {
-        clearCanvas(canvas);
-    }
-    let topRight = {x: bottomRight.x, y: topLeft.y, z:0};
-    let bottomLeft = {x: topLeft.x, y: bottomRight.y, z:0};
-    let coreX = frames[0][0].x;
-    let coreZ = frames[0][0].z;
-    let width = bottomRight.x-topLeft.x;
-    let height = bottomRight.y-topLeft.y;
-    for (let i = 0; i < frames.length; i++) {
-        let x = frames[i][0].x-coreX;
-        let z = frames[i][0].z-coreZ;
-        let transformedX = inverseLerp(-canvas.width/2, canvas.width/2, x)*width;
-        let transformedZ = height-inverseLerp(-canvas.width/2, canvas.width/2, z)*height;
-        if (transformedX < 2 || transformedZ < 2 || transformedX >= width-2 || transformedZ >= height-2) {
-            continue;
-        }
-        if (indexes.includes(i)) {
-            ctx.beginPath();
-            ctx.fillStyle = rgbaToColorString({r: 0, g: 0, b: 0, a:1});
-            ctx.rect(topLeft.x+transformedX, topLeft.y+transformedZ, 5, 5);
-            ctx.closePath();
-            ctx.fill();
-        } else {
-            ctx.fillStyle = rgbaToColorString({r: (i/frames.length)*255, g: 0, b: 128, a:0.3});
-            ctx.beginPath();
-            ctx.rect(topLeft.x+transformedX, topLeft.y+transformedZ, 3, 3);
-            ctx.closePath();
-            ctx.fill();
-        }
-    }
-    ctx.fillStyle = "black";
-    for (let i = 1; i < 10; i++) {
-        ctx.beginPath();
-        ctx.rect(topLeft.x+i*width/10, bottomLeft.y-5, 4, 5);
-        ctx.closePath();
-        ctx.fill();
-    }
-    ctx.fillStyle = 'black';
-    drawRectangle(ctx, topLeft, topRight, 1, 0, 0);
-    drawRectangle(ctx, topRight, bottomRight, 1, 0, 0);
-    drawRectangle(ctx, bottomRight, bottomLeft, 1, 0, 0);
-    drawRectangle(ctx, bottomLeft, topLeft, 1, 0, 0);
-}
-
-function drawTopDownMapParallelogram(canvas, frames, indexes, topLeft, bottomLeft, bottomRight, drawUntilFrame, clear = true) {
+function drawTopDownMapParallelogram(canvas, frames, indexes, topLeft, bottomLeft, bottomRight, drawUntilFrame, mapScale, clear = true) {
     let ctx = canvas.getContext("2d");
     if (clear) {
         clearCanvas(canvas);
@@ -238,8 +194,8 @@ function drawTopDownMapParallelogram(canvas, frames, indexes, topLeft, bottomLef
     for (let i = 0; i < drawUntilFrame; i++) {
         let x = frames[i][0].x-coreX;
         let z = frames[i][0].z-coreZ;
-        let transformedX = inverseLerp(-canvas.width/2, canvas.width/2, x)*width;
-        let transformedZ = height-inverseLerp(-canvas.width/2, canvas.width/2, z)*height;
+        let transformedX = inverseLerp(-mapScale/2, mapScale/2, x)*width;
+        let transformedZ = height-inverseLerp(-mapScale/2, mapScale/2, z)*height;
         if (transformedX < 2 || transformedZ < 2 || transformedX >= width-2 || transformedZ >= height-2) {
             continue;
         }
@@ -371,6 +327,48 @@ function findBestRotation(frames, numSamples) {
     } else {
         return Math.asin(b/c);
     }
+}
+
+function findSequenceMinimums(frames, numSamples) {
+    let framesMin = findMinimumsFromFrame(frames[0]);
+    for (let i = 1; i < numSamples+1; i++) {
+        let index = Math.floor((i/numSamples)*frames.length);
+        if (index == frames.length) {
+            index = index-1;
+        }
+        let min = findMinimumsFromFrame(frames[index]);
+        if (framesMin.x > min.x) {
+            framesMin.x = min.x;
+        }
+        if (framesMin.y > min.y) {
+            framesMin.y = min.y;
+        }
+        if (framesMin.z > min.z) {
+            framesMin.z = min.z;
+        }
+    }
+    return framesMin;
+}
+
+function findSequenceMaximums(frames, numSamples) {
+    let framesMax = findMaximumsFromFrame(frames[0]);
+    for (let i = 1; i < numSamples+1; i++) {
+        let index = Math.floor((i/numSamples)*frames.length);
+        if (index == frames.length) {
+            index = index-1;
+        }
+        let max = findMaximumsFromFrame(frames[index]);
+        if (framesMax.x < max.x) {
+            framesMax.x = max.x;
+        }
+        if (framesMax.y < max.y) {
+            framesMax.y = max.y;
+        }
+        if (framesMax.z < max.z) {
+            framesMax.z = max.z;
+        }
+    }
+    return framesMax;
 }
 
 function findOptimalScale(frames, canvas, numFrames) {
