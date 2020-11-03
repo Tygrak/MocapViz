@@ -31,22 +31,19 @@ let bonesKinect2d = [
 
 
 let figureScale = 8;
-let defaultHeight = 600;
+let defaultHeight = 150;
 let defaultWidth = 1000;
-let currentFrame = 0;
 let headRadius = 18;
 let jointRadius = 0;
 let boneRadius = 2;
 let numPositions = 8;
-let numBlurPositions = 10;
+let numBlurPositions = 15;
 let jointStyle = {r:0, g:0, b:0, a:1};
 let boneStyle = {r:0, g:0, b:0, a:1};
 let leftBoneStyle = {r:128, g:0, b:0, a:1};
 let rightBoneStyle = {r:0, g:0, b:128, a:1};
 let blurStyle = {r:0, g:0, b:0, a:0.1};
 let sequences = [];
-let currentPlayingFrames = [];
-let playingSequence = false;
 let headJointIndex = 16;
 let drawStyle = new MocapDrawStyle(bonesVicon, headJointIndex, boneRadius, jointRadius, headRadius, boneStyle, leftBoneStyle, rightBoneStyle, jointStyle);
 let drawStyleBlur = new MocapDrawStyle(bonesVicon, headJointIndex, boneRadius, jointRadius, headRadius, blurStyle, blurStyle, blurStyle, blurStyle);
@@ -54,9 +51,9 @@ let drawStyleBlur = new MocapDrawStyle(bonesVicon, headJointIndex, boneRadius, j
 const availableSequencesText = document.getElementById("availableSequencesText");
 const sequenceNumberInput = document.getElementById("sequenceNumberInput");
 const sequenceInputLoadButton = document.getElementById("sequenceInputLoadButton");
-const sequenceInputPlayButton = document.getElementById("sequenceInputPlayButton");
 const dataFileInput = document.getElementById("dataFileInput");
 const dataTextInput = document.getElementById("dataTextInput");
+const numSequencesInput = document.getElementById("numSequencesInput");
 const numFramesInput = document.getElementById("numFramesInput");
 const yRotationInput = document.getElementById("yRotationInput");
 const loadButton = document.getElementById("dataInputLoadButton");
@@ -69,12 +66,7 @@ const mapPerKeyframeInput = document.getElementById("mapsPerKeyframeInput");
 loadButton.onclick = loadDataFile;
 loadTextButton.onclick = loadDataText;
 sequenceInputLoadButton.onclick = drawSequenceMain;
-sequenceInputPlayButton.onclick = playSequence;
-const canvas = document.getElementsByClassName("drawBox")[0];
-//canvas.width = defaultWidth;
-canvas.width = Math.floor(canvas.parentElement.getBoundingClientRect().width)-20;
-canvas.height = defaultHeight;
-let ctx = canvas.getContext("2d");
+const drawContainer = document.getElementById("drawContainer");
 let defaultScale = 1;
 
 //const queryString = window.location.search;
@@ -82,7 +74,6 @@ let defaultScale = 1;
 //const urlParams = new URLSearchParams(queryString);
 
 loadDataFile();
-setInterval(update, 10);
 
 function loadDataFile() {
     if (dataFileInput.files.length == 0) {
@@ -105,7 +96,7 @@ function loadDataText() {
     availableSequencesText.innerText = sequences.length;
 }
 
-function processSelectedSequence() {
+function processSelectedSequence(selectedSequence, canvas) {
     figureScale = parseFloat(scaleInput.value);
     numPositions = parseInt(numFramesInput.value);
     if (bonesModelInput.value == "Vicon") {
@@ -127,10 +118,6 @@ function processSelectedSequence() {
         drawStyleBlur.bonesModel = bonesKinect2d;
         drawStyleBlur.headJointIndex = 9;
     }
-    console.log(bonesModelInput.value);
-    playingSequence = false;
-    clearCanvas(canvas);
-    let selectedSequence = parseInt(sequenceNumberInput.value);
     let frames = processSequenceToFrames(sequences[selectedSequence], canvas.height, figureScale*defaultScale);
     if (autoscaleInput.checked) {
         if (frames.length == 0) {
@@ -159,7 +146,6 @@ function processSelectedSequence() {
     if (autorotateInput.checked) {
         let bestRotation = findBestRotation(frames, numPositions);
         yRotationInput.value = bestRotation*57.29578778556937;
-        console.log(bestRotation);
     }
     let yRotation = parseFloat(yRotationInput.value)*0.01745329;
     for (let i = 0; i < frames.length; i++) {
@@ -169,17 +155,36 @@ function processSelectedSequence() {
 }
 
 function drawSequenceMain() {
-    if (mapPerKeyframeInput.checked) {
-        loadSequenceMaps();
-    } else {
-        loadSequence();
+    let a = performance.now();
+    drawContainer.innerHTML = "";
+    let numSequences = parseInt(numSequencesInput.value);
+    let startSequence = parseInt(sequenceNumberInput.value);
+    numSequences = Math.min(numSequences, sequences.length-startSequence);
+    for (let sequence = 0; sequence < numSequences; sequence++) {
+        let div = document.createElement("div");
+        div.className = "drawItem";
+        div.id = "drawItem-"+(startSequence+sequence);
+        let divCanvas = document.createElement("canvas");
+        divCanvas.className = "drawBox";
+        div.appendChild(divCanvas);
+        drawContainer.appendChild(div);
     }
+    let canvases = document.getElementsByClassName("drawBox");
+    for (let sequence = 0; sequence < canvases.length; sequence++) {
+        let selectedSequence = startSequence+sequence;
+        let canvas = canvases[sequence];
+        canvas.width = Math.floor(canvas.parentElement.getBoundingClientRect().width)-20;
+        canvas.height = defaultHeight;
+        let frames = processSelectedSequence(selectedSequence, canvas);
+        drawSequence(canvas, frames);
+    }
+    let b = performance.now();
+    console.log("Result time ("+numSequences+" sequences):");
+    console.log((b-a)+" ms");
 }
 
-function loadSequence() {
-    let frames = processSelectedSequence();
+function drawSequence(canvas, frames) {
     let keyframes = findKeyframes(frames, numPositions);
-    console.log(keyframes);
     let notKeyframes = [];
     for (let i = 0; i < keyframes.length; i++) {
         notKeyframes.push(Math.floor((i/keyframes.length)*frames.length));
@@ -199,66 +204,5 @@ function loadSequence() {
     } else if (maxWidth < canvas.width/4) {
         mapScale = canvas.width/1.95;
     }
-    console.log(frames);
     drawSequenceKeyframesBlur(canvas, frames, keyframes, numBlurPositions, drawStyle, drawStyleBlur, 0, true);
-    drawMapScale(canvas, mapScale/10);
-    drawTopDownMapParallelogram(canvas, frames, keyframes, 
-        {x:defaultWidth/2-4*defaultHeight/24, y:3*defaultHeight/24, z:0}, 
-        {x:defaultWidth/2-6*defaultHeight/24, y:9*defaultHeight/24, z:0}, 
-        {x:defaultWidth/2+4*defaultHeight/24, y:9*defaultHeight/24, z:0}, frames.length, mapScale, false);
-    //drawSequenceKeyframesBlur(canvas, frames, notKeyframes, numBlurPositions, drawStyle, drawStyleBlur, -height/2, false);
-    //drawSequenceBlur(canvas, frames, numPositions, numBlurPositions, drawStyle, drawStyleBlur);
-}
-
-function loadSequenceMaps() {
-    let frames = processSelectedSequence();
-    let keyframes = findKeyframes(frames, numPositions);
-    console.log(keyframes);
-    let notKeyframes = [];
-    for (let i = 0; i < keyframes.length; i++) {
-        notKeyframes.push(Math.floor((i/keyframes.length)*frames.length));
-    }
-    let framesMin = findSequenceMinimums(frames, numPositions);
-    let framesMax = findSequenceMaximums(frames, numPositions);
-    let maxWidth = Math.max(framesMax.x-framesMin.x, framesMax.z-framesMin.z);
-    let mapScale = canvas.width;
-    if (maxWidth > canvas.width) {
-        mapScale = canvas.width*1.5;
-    } else if (maxWidth < canvas.width/10) {
-        mapScale = canvas.width/4.95;
-    } else if (maxWidth < canvas.width/8) {
-        mapScale = canvas.width/3.95;
-    } else if (maxWidth < canvas.width/6) {
-        mapScale = canvas.width/2.95;
-    } else if (maxWidth < canvas.width/4) {
-        mapScale = canvas.width/1.95;
-    }
-    console.log(frames);
-    drawSequenceKeyframesBlurWithMaps(canvas, frames, keyframes, numBlurPositions, drawStyle, drawStyleBlur, mapScale, 0, true);
-}
-
-function playSequence() {
-    currentFrame = 0;
-    clearCanvas(canvas);
-    currentPlayingFrames = processSelectedSequence();
-    if (currentPlayingFrames.length == 0) {
-        return;
-    }
-    playingSequence = true;
-    console.debug(currentPlayingFrames);
-    jointStyle = 'rgba(0,0,0,0.75)';
-    boneStyle = 'rgba(0,0,0,0.75)';
-}
-
-function update() {
-    if (!playingSequence) {
-        return;
-    }
-    clearCanvas(canvas);
-    let yRotation = parseFloat(yRotationInput.value)*0.01745329;
-    drawFrame(canvas, frameRotateY(currentPlayingFrames[currentFrame], yRotation), defaultWidth/2, 0, drawStyle);
-    currentFrame++;
-    if (currentFrame >= currentPlayingFrames.length) {
-        currentFrame = currentFrame%currentPlayingFrames.length;
-    }
 }

@@ -321,7 +321,6 @@ function findBestRotation(frames, numSamples) {
     let a = framesMax.x-framesMin.x;
     let b = framesMax.z-framesMin.z;
     let c = Math.sqrt(a**2+b**2);
-    console.log(framesMin, framesMax, a, b, c, vec, distMax, framesMax.y-framesMin.y);
     if (distMax > (framesMax.y-framesMin.y)/2 && ((vec.x > 0 && vec.z < 0) || (vec.x < 0 && vec.z > 0))) {
         return -Math.asin(b/c);
     } else {
