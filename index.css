@@ -17,7 +17,12 @@ body {
 .drawBox {
     background-color: white;
     border: 2px solid black;
-}      
+}
+
+.mapDrawBox {
+    background-color: white;
+    border: 2px solid black;
+}
 
 #drawContainer {
     margin: 1em 1em 1em 1em;

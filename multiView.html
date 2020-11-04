@@ -40,7 +40,7 @@
                 </div>
                 <div class="sideMenuItem">
                     <div class="sideMenuItemLabel">Number of frames to draw:</div>
-                    <input type="number" id="numFramesInput" name="numFramesInput" value="8">
+                    <input type="number" id="numFramesInput" name="numFramesInput" value="12">
                 </div>
                 <div class="sideMenuItem">
                     <div class="sideMenuItemLabel">Scale:</div>
@@ -52,27 +52,31 @@
                 </div>
                 <div class="sideMenuItem">
                     <div>
-                        <input type="checkbox" id="autorotateInput" name="autorotateInput">
+                        <input type="checkbox" id="autorotateInput" name="autorotateInput" checked>
                         <label for="autorotateInput">Automatically set rotation</label>
                     </div>
                     <div>
-                        <input type="checkbox" id="autoscaleInput" name="autoscaleInput">
+                        <input type="checkbox" id="autoscaleInput" name="autoscaleInput" checked>
                         <label for="autoscaleInput">Automatically scale</label>
                     </div>
                     <div>
-                        <input type="checkbox" id="mapsPerKeyframeInput" name="mapsPerKeyframeInput">
-                        <label for="mapsPerKeyframeInput">Create map for each keyframe</label>
+                        <input type="checkbox" id="mapsPerSequenceInput" name="mapsPerSequenceInput" checked>
+                        <label for="mapsPerSequenceInput">Create map for each sequence</label>
+                    </div>
+                    <div>
+                        <input type="checkbox" id="mapsParallelogramInput" name="mapsParallelogramInput">
+                        <label for="mapsParallelogramInput">Create parallelogram maps</label>
                     </div>
                 </div>
             </div>
             <div id="content">
                 <div id="drawContainer">
                     <div class="drawItem">
-
+                        <canvas class="drawBox">
+                        </canvas>
+                        <canvas class="mapDrawBox">
+                        </canvas>
                     </div>
-                    <canvas class="drawBox">
-        
-                    </canvas>
                 </div>
             </div>
         </div>

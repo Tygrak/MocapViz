@@ -37,7 +37,7 @@ let headRadius = 18;
 let jointRadius = 0;
 let boneRadius = 2;
 let numPositions = 8;
-let numBlurPositions = 15;
+let numBlurPositions = 10;
 let jointStyle = {r:0, g:0, b:0, a:1};
 let boneStyle = {r:0, g:0, b:0, a:1};
 let leftBoneStyle = {r:128, g:0, b:0, a:1};
@@ -62,7 +62,8 @@ const bonesModelInput = document.getElementById("bonesModelInput");
 const scaleInput = document.getElementById("scaleInput");
 const autorotateInput = document.getElementById("autorotateInput");
 const autoscaleInput = document.getElementById("autoscaleInput");
-const mapPerKeyframeInput = document.getElementById("mapsPerKeyframeInput");
+const mapPerSequenceInput = document.getElementById("mapsPerSequenceInput");
+const mapsParallelogramInput = document.getElementById("mapsParallelogramInput");
 loadButton.onclick = loadDataFile;
 loadTextButton.onclick = loadDataText;
 sequenceInputLoadButton.onclick = drawSequenceMain;
@@ -164,45 +165,64 @@ function drawSequenceMain() {
         let div = document.createElement("div");
         div.className = "drawItem";
         div.id = "drawItem-"+(startSequence+sequence);
+        if (mapPerSequenceInput.checked) {
+            let divMap = document.createElement("canvas");
+            divMap.className = "mapDrawBox";
+            divMap.width = 200;
+            div.appendChild(divMap);
+        }
         let divCanvas = document.createElement("canvas");
         divCanvas.className = "drawBox";
         div.appendChild(divCanvas);
         drawContainer.appendChild(div);
     }
     let canvases = document.getElementsByClassName("drawBox");
+    let maps = document.getElementsByClassName("mapDrawBox");
     for (let sequence = 0; sequence < canvases.length; sequence++) {
         let selectedSequence = startSequence+sequence;
         let canvas = canvases[sequence];
-        canvas.width = Math.floor(canvas.parentElement.getBoundingClientRect().width)-20;
+        if (mapPerSequenceInput.checked) {
+            canvas.width = Math.floor(canvas.parentElement.getBoundingClientRect().width)-230;
+        } else {
+            canvas.width = Math.floor(canvas.parentElement.getBoundingClientRect().width)-30;
+        }
         canvas.height = defaultHeight;
         let frames = processSelectedSequence(selectedSequence, canvas);
-        drawSequence(canvas, frames);
+        drawSequence(canvas, maps.length > 0 ? maps[sequence] : null, frames);
     }
     let b = performance.now();
     console.log("Result time ("+numSequences+" sequences):");
     console.log((b-a)+" ms");
 }
 
-function drawSequence(canvas, frames) {
+function drawSequence(canvas, map, frames) {
     let keyframes = findKeyframes(frames, numPositions);
     let notKeyframes = [];
     for (let i = 0; i < keyframes.length; i++) {
         notKeyframes.push(Math.floor((i/keyframes.length)*frames.length));
     }
-    let framesMin = findSequenceMinimums(frames, numPositions);
-    let framesMax = findSequenceMaximums(frames, numPositions);
-    let maxWidth = Math.max(framesMax.x-framesMin.x, framesMax.z-framesMin.z);
-    let mapScale = canvas.width;
-    if (maxWidth > canvas.width) {
-        mapScale = canvas.width*1.5;
-    } else if (maxWidth < canvas.width/10) {
-        mapScale = canvas.width/4.95;
-    } else if (maxWidth < canvas.width/8) {
-        mapScale = canvas.width/3.95;
-    } else if (maxWidth < canvas.width/6) {
-        mapScale = canvas.width/2.95;
-    } else if (maxWidth < canvas.width/4) {
-        mapScale = canvas.width/1.95;
-    }
     drawSequenceKeyframesBlur(canvas, frames, keyframes, numBlurPositions, drawStyle, drawStyleBlur, 0, true);
+    if (map != null) {
+        let framesMin = findSequenceMinimums(frames, numPositions);
+        let framesMax = findSequenceMaximums(frames, numPositions);
+        let maxWidth = Math.max(framesMax.x-framesMin.x, framesMax.z-framesMin.z);
+        let mapScale = canvas.width;
+        if (maxWidth > canvas.width) {
+            mapScale = canvas.width*1.5;
+        } else {
+            mapScale = Math.floor(maxWidth/50)*100+100;
+        }
+        drawMapScale(canvas, mapScale/10);
+        if (mapsParallelogramInput.checked) {
+            drawTopDownMapParallelogram(map, frames, keyframes, 
+                {x:map.width/5, y:0, z:0}, 
+                {x:0, y:map.height-0, z:0}, 
+                {x:map.width-map.width/5, y:map.height-0, z:0}, frames.length, mapScale, false);
+        } else {
+            drawTopDownMapParallelogram(map, frames, keyframes, 
+                {x:0, y:0, z:0}, 
+                {x:0, y:map.height-0, z:0}, 
+                {x:map.width-0, y:map.height-0, z:0}, frames.length, mapScale, false);
+        }
+    }
 }
