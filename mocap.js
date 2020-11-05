@@ -163,10 +163,22 @@ function processSequenceToFrames2d(rawData, canvasHeight, figureScale) {
 
 function drawMapScale(canvas, markerDistance) {
     let ctx = canvas.getContext("2d");
-    ctx.fillStyle = "black";
+    ctx.fillStyle = "rgba(0, 0, 0, 1)";
     for (let i = 1; i < 10; i++) {
         ctx.beginPath();
-        ctx.rect(i*markerDistance, canvas.height-5, 4, 5);
+        ctx.rect(i*markerDistance, canvas.height-5, 3, 5);
+        ctx.closePath();
+        ctx.fill();
+    }
+}
+
+function drawTimeScale(canvas, fps, length) {
+    let ctx = canvas.getContext("2d");
+    ctx.fillStyle = "rgba(64, 64, 64, 1)";
+    drawRectangle(ctx, {x: 0, y: 3}, {x: canvas.width*length/(fps*10), y: 1}, 3, 0, 0);
+    for (let i = 1; i < 10 && i*fps < length; i++) {
+        ctx.beginPath();
+        ctx.rect(canvas.width*i/10, 3, 3, 5);
         ctx.closePath();
         ctx.fill();
     }
