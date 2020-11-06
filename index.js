@@ -156,22 +156,16 @@ function loadSequence() {
     let mapScale = canvas.width;
     if (maxWidth > canvas.width) {
         mapScale = canvas.width*1.5;
-    } else if (maxWidth < canvas.width/10) {
-        mapScale = canvas.width/4.95;
-    } else if (maxWidth < canvas.width/8) {
-        mapScale = canvas.width/3.95;
-    } else if (maxWidth < canvas.width/6) {
-        mapScale = canvas.width/2.95;
-    } else if (maxWidth < canvas.width/4) {
-        mapScale = canvas.width/1.95;
+    } else {
+        mapScale = Math.floor(maxWidth/50)*100+100;
     }
     console.log(frames);
     drawSequenceKeyframesBlur(canvas, frames, keyframes, numBlurPositions, drawStyle, drawStyleBlur, 0, true);
     drawMapScale(canvas, mapScale/10);
     drawTopDownMapParallelogram(canvas, frames, keyframes, 
-        {x:defaultWidth/2-4*defaultHeight/24, y:3*defaultHeight/24, z:0}, 
-        {x:defaultWidth/2-6*defaultHeight/24, y:9*defaultHeight/24, z:0}, 
-        {x:defaultWidth/2+4*defaultHeight/24, y:9*defaultHeight/24, z:0}, frames.length, mapScale, false);
+        {x:canvas.width/2-4*canvas.height/24, y:3*canvas.height/24, z:0}, 
+        {x:canvas.width/2-6*canvas.height/24, y:9*canvas.height/24, z:0}, 
+        {x:canvas.width/2+4*canvas.height/24, y:9*canvas.height/24, z:0}, frames.length, mapScale, false);
     //drawSequenceKeyframesBlur(canvas, frames, notKeyframes, numBlurPositions, drawStyle, drawStyleBlur, -height/2, false);
     //drawSequenceBlur(canvas, frames, numPositions, numBlurPositions, drawStyle, drawStyleBlur);
 }
@@ -190,14 +184,8 @@ function loadSequenceMaps() {
     let mapScale = canvas.width;
     if (maxWidth > canvas.width) {
         mapScale = canvas.width*1.5;
-    } else if (maxWidth < canvas.width/10) {
-        mapScale = canvas.width/4.95;
-    } else if (maxWidth < canvas.width/8) {
-        mapScale = canvas.width/3.95;
-    } else if (maxWidth < canvas.width/6) {
-        mapScale = canvas.width/2.95;
-    } else if (maxWidth < canvas.width/4) {
-        mapScale = canvas.width/1.95;
+    } else {
+        mapScale = Math.floor(maxWidth/50)*100+100;
     }
     console.log(frames);
     drawSequenceKeyframesBlurWithMaps(canvas, frames, keyframes, numBlurPositions, drawStyle, drawStyleBlur, mapScale, 0, true);

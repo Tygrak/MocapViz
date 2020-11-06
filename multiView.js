@@ -195,6 +195,6 @@ function drawSequence(canvas, map, frames) {
         }
     }
     if (timeScaleInput.checked) {
-        drawTimeScale(canvas, modelFps, frames.length);
+        drawTimeScale(canvas, modelFps, frames.length, keyframes);
     }
 }

@@ -172,13 +172,21 @@ function drawMapScale(canvas, markerDistance) {
     }
 }
 
-function drawTimeScale(canvas, fps, length) {
+function drawTimeScale(canvas, fps, length, keyframes) {
     let ctx = canvas.getContext("2d");
     ctx.fillStyle = "rgba(64, 64, 64, 1)";
     drawRectangle(ctx, {x: 0, y: 3}, {x: canvas.width*length/(fps*10), y: 1}, 3, 0, 0);
+    ctx.fillStyle = "rgba(0, 0, 0, 1)";
     for (let i = 1; i < 10 && i*fps < length; i++) {
         ctx.beginPath();
-        ctx.rect(canvas.width*i/10, 3, 3, 5);
+        ctx.rect(canvas.width*i/10, 0, 3, 11);
+        ctx.closePath();
+        ctx.fill();
+    }
+    ctx.fillStyle = "rgba(64, 0, 192, 1)";
+    for (let i = 0; i < keyframes.length; i++) {
+        ctx.beginPath();
+        ctx.rect(canvas.width*keyframes[i]/(fps*10), 0, 3, 7);
         ctx.closePath();
         ctx.fill();
     }
