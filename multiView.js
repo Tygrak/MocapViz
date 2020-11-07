@@ -137,7 +137,7 @@ function drawSequenceMain() {
         if (mapPerSequenceInput.checked) {
             let divMap = document.createElement("canvas");
             divMap.className = "mapDrawBox";
-            divMap.width = 200;
+            divMap.width = 150;
             div.appendChild(divMap);
         }
         let divCanvas = document.createElement("canvas");
@@ -151,7 +151,7 @@ function drawSequenceMain() {
         let selectedSequence = startSequence+sequence;
         let canvas = canvases[sequence];
         if (mapPerSequenceInput.checked) {
-            canvas.width = Math.floor(canvas.parentElement.getBoundingClientRect().width)-230;
+            canvas.width = Math.floor(canvas.parentElement.getBoundingClientRect().width)-180;
         } else {
             canvas.width = Math.floor(canvas.parentElement.getBoundingClientRect().width)-30;
         }
@@ -189,9 +189,9 @@ function drawSequence(canvas, map, frames) {
                 {x:map.width-map.width/5, y:map.height-0, z:0}, frames.length, mapScale, false);
         } else {
             drawTopDownMapParallelogram(map, frames, keyframes, 
-                {x:0, y:0, z:0}, 
-                {x:0, y:map.height-0, z:0}, 
-                {x:map.width-0, y:map.height-0, z:0}, frames.length, mapScale, false);
+                {x:-1, y:-1, z:0}, 
+                {x:-1, y:map.height+1, z:0}, 
+                {x:map.width+1, y:map.height+1, z:0}, frames.length, mapScale, false);
         }
     }
     if (timeScaleInput.checked) {
