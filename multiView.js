@@ -25,6 +25,7 @@ const sequenceInputLoadButton = document.getElementById("sequenceInputLoadButton
 const dataFileInput = document.getElementById("dataFileInput");
 const dataTextInput = document.getElementById("dataTextInput");
 const numSequencesInput = document.getElementById("numSequencesInput");
+const numSequencesPageInput = document.getElementById("numSequencesPageInput");
 const numFramesInput = document.getElementById("numFramesInput");
 const yRotationInput = document.getElementById("yRotationInput");
 const loadButton = document.getElementById("dataInputLoadButton");
@@ -36,6 +37,7 @@ const autoscaleInput = document.getElementById("autoscaleInput");
 const mapPerSequenceInput = document.getElementById("mapsPerSequenceInput");
 const mapsParallelogramInput = document.getElementById("mapsParallelogramInput");
 const timeScaleInput = document.getElementById("timeScaleInput");
+const contentDiv = document.getElementById("content");
 loadButton.onclick = loadDataFile;
 loadTextButton.onclick = loadDataText;
 sequenceInputLoadButton.onclick = drawSequenceMain;
@@ -128,6 +130,7 @@ function drawSequenceMain() {
     let a = performance.now();
     drawContainer.innerHTML = "";
     let numSequences = parseInt(numSequencesInput.value);
+    let numSequencesPerPage = parseInt(numSequencesPageInput.value);
     let startSequence = parseInt(sequenceNumberInput.value);
     numSequences = Math.min(numSequences, sequences.length-startSequence);
     for (let sequence = 0; sequence < numSequences; sequence++) {
@@ -138,6 +141,7 @@ function drawSequenceMain() {
             let divMap = document.createElement("canvas");
             divMap.className = "mapDrawBox";
             divMap.width = 150;
+            divMap.height = Math.floor((window.innerHeight-60)/numSequencesPerPage);
             div.appendChild(divMap);
         }
         let divCanvas = document.createElement("canvas");
@@ -147,15 +151,16 @@ function drawSequenceMain() {
     }
     let canvases = document.getElementsByClassName("drawBox");
     let maps = document.getElementsByClassName("mapDrawBox");
+    let canvasWidth = mapPerSequenceInput.checked 
+        ? Math.floor(canvases[0].parentElement.getBoundingClientRect().width-180)
+        : Math.floor(canvases[0].parentElement.getBoundingClientRect().width-30);
     for (let sequence = 0; sequence < canvases.length; sequence++) {
         let selectedSequence = startSequence+sequence;
         let canvas = canvases[sequence];
-        if (mapPerSequenceInput.checked) {
-            canvas.width = Math.floor(canvas.parentElement.getBoundingClientRect().width)-180;
-        } else {
-            canvas.width = Math.floor(canvas.parentElement.getBoundingClientRect().width)-30;
-        }
-        canvas.height = defaultHeight;
+        canvas.width = canvasWidth;
+        console.log(sequence, canvas.width, canvas.height);
+        canvas.height = Math.floor((window.innerHeight-60)/numSequencesPerPage);
+        //canvas.height = defaultHeight;
         let frames = processSelectedSequence(selectedSequence, canvas);
         drawSequence(canvas, maps.length > 0 ? maps[sequence] : null, frames);
     }
