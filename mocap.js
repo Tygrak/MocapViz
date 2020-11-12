@@ -283,7 +283,8 @@ function findKeyframes(frames, numKeyframes) {
             let dmin = Infinity;
             for (let j = 0; j < result.length; j++) {
                 const keyframe = frames[result[j]];
-                let d = frameDistance(frame, keyframe);
+                let d = frameTimeDistance(frame, keyframe, i, j);
+                //let d = frameDistance(frame, keyframe);
                 if (d < dmin) {
                     dmin = d;
                 }
@@ -408,7 +409,7 @@ function findOptimalScale(frames, canvas, numFrames) {
             maxHeight = height;
         }
     }
-    return Math.min(((canvas.height)-40)/maxHeight, (canvas.width/(numFrames-1))/maxWidth);
+    return Math.min((canvas.height-38)/maxHeight, (canvas.width/(numFrames-1))/maxWidth);
     //return ((canvas.height)/2-40)/maxHeight;
 }
 
@@ -417,6 +418,15 @@ function frameDistance(a, b) {
     for (let i = 0; i < a.length; i++) {
         result += (a[i].x-b[i].x)*(a[i].x-b[i].x)+(a[i].y-b[i].y)*(a[i].y-b[i].y)+(a[i].z-b[i].z)*(a[i].z-b[i].z);
     }
+    return Math.sqrt(result);
+}
+
+function frameTimeDistance(a, b, aFrame, bFrame) {
+    let result = 0;
+    for (let i = 0; i < a.length; i++) {
+        result += (a[i].x-b[i].x)*(a[i].x-b[i].x)+(a[i].y-b[i].y)*(a[i].y-b[i].y)+(a[i].z-b[i].z)*(a[i].z-b[i].z);
+    }
+    result += (aFrame-bFrame)^2;
     return Math.sqrt(result);
 }
 
