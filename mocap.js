@@ -122,7 +122,8 @@ function drawSequenceBlur(canvas, frames, numPositions, numBlurPositions, drawSt
 }
 
 function processSequenceToFrames(rawData, canvasHeight, figureScale) {
-    let frames = rawData.split("\n").map((frame) => {
+    let lines = rawData.split("\n");
+    let frames = lines.map((frame) => {
         return frame.replace(" ", "").split(';').map((joint) => {
             let xyz = joint.split(',');
             return {x:parseFloat(xyz[0])*figureScale, y:parseFloat(xyz[1])*-1*figureScale + canvasHeight, z:parseFloat(xyz[2])*figureScale};
@@ -142,7 +143,8 @@ function processSequenceToFrames(rawData, canvasHeight, figureScale) {
 }
 
 function processSequenceToFrames2d(rawData, canvasHeight, figureScale) {
-    let frames = rawData.split("\n").map((frame) => {
+    let lines = rawData.split("\n");
+    let frames = lines.map((frame) => {
         return frame.replace(" ", "").split(';').map((joint) => {
             let xy = joint.split(',');
             return {x:parseFloat(xy[0])*figureScale, y:parseFloat(xy[1])*figureScale + canvasHeight-10, z:0};
@@ -159,6 +161,16 @@ function processSequenceToFrames2d(rawData, canvasHeight, figureScale) {
         }
     }
     return frames;
+}
+
+function getSequenceCategory(rawData) {
+    let lines = rawData.split("\n");
+    let description = lines[0].match(/messif.objects.keys.AbstractObjectKey (.+)/);
+    if (description == null) {
+        return "null";
+    }
+    let category = description[1].match(/\d+_(\d+).+/)[1];
+    return category;
 }
 
 function drawMapScale(canvas, markerDistance) {

@@ -9,8 +9,8 @@ let numPositions = 8;
 let numBlurPositions = 10;
 let jointStyle = {r:0, g:0, b:0, a:1};
 let boneStyle = {r:0, g:0, b:0, a:1};
-let leftBoneStyle = {r:128, g:0, b:0, a:1};
-let rightBoneStyle = {r:0, g:0, b:128, a:1};
+let leftBoneStyle = {r:144, g:0, b:0, a:1};
+let rightBoneStyle = {r:0, g:0, b:144, a:1};
 let blurStyle = {r:0, g:0, b:0, a:0.1};
 let sequences = [];
 let longestSequence = 0;
@@ -136,7 +136,7 @@ function drawSequenceMain() {
     for (let sequence = 0; sequence < numSequences; sequence++) {
         let div = document.createElement("div");
         div.className = "drawItem";
-        div.id = "drawItem-"+(startSequence+sequence);
+        div.id = "drawItem-"+(startSequence+sequence)+"-"+motionCategories[getSequenceCategory(sequences[sequence])];
         if (mapPerSequenceInput.checked) {
             let divMap = document.createElement("canvas");
             divMap.className = "mapDrawBox";
@@ -158,7 +158,6 @@ function drawSequenceMain() {
         let selectedSequence = startSequence+sequence;
         let canvas = canvases[sequence];
         canvas.width = canvasWidth;
-        console.log(sequence, canvas.width, canvas.height);
         canvas.height = Math.floor((window.innerHeight-60)/numSequencesPerPage);
         //canvas.height = defaultHeight;
         let frames = processSelectedSequence(selectedSequence, canvas);
@@ -169,6 +168,7 @@ function drawSequenceMain() {
     console.log((b-a)+" ms");
 }
 
+//todo: scaling changes map scale too, which in multi view is broken
 function drawSequence(canvas, map, frames) {
     let keyframes = findKeyframes(frames, numPositions);
     let notKeyframes = [];
