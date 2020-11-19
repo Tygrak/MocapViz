@@ -37,6 +37,7 @@ const autoscaleInput = document.getElementById("autoscaleInput");
 const mapPerSequenceInput = document.getElementById("mapsPerSequenceInput");
 const mapsParallelogramInput = document.getElementById("mapsParallelogramInput");
 const timeScaleInput = document.getElementById("timeScaleInput");
+const timeImageScaleInput = document.getElementById("timeImageScaleInput");
 const contentDiv = document.getElementById("content");
 loadButton.onclick = loadDataFile;
 loadTextButton.onclick = loadDataText;
@@ -133,6 +134,15 @@ function drawSequenceMain() {
     let numSequencesPerPage = parseInt(numSequencesPageInput.value);
     let startSequence = parseInt(sequenceNumberInput.value);
     numSequences = Math.min(numSequences, sequences.length-startSequence);
+    let maxSequenceLength = 0;
+    if (timeImageScaleInput.checked) {
+        for (let sequence = 0; sequence < numSequences; sequence++) {
+            let split = sequences[startSequence+sequence].split("\n");
+            if (split.length-2 > maxSequenceLength) {
+                maxSequenceLength = split.length-2;
+            }
+        }
+    }
     for (let sequence = 0; sequence < numSequences; sequence++) {
         let div = document.createElement("div");
         div.className = "drawItem";
@@ -157,10 +167,10 @@ function drawSequenceMain() {
     for (let sequence = 0; sequence < canvases.length; sequence++) {
         let selectedSequence = startSequence+sequence;
         let canvas = canvases[sequence];
-        canvas.width = canvasWidth;
-        canvas.height = Math.floor((window.innerHeight-60)/numSequencesPerPage);
         //canvas.height = defaultHeight;
         let frames = processSelectedSequence(selectedSequence, canvas);
+        canvas.width = timeImageScaleInput.checked ? canvasWidth*(frames.length/maxSequenceLength) : canvasWidth;
+        canvas.height = Math.floor((window.innerHeight-60)/numSequencesPerPage);
         drawSequence(canvas, maps.length > 0 ? maps[sequence] : null, frames);
     }
     let b = performance.now();
