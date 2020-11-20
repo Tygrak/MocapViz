@@ -60,7 +60,7 @@ function loadDataFile() {
     let reader = new FileReader();
     reader.onload = function (textResult) {
         let text = textResult.target.result;
-        sequences = text.split("#objectKey").filter((s) => {return s != "";});
+        sequences = text.split("#objectKey").filter((s) => {return s != "";}).map((s) => s.split("\n"));
         availableSequencesText.innerText = sequences.length;
     }
     reader.readAsText(dataFileInput.files[0], "UTF-8");
@@ -70,7 +70,7 @@ function loadDataText() {
     if (dataTextInput.value.length == 0) {
         return;
     } 
-    sequences = dataTextInput.value.split("#objectKey").filter((s) => {return s != "";});
+    sequences = dataTextInput.value.split("#objectKey").filter((s) => {return s != "";}).map((s) => s.split("\n"));
     availableSequencesText.innerText = sequences.length;
 }
 

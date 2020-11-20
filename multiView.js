@@ -38,6 +38,7 @@ const mapPerSequenceInput = document.getElementById("mapsPerSequenceInput");
 const mapsParallelogramInput = document.getElementById("mapsParallelogramInput");
 const timeScaleInput = document.getElementById("timeScaleInput");
 const timeImageScaleInput = document.getElementById("timeImageScaleInput");
+const mapScalingEnabledInput = document.getElementById("mapScaleInput");
 const contentDiv = document.getElementById("content");
 loadButton.onclick = loadDataFile;
 loadTextButton.onclick = loadDataText;
@@ -58,7 +59,7 @@ function loadDataFile() {
     let reader = new FileReader();
     reader.onload = function (textResult) {
         let text = textResult.target.result;
-        sequences = text.split("#objectKey").filter((s) => {return s != "";});
+        sequences = text.split("#objectKey").filter((s) => {return s != "";}).map((s) => s.split("\n"));
         availableSequencesText.innerText = sequences.length;
     }
     reader.readAsText(dataFileInput.files[0], "UTF-8");
@@ -68,7 +69,7 @@ function loadDataText() {
     if (dataTextInput.value.length == 0) {
         return;
     } 
-    sequences = dataTextInput.value.split("#objectKey").filter((s) => {return s != "";});
+    sequences = dataTextInput.value.split("#objectKey").filter((s) => {return s != "";}).map((s) => s.split("\n"));
     availableSequencesText.innerText = sequences.length;
 }
 
@@ -81,9 +82,8 @@ function loadModel(model) {
     drawStyleBlur.headJointIndex = model.headJointIndex;
 }
 
-function processSelectedSequence(selectedSequence, canvas) {
+function processSelectedSequence(selectedSequence, canvas, numKeyframes) {
     figureScale = parseFloat(scaleInput.value);
-    numPositions = parseInt(numFramesInput.value);
     if (bonesModelInput.value == "Vicon") {
         loadModel(modelVicon);
     } else if (bonesModelInput.value == "Kinect") {
@@ -95,10 +95,10 @@ function processSelectedSequence(selectedSequence, canvas) {
     if (autoscaleInput.checked) {
         if (frames.length == 0) {
             frames = processSequenceToFrames2d(sequences[selectedSequence], canvas.height, figureScale*defaultScale);
-            figureScale = figureScale*findOptimalScale(frames, canvas, numPositions);
+            figureScale = figureScale*findOptimalScale(frames, canvas, numKeyframes);
             frames = processSequenceToFrames2d(sequences[selectedSequence], canvas.height, figureScale*defaultScale);
         } else {
-            figureScale = figureScale*findOptimalScale(frames, canvas, numPositions);
+            figureScale = figureScale*findOptimalScale(frames, canvas, numKeyframes);
             frames = processSequenceToFrames(sequences[selectedSequence], canvas.height, figureScale*defaultScale);
         }
         scaleInput.value = figureScale;
@@ -117,7 +117,7 @@ function processSelectedSequence(selectedSequence, canvas) {
         drawStyleBlur.headRadius = headRadius*figureScale;
     }
     if (autorotateInput.checked) {
-        let bestRotation = findBestRotation(frames, numPositions);
+        let bestRotation = findBestRotation(frames, numKeyframes);
         yRotationInput.value = bestRotation*57.29578778556937;
     }
     let yRotation = parseFloat(yRotationInput.value)*0.01745329;
@@ -134,12 +134,13 @@ function drawSequenceMain() {
     let numSequencesPerPage = parseInt(numSequencesPageInput.value);
     let startSequence = parseInt(sequenceNumberInput.value);
     numSequences = Math.min(numSequences, sequences.length-startSequence);
-    let maxSequenceLength = 0;
+    numPositions = parseInt(numFramesInput.value);
+    let maxSequenceLength = sequences[startSequence].length-1;
     if (timeImageScaleInput.checked) {
-        for (let sequence = 0; sequence < numSequences; sequence++) {
-            let split = sequences[startSequence+sequence].split("\n");
-            if (split.length-2 > maxSequenceLength) {
-                maxSequenceLength = split.length-2;
+        for (let sequence = 1; sequence < numSequences; sequence++) {
+            let lines = sequences[startSequence+sequence];
+            if (lines.length-3 > maxSequenceLength) {
+                maxSequenceLength = lines.length-3;
             }
         }
     }
@@ -167,11 +168,12 @@ function drawSequenceMain() {
     for (let sequence = 0; sequence < canvases.length; sequence++) {
         let selectedSequence = startSequence+sequence;
         let canvas = canvases[sequence];
+        let numKeyframes = timeImageScaleInput.checked ? Math.ceil(numPositions*((sequences[selectedSequence].length-3)/maxSequenceLength)) : numPositions;
         //canvas.height = defaultHeight;
-        let frames = processSelectedSequence(selectedSequence, canvas);
-        canvas.width = timeImageScaleInput.checked ? canvasWidth*(frames.length/maxSequenceLength) : canvasWidth;
+        canvas.width = timeImageScaleInput.checked ? canvasWidth*((sequences[selectedSequence].length-3)/maxSequenceLength) : canvasWidth;
         canvas.height = Math.floor((window.innerHeight-60)/numSequencesPerPage);
-        drawSequence(canvas, maps.length > 0 ? maps[sequence] : null, frames);
+        let frames = processSelectedSequence(selectedSequence, canvas, numKeyframes);
+        drawSequence(canvas, maps.length > 0 ? maps[sequence] : null, frames, numKeyframes);
     }
     let b = performance.now();
     console.log("Result time ("+numSequences+" sequences):");
@@ -179,22 +181,24 @@ function drawSequenceMain() {
 }
 
 //todo: scaling changes map scale too, which in multi view is broken
-function drawSequence(canvas, map, frames) {
-    let keyframes = findKeyframes(frames, numPositions);
+function drawSequence(canvas, map, frames, numKeyframes) {
+    let keyframes = findKeyframes(frames, numKeyframes);
     let notKeyframes = [];
     for (let i = 0; i < keyframes.length; i++) {
         notKeyframes.push(Math.floor((i/keyframes.length)*frames.length));
     }
-    drawSequenceKeyframesBlur(canvas, frames, keyframes, numBlurPositions, drawStyle, drawStyleBlur, 0, true);
+    drawSequenceKeyframesBlur(canvas, frames, keyframes, numKeyframes, drawStyle, drawStyleBlur, 0, true);
     if (map != null) {
-        let framesMin = findSequenceMinimums(frames, numPositions);
-        let framesMax = findSequenceMaximums(frames, numPositions);
+        let framesMin = findSequenceMinimums(frames, numKeyframes);
+        let framesMax = findSequenceMaximums(frames, numKeyframes);
         let maxWidth = Math.max(framesMax.x-framesMin.x, framesMax.z-framesMin.z);
-        let mapScale = canvas.width;
-        if (maxWidth > canvas.width) {
-            mapScale = canvas.width*1.5;
-        } else {
-            mapScale = Math.floor(maxWidth/50)*100+100;
+        let mapScale = 100*figureScale*defaultScale;
+        if (mapScalingEnabledInput.checked) {
+            if (maxWidth > canvas.width) {
+                mapScale = canvas.width*1.5;
+            } else {
+                mapScale = Math.floor(maxWidth/50)*100+100;
+            }
         }
         drawMapScale(canvas, mapScale/10);
         if (mapsParallelogramInput.checked) {

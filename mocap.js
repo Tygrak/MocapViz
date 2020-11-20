@@ -122,7 +122,7 @@ function drawSequenceBlur(canvas, frames, numPositions, numBlurPositions, drawSt
 }
 
 function processSequenceToFrames(rawData, canvasHeight, figureScale) {
-    let lines = rawData.split("\n");
+    let lines = rawData;
     let frames = lines.map((frame) => {
         return frame.replace(" ", "").split(';').map((joint) => {
             let xyz = joint.split(',');
@@ -143,7 +143,7 @@ function processSequenceToFrames(rawData, canvasHeight, figureScale) {
 }
 
 function processSequenceToFrames2d(rawData, canvasHeight, figureScale) {
-    let lines = rawData.split("\n");
+    let lines = rawData;
     let frames = lines.map((frame) => {
         return frame.replace(" ", "").split(';').map((joint) => {
             let xy = joint.split(',');
@@ -164,7 +164,7 @@ function processSequenceToFrames2d(rawData, canvasHeight, figureScale) {
 }
 
 function getSequenceCategory(rawData) {
-    let lines = rawData.split("\n");
+    let lines = rawData;
     let description = lines[0].match(/messif.objects.keys.AbstractObjectKey (.+)/);
     if (description == null) {
         return "null";
