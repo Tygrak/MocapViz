@@ -17,8 +17,8 @@ let currentPlayingFrames = [];
 let playingSequence = false;
 let headJointIndex = 16;
 let modelFps = 120;
-let drawStyle = new MocapDrawStyle(bonesVicon, headJointIndex, boneRadius, jointRadius, headRadius, boneStyle, leftBoneStyle, rightBoneStyle, jointStyle);
-let drawStyleBlur = new MocapDrawStyle(bonesVicon, headJointIndex, boneRadius, jointRadius, headRadius, blurStyle, blurStyle, blurStyle, blurStyle);
+let drawStyle = new MocapDrawStyle(bonesVicon, headJointIndex, 17, 13, boneRadius, jointRadius, headRadius, boneStyle, leftBoneStyle, rightBoneStyle, jointStyle, 8);
+let drawStyleBlur = new MocapDrawStyle(bonesVicon, headJointIndex, 17, 13, boneRadius, jointRadius, headRadius, blurStyle, blurStyle, blurStyle, blurStyle, 8);
 
 const availableSequencesText = document.getElementById("availableSequencesText");
 const sequenceNumberInput = document.getElementById("sequenceNumberInput");
@@ -79,6 +79,8 @@ function loadModel(model) {
     modelFps = model.fps;
     drawStyle.bonesModel = model.bonesModel;
     drawStyle.headJointIndex = model.headJointIndex;
+    drawStyle.leftArmIndex = model.leftArmIndex;
+    drawStyle.thoraxIndex = model.thoraxIndex;
     drawStyleBlur.bonesModel = model.bonesModel;
     drawStyleBlur.headJointIndex = model.headJointIndex;
 }
@@ -113,6 +115,8 @@ function processSelectedSequence() {
             frames = processSequenceToFrames2d(sequences[selectedSequence], canvas.height, figureScale*defaultScale);
         }
     }
+    drawStyle.figureScale = figureScale;
+    drawStyleBlur.figureScale = figureScale;
     drawStyle.boneRadius = boneRadius*figureScale;
     drawStyleBlur.boneRadius = boneRadius*figureScale;
     if (figureScale < 0.5) {

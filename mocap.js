@@ -1,6 +1,8 @@
-function MocapDrawStyle(bonesModel, headJointIndex, boneRadius, jointRadius, headRadius, boneStyle, leftBoneStyle, rightBoneStyle, jointStyle) {
+function MocapDrawStyle(bonesModel, headJointIndex, leftArmIndex, thoraxIndex, boneRadius, jointRadius, headRadius, boneStyle, leftBoneStyle, rightBoneStyle, jointStyle, figureScale) {
     this.bonesModel = bonesModel;
     this.headJointIndex = headJointIndex;
+    this.leftArmIndex = leftArmIndex;
+    this.thoraxIndex = thoraxIndex;
     this.boneRadius = boneRadius;
     this.jointRadius = jointRadius;
     this.headRadius = headRadius;
@@ -8,6 +10,13 @@ function MocapDrawStyle(bonesModel, headJointIndex, boneRadius, jointRadius, hea
     this.leftBoneStyle = leftBoneStyle;
     this.rightBoneStyle = rightBoneStyle;
     this.jointStyle = jointStyle;
+    this.figureScale = figureScale;
+}
+
+function Vec3(x, y, z) {
+    this.x = x;
+    this.y = y;
+    this.z = z;
 }
 
 const BoneType = {
@@ -215,7 +224,7 @@ function drawTopDownMapParallelogram(canvas, frames, indexes, topLeft, bottomLef
     let height = bottomRight.y-topLeft.y;
     let coreX = frames[0][0].x;
     let coreZ = frames[0][0].z;
-    ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+    ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
     for (let i = 1; i < 10; i++) {
         drawRectangle(ctx, {x:topLeft.x+i*width/10, y:topLeft.y}, {x:bottomLeft.x+i*width/10, y:bottomLeft.y}, 0.75, 0, 0);
     }
@@ -481,6 +490,15 @@ function clamp(a, b, value) {
     }
 }
 
+function crossProduct(a, b) {
+    return new Vec3(a.y*b.z-a.z*b.y, -(a.x*b.z-a.z*b.x), a.x*b.y-a.y*b.x);
+}
+
+function normalize(vec) {
+    let len = Math.sqrt(vec.x*vec.x+vec.y*vec.y+vec.z*vec.z);
+    return new Vec3(vec.x/len, vec.y/len, vec.z/len);
+}
+
 function lerp(a, b, value) {
     return (b-a)*value+a;
 }
@@ -517,6 +535,7 @@ function drawFrame(canvas, frame, xShift, yShift, drawStyle) {
     let ctx = canvas.getContext("2d");
     let bones = drawStyle.bonesModel.slice();
     bones.sort((a, b) => (frame[a.a].z+frame[a.b].z)/2-(frame[b.a].z+frame[b.b].z)/2);
+    //ctx.fillStyle = rgbaToColorString(drawStyle.leftBoneStyle);
     for (let i = 0; i < frame.length; i++) {
         ctx.beginPath();
         ctx.fillStyle = rgbaToColorString(drawStyle.jointStyle);
@@ -544,4 +563,11 @@ function drawFrame(canvas, frame, xShift, yShift, drawStyle) {
         }
         drawRectangle(ctx, a, b, drawStyle.boneRadius+1*(i/bones.length), xShift, yShift);
     }
+    let vecNose = crossProduct(new Vec3(frame[16].x-frame[13].x, frame[16].y-frame[13].y, frame[16].z-frame[13].z),
+                               new Vec3(frame[17].x-frame[13].x, frame[17].y-frame[13].y, frame[17].z-frame[13].z));
+    vecNose = normalize(vecNose);
+    vecNose = new Vec3(vecNose.x*35*drawStyle.figureScale, vecNose.y*35*drawStyle.figureScale, vecNose.z*35*drawStyle.figureScale);
+    let nosePos = new Vec3(frame[16].x+vecNose.x, frame[16].y+vecNose.y, frame[16].z+vecNose.z);
+    ctx.fillStyle = rgbaToColorString({r: 192, g: 16, b:128, a: drawStyle.boneStyle.a});
+    drawRectangle(ctx, nosePos, frame[16], drawStyle.boneRadius, xShift, yShift);
 }

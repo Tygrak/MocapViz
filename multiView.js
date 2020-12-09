@@ -2,7 +2,7 @@
 let figureScale = 8;
 let defaultHeight = 150;
 let defaultWidth = 1000;
-let headRadius = 18;
+let headRadius = 6;
 let jointRadius = 0;
 let boneRadius = 2;
 let numPositions = 8;
@@ -16,8 +16,8 @@ let sequences = [];
 let longestSequence = 0;
 let headJointIndex = 16;
 let modelFps = 120;
-let drawStyle = new MocapDrawStyle(bonesVicon, headJointIndex, boneRadius, jointRadius, headRadius, boneStyle, leftBoneStyle, rightBoneStyle, jointStyle);
-let drawStyleBlur = new MocapDrawStyle(bonesVicon, headJointIndex, boneRadius, jointRadius, headRadius, blurStyle, blurStyle, blurStyle, blurStyle);
+let drawStyle = new MocapDrawStyle(bonesVicon, headJointIndex, 17, 13, boneRadius, jointRadius, headRadius, boneStyle, leftBoneStyle, rightBoneStyle, jointStyle, 8);
+let drawStyleBlur = new MocapDrawStyle(bonesVicon, headJointIndex, 17, 13, boneRadius, jointRadius, headRadius, blurStyle, blurStyle, blurStyle, blurStyle, 8);
 
 const availableSequencesText = document.getElementById("availableSequencesText");
 const sequenceNumberInput = document.getElementById("sequenceNumberInput");
@@ -78,6 +78,8 @@ function loadModel(model) {
     modelFps = model.fps;
     drawStyle.bonesModel = model.bonesModel;
     drawStyle.headJointIndex = model.headJointIndex;
+    drawStyle.leftArmIndex = model.leftArmIndex;
+    drawStyle.thoraxIndex = model.thoraxIndex;
     drawStyleBlur.bonesModel = model.bonesModel;
     drawStyleBlur.headJointIndex = model.headJointIndex;
 }
@@ -107,6 +109,8 @@ function processSelectedSequence(selectedSequence, canvas, numKeyframes) {
             frames = processSequenceToFrames2d(sequences[selectedSequence], canvas.height, figureScale*defaultScale);
         }
     }
+    drawStyle.figureScale = figureScale;
+    drawStyleBlur.figureScale = figureScale;
     drawStyle.boneRadius = boneRadius*figureScale;
     drawStyleBlur.boneRadius = boneRadius*figureScale;
     if (figureScale < 0.5) {
@@ -183,10 +187,6 @@ function drawSequenceMain() {
 //todo: scaling changes map scale too, which in multi view is broken
 function drawSequence(canvas, map, frames, numKeyframes) {
     let keyframes = findKeyframes(frames, numKeyframes);
-    let notKeyframes = [];
-    for (let i = 0; i < keyframes.length; i++) {
-        notKeyframes.push(Math.floor((i/keyframes.length)*frames.length));
-    }
     drawSequenceKeyframesBlur(canvas, frames, keyframes, numKeyframes, drawStyle, drawStyleBlur, 0, true);
     if (map != null) {
         let framesMin = findSequenceMinimums(frames, numKeyframes);
@@ -197,7 +197,7 @@ function drawSequence(canvas, map, frames, numKeyframes) {
             if (maxWidth > canvas.width) {
                 mapScale = canvas.width*1.5;
             } else {
-                mapScale = Math.floor(maxWidth/50)*100+100;
+                mapScale = Math.floor(maxWidth/25)*50+50;
             }
         }
         drawMapScale(canvas, mapScale/10);
