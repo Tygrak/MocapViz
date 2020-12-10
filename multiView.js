@@ -2,7 +2,7 @@
 let figureScale = 8;
 let defaultHeight = 150;
 let defaultWidth = 1000;
-let headRadius = 6;
+let headRadius = 10;
 let jointRadius = 0;
 let boneRadius = 2;
 let numPositions = 8;
@@ -94,6 +94,9 @@ function processSelectedSequence(selectedSequence, canvas, numKeyframes) {
         loadModel(modelKinect2d);
     }
     let frames = processSequenceToFrames(sequences[selectedSequence], canvas.height, figureScale*defaultScale);
+    /*frames = processSequenceToFrames(sequences[selectedSequence], canvas.height, 1);
+    console.log(findMaximumsFromFrame(frames[0]).y-findMinimumsFromFrame(frames[0]).y);
+    frames = processSequenceToFrames(sequences[selectedSequence], canvas.height, figureScale*defaultScale);*/
     if (autoscaleInput.checked) {
         if (frames.length == 0) {
             frames = processSequenceToFrames2d(sequences[selectedSequence], canvas.height, figureScale*defaultScale);

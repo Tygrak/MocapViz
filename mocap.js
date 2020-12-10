@@ -536,6 +536,15 @@ function drawFrame(canvas, frame, xShift, yShift, drawStyle) {
     let bones = drawStyle.bonesModel.slice();
     bones.sort((a, b) => (frame[a.a].z+frame[a.b].z)/2-(frame[b.a].z+frame[b.b].z)/2);
     //ctx.fillStyle = rgbaToColorString(drawStyle.leftBoneStyle);
+    let vecNose = crossProduct(new Vec3(frame[drawStyle.headJointIndex].x-frame[drawStyle.thoraxIndex].x, frame[drawStyle.headJointIndex].y-frame[drawStyle.thoraxIndex].y, frame[drawStyle.headJointIndex].z-frame[drawStyle.thoraxIndex].z),
+                               new Vec3(frame[drawStyle.leftArmIndex].x-frame[drawStyle.thoraxIndex].x, frame[drawStyle.leftArmIndex].y-frame[drawStyle.thoraxIndex].y, frame[drawStyle.leftArmIndex].z-frame[drawStyle.thoraxIndex].z));
+    vecNose = normalize(vecNose);
+    vecNose = new Vec3(vecNose.x*35*drawStyle.figureScale, vecNose.y*35*drawStyle.figureScale, vecNose.z*35*drawStyle.figureScale);
+    let nosePos = new Vec3(frame[drawStyle.headJointIndex].x+vecNose.x, frame[drawStyle.headJointIndex].y+vecNose.y, frame[drawStyle.headJointIndex].z+vecNose.z);
+    if (nosePos.z < frame[drawStyle.headJointIndex].z) {
+        ctx.fillStyle = rgbaToColorString({r: 192, g: 16, b:128, a: drawStyle.boneStyle.a});
+        drawRectangle(ctx, nosePos, frame[drawStyle.headJointIndex], drawStyle.boneRadius, xShift, yShift);
+    }
     for (let i = 0; i < frame.length; i++) {
         ctx.beginPath();
         ctx.fillStyle = rgbaToColorString(drawStyle.jointStyle);
@@ -563,11 +572,8 @@ function drawFrame(canvas, frame, xShift, yShift, drawStyle) {
         }
         drawRectangle(ctx, a, b, drawStyle.boneRadius+1*(i/bones.length), xShift, yShift);
     }
-    let vecNose = crossProduct(new Vec3(frame[16].x-frame[13].x, frame[16].y-frame[13].y, frame[16].z-frame[13].z),
-                               new Vec3(frame[17].x-frame[13].x, frame[17].y-frame[13].y, frame[17].z-frame[13].z));
-    vecNose = normalize(vecNose);
-    vecNose = new Vec3(vecNose.x*35*drawStyle.figureScale, vecNose.y*35*drawStyle.figureScale, vecNose.z*35*drawStyle.figureScale);
-    let nosePos = new Vec3(frame[16].x+vecNose.x, frame[16].y+vecNose.y, frame[16].z+vecNose.z);
-    ctx.fillStyle = rgbaToColorString({r: 192, g: 16, b:128, a: drawStyle.boneStyle.a});
-    drawRectangle(ctx, nosePos, frame[16], drawStyle.boneRadius, xShift, yShift);
+    if (nosePos.z >= frame[drawStyle.headJointIndex].z) {
+        ctx.fillStyle = rgbaToColorString({r: 192, g: 16, b:128, a: drawStyle.boneStyle.a});
+        drawRectangle(ctx, nosePos, frame[drawStyle.headJointIndex], drawStyle.boneRadius, xShift, yShift);
+    }
 }
