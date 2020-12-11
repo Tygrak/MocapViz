@@ -16,6 +16,7 @@ let sequences = [];
 let longestSequence = 0;
 let headJointIndex = 16;
 let modelFps = 120;
+let model = modelVicon;
 let drawStyle = new MocapDrawStyle(bonesVicon, headJointIndex, 17, 13, boneRadius, jointRadius, headRadius, boneStyle, leftBoneStyle, rightBoneStyle, jointStyle, 8);
 let drawStyleBlur = new MocapDrawStyle(bonesVicon, headJointIndex, 17, 13, boneRadius, jointRadius, headRadius, blurStyle, blurStyle, blurStyle, blurStyle, 8);
 
@@ -82,6 +83,7 @@ function loadModel(model) {
     drawStyle.thoraxIndex = model.thoraxIndex;
     drawStyleBlur.bonesModel = model.bonesModel;
     drawStyleBlur.headJointIndex = model.headJointIndex;
+    drawStyleBlur.leftArmIndex = model.leftArmIndex;
 }
 
 function processSelectedSequence(selectedSequence, canvas, numKeyframes) {
@@ -94,9 +96,6 @@ function processSelectedSequence(selectedSequence, canvas, numKeyframes) {
         loadModel(modelKinect2d);
     }
     let frames = processSequenceToFrames(sequences[selectedSequence], canvas.height, figureScale*defaultScale);
-    /*frames = processSequenceToFrames(sequences[selectedSequence], canvas.height, 1);
-    console.log(findMaximumsFromFrame(frames[0]).y-findMinimumsFromFrame(frames[0]).y);
-    frames = processSequenceToFrames(sequences[selectedSequence], canvas.height, figureScale*defaultScale);*/
     if (autoscaleInput.checked) {
         if (frames.length == 0) {
             frames = processSequenceToFrames2d(sequences[selectedSequence], canvas.height, figureScale*defaultScale);
@@ -203,7 +202,8 @@ function drawSequence(canvas, map, frames, numKeyframes) {
                 mapScale = Math.floor(maxWidth/25)*50+50;
             }
         }
-        drawMapScale(canvas, mapScale/10);
+        //drawMapScale(canvas, mapScale/10);
+        drawMapMeterScale(map, (model.unitSize*figureScale)*100, mapScale);
         if (mapsParallelogramInput.checked) {
             drawTopDownMapParallelogram(map, frames, keyframes, 
                 {x:map.width/5, y:0, z:0}, 

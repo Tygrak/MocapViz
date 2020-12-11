@@ -193,6 +193,28 @@ function drawMapScale(canvas, markerDistance) {
     }
 }
 
+function drawMapMeterScale(canvas, meterSize, mapSize) {
+    let ctx = canvas.getContext("2d");
+    ctx.fillStyle = "rgba(0, 0, 0, 1)";
+    let meterPosition = lerp(0, canvas.width, meterSize/mapSize);
+    ctx.font = '10px serif';
+    meterPosition = lerp(0, canvas.width, (meterSize/10)/mapSize);
+    drawRectangle(ctx, {x:canvas.width/10, y:canvas.height-5, z:0}, {x:meterPosition+canvas.width/10, y:canvas.height-5, z:0}, 2, 0, 0);
+    ctx.fillText("1 dm", canvas.width/10+3, canvas.height-8);
+    /*if (meterPosition/2 > canvas.width-20) {
+        meterPosition = lerp(0, canvas.width, (meterSize/10)/mapSize);
+        drawRectangle(ctx, {x:10,y:canvas.height-5, z:0}, {x:meterPosition, y:canvas.height-5, z:0}, 2, 0, 0);
+        ctx.fillText("1 dm", 13, canvas.height-8);
+    } else if (meterPosition > canvas.width-20) {
+        meterPosition = lerp(0, canvas.width, (meterSize/2)/mapSize);
+        drawRectangle(ctx, {x:10,y:canvas.height-5, z:0}, {x:meterPosition, y:canvas.height-5, z:0}, 2, 0, 0);
+        ctx.fillText("5 dm", 13, canvas.height-8);
+    } else {
+        drawRectangle(ctx, {x:10,y:canvas.height-5, z:0}, {x:meterPosition, y:canvas.height-5, z:0}, 2, 0, 0);
+        ctx.fillText("1 m", 13, canvas.height-8);
+    }*/
+}
+
 function drawTimeScale(canvas, fps, length, keyframes) {
     let ctx = canvas.getContext("2d");
     ctx.fillStyle = "rgba(64, 64, 64, 1)";
@@ -236,7 +258,7 @@ function drawTopDownMapParallelogram(canvas, frames, indexes, topLeft, bottomLef
         let x = frames[i][0].x-coreX;
         let z = frames[i][0].z-coreZ;
         let transformedX = inverseLerp(-mapScale/2, mapScale/2, x)*width;
-        let transformedZ = height-inverseLerp(-mapScale/2, mapScale/2, z)*height;
+        let transformedZ = inverseLerp(-mapScale/2, mapScale/2, z)*height;
         if (transformedX < 2 || transformedZ < 2 || transformedX >= width-2 || transformedZ >= height-2) {
             continue;
         }
@@ -304,8 +326,9 @@ function findKeyframes(frames, numKeyframes) {
             let dmin = Infinity;
             for (let j = 0; j < result.length; j++) {
                 const keyframe = frames[result[j]];
-                let d = frameTimeDistance(frame, keyframe, i, j);
-                //let d = frameDistance(frame, keyframe);
+                //frametimedistance broken? gives shit results
+                //let d = frameTimeDistance(frame, keyframe, i, result[j]);
+                let d = frameDistance(frame, keyframe);
                 if (d < dmin) {
                     dmin = d;
                 }
@@ -447,7 +470,7 @@ function frameTimeDistance(a, b, aFrame, bFrame) {
     for (let i = 0; i < a.length; i++) {
         result += (a[i].x-b[i].x)*(a[i].x-b[i].x)+(a[i].y-b[i].y)*(a[i].y-b[i].y)+(a[i].z-b[i].z)*(a[i].z-b[i].z);
     }
-    result += (aFrame-bFrame)^2;
+    result += (aFrame-bFrame);
     return Math.sqrt(result);
 }
 
