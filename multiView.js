@@ -40,6 +40,7 @@ const mapsParallelogramInput = document.getElementById("mapsParallelogramInput")
 const timeScaleInput = document.getElementById("timeScaleInput");
 const timeImageScaleInput = document.getElementById("timeImageScaleInput");
 const mapScalingEnabledInput = document.getElementById("mapScaleInput");
+const mapUnitGridInput = document.getElementById("mapUnitGridInput");
 const contentDiv = document.getElementById("content");
 loadButton.onclick = loadDataFile;
 loadTextButton.onclick = loadDataText;
@@ -199,21 +200,34 @@ function drawSequence(canvas, map, frames, numKeyframes) {
             if (maxWidth > canvas.width) {
                 mapScale = canvas.width*1.5;
             } else {
-                mapScale = Math.floor(maxWidth/25)*50+50;
+                mapScale = Math.floor(maxWidth/12.5)*25+25;
             }
         }
-        //drawMapScale(canvas, mapScale/10);
-        drawMapMeterScale(map, (model.unitSize*figureScale)*100, mapScale);
-        if (mapsParallelogramInput.checked) {
-            drawTopDownMapParallelogram(map, frames, keyframes, 
-                {x:map.width/5, y:0, z:0}, 
-                {x:0, y:map.height-0, z:0}, 
-                {x:map.width-map.width/5, y:map.height-0, z:0}, frames.length, mapScale, false);
+        if (!mapUnitGridInput.checked) {
+            drawMapMeterScale(map, (model.unitSize*figureScale)*100, mapScale);
+            if (mapsParallelogramInput.checked) {
+                drawTopDownMapParallelogram(map, frames, keyframes, 
+                    {x:map.width/5, y:0, z:0}, 
+                    {x:0, y:map.height-0, z:0}, 
+                    {x:map.width-map.width/5, y:map.height-0, z:0}, frames.length, mapScale, false);
+            } else {
+                drawTopDownMapParallelogram(map, frames, keyframes, 
+                    {x:-1, y:-1, z:0}, 
+                    {x:-1, y:map.height+1, z:0}, 
+                    {x:map.width+1, y:map.height+1, z:0}, frames.length, mapScale, false);
+            }
         } else {
-            drawTopDownMapParallelogram(map, frames, keyframes, 
-                {x:-1, y:-1, z:0}, 
-                {x:-1, y:map.height+1, z:0}, 
-                {x:map.width+1, y:map.height+1, z:0}, frames.length, mapScale, false);
+            if (mapsParallelogramInput.checked) {
+                drawTopDownMapParallelogramUnitGrid(map, frames, keyframes, 
+                    {x:map.width/5, y:0, z:0}, 
+                    {x:0, y:map.height-0, z:0}, 
+                    {x:map.width-map.width/5, y:map.height-0, z:0}, frames.length, mapScale, (model.unitSize*figureScale)*10, false);
+            } else {
+                drawTopDownMapParallelogramUnitGrid(map, frames, keyframes, 
+                    {x:-1, y:-1, z:0}, 
+                    {x:-1, y:map.height+1, z:0}, 
+                    {x:map.width+1, y:map.height+1, z:0}, frames.length, mapScale, (model.unitSize*figureScale)*10, false);
+            }
         }
     }
     if (timeScaleInput.checked) {

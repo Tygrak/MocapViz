@@ -284,6 +284,72 @@ function drawTopDownMapParallelogram(canvas, frames, indexes, topLeft, bottomLef
     drawRectangle(ctx, bottomLeft, topLeft, 1, 0, 0);
 }
 
+function drawTopDownMapParallelogramUnitGrid(canvas, frames, indexes, topLeft, bottomLeft, bottomRight, drawUntilFrame, mapScale, dmsize, clear = true) {
+    let ctx = canvas.getContext("2d");
+    if (clear) {
+        clearCanvas(canvas);
+    }
+    let shift = topLeft.x-bottomLeft.x;
+    let topRight = {x: bottomRight.x+shift, y: topLeft.y, z:0};
+    let width = topRight.x-topLeft.x;
+    let height = bottomRight.y-topLeft.y;
+    let coreX = frames[0][0].x;
+    let coreZ = frames[0][0].z;
+    ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
+    let meterSizeWidth = lerp(0, canvas.width, dmsize/mapScale);
+    let meterSizeHeight = lerp(0, canvas.height, dmsize/mapScale);
+    let i = 0;
+    while (canvas.width/2 + i*meterSizeWidth < canvas.width) {
+        drawRectangle(ctx, {x:topLeft.x+canvas.width/2+i*meterSizeWidth, y:topLeft.y}, {x:bottomLeft.x+canvas.width/2+i*meterSizeWidth, y:bottomLeft.y}, 0.75, 0, 0);
+        i++;
+    }
+    i = 0;
+    while (canvas.height/2 + i*meterSizeHeight < canvas.height) {
+        let startShiftX = shift-inverseLerp(0, height, i*meterSizeHeight)*shift;
+        drawRectangle(ctx, {x:bottomLeft.x+startShiftX, y:topLeft.y+canvas.height/2+i*meterSizeHeight}, {x:bottomRight.x+startShiftX, y:topLeft.y+canvas.height/2+i*meterSizeHeight}, 0.75, 0, 0);
+        i++;
+    }
+    i = 1;
+    while (canvas.width/2 - i*meterSizeWidth > 0) {
+        drawRectangle(ctx, {x:topLeft.x+canvas.width/2-i*meterSizeWidth, y:topLeft.y}, {x:bottomLeft.x+canvas.width/2-i*meterSizeWidth, y:bottomLeft.y}, 0.75, 0, 0);
+        i++;
+    }
+    i = 1;
+    while (canvas.height/2 - i*meterSizeHeight > 0) {
+        let startShiftX = shift-inverseLerp(0, height, i*meterSizeHeight)*shift;
+        drawRectangle(ctx, {x:bottomLeft.x+startShiftX, y:topLeft.y+canvas.height/2-i*meterSizeHeight}, {x:bottomRight.x+startShiftX, y:topLeft.y+canvas.height/2-i*meterSizeHeight}, 0.75, 0, 0);
+        i++;
+    }
+    for (let i = 0; i < drawUntilFrame; i++) {
+        let x = frames[i][0].x-coreX;
+        let z = frames[i][0].z-coreZ;
+        let transformedX = inverseLerp(-mapScale/2, mapScale/2, x)*width;
+        let transformedZ = inverseLerp(-mapScale/2, mapScale/2, z)*height;
+        if (transformedX < 2 || transformedZ < 2 || transformedX >= width-2 || transformedZ >= height-2) {
+            continue;
+        }
+        let startShiftX = shift-inverseLerp(0, height, transformedZ)*shift;
+        if (indexes.includes(i)) {
+            ctx.beginPath();
+            ctx.fillStyle = rgbaToColorString({r: 0, g: 0, b: 0, a:1});
+            ctx.rect(bottomLeft.x+transformedX+startShiftX, topLeft.y+transformedZ, 5, 5);
+            ctx.closePath();
+            ctx.fill();
+        } else {
+            ctx.fillStyle = rgbaToColorString({r: (i/frames.length)*255, g: 0, b: 128, a:0.3});
+            ctx.beginPath();
+            ctx.rect(bottomLeft.x+transformedX+startShiftX, topLeft.y+transformedZ, 3, 3);
+            ctx.closePath();
+            ctx.fill();
+        }
+    }
+    ctx.fillStyle = 'black';
+    drawRectangle(ctx, topLeft, topRight, 1, 0, 0);
+    drawRectangle(ctx, topRight, bottomRight, 1, 0, 0);
+    drawRectangle(ctx, bottomRight, bottomLeft, 1, 0, 0);
+    drawRectangle(ctx, bottomLeft, topLeft, 1, 0, 0);
+}
+
 function findMinimumsFromFrame(frame) {
     let xyz = {x:frame[0].x, y:frame[0].y, z:frame[0].z};
     for (let i = 1; i < frame.length; i++) {
