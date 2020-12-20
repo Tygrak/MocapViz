@@ -41,10 +41,13 @@ const timeScaleInput = document.getElementById("timeScaleInput");
 const timeImageScaleInput = document.getElementById("timeImageScaleInput");
 const mapScalingEnabledInput = document.getElementById("mapScaleInput");
 const mapUnitGridInput = document.getElementById("mapUnitGridInput");
+const actorHeightInput = document.getElementById("actorHeightInput");
+const calculateConversionButton = document.getElementById("calculateConversionButton");
 const contentDiv = document.getElementById("content");
 loadButton.onclick = loadDataFile;
 loadTextButton.onclick = loadDataText;
 sequenceInputLoadButton.onclick = drawSequenceMain;
+calculateConversionButton.onclick = calculateConversion;
 const drawContainer = document.getElementById("drawContainer");
 let defaultScale = 1;
 
@@ -75,7 +78,12 @@ function loadDataText() {
     availableSequencesText.innerText = sequences.length;
 }
 
+function calculateConversion() {
+    model.unitSize = findMeterConversion(sequences, parseFloat(actorHeightInput.value));
+}
+
 function loadModel(model) {
+    this.model = model;
     defaultScale = model.defaultScale;
     modelFps = model.fps;
     drawStyle.bonesModel = model.bonesModel;
@@ -187,7 +195,6 @@ function drawSequenceMain() {
     console.log((b-a)+" ms");
 }
 
-//todo: scaling changes map scale too, which in multi view is broken
 function drawSequence(canvas, map, frames, numKeyframes) {
     let keyframes = findKeyframes(frames, numKeyframes);
     drawSequenceKeyframesBlur(canvas, frames, keyframes, numKeyframes, drawStyle, drawStyleBlur, 0, true);

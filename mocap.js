@@ -523,6 +523,27 @@ function findOptimalScale(frames, canvas, numFrames) {
     //return ((canvas.height)/2-40)/maxHeight;
 }
 
+function findMeterConversion(sequences, actorHeight) {
+    let heights = [];
+    let maxHeight = 0;
+    for (let i = 0; i < sequences.length; i++) {
+        let frames = processSequenceToFrames(sequences[i], 0, 1);
+        if (frames.length == 0) {
+            frames = processSequenceToFrames2d(sequences[i], 0, 1);
+        }
+        let maximums = findMaximumsFromFrame(frames[0]);
+        let minimums = findMinimumsFromFrame(frames[0]);
+        let height = maximums.y-minimums.y;
+        heights.push(height);
+        if (maxHeight < height) {
+            maxHeight = height;
+        }
+    }
+    heights.sort((a, b) => a - b);
+    console.log(heights);
+    return actorHeight/heights[Math.round(heights.length/2)];
+}
+
 function frameDistance(a, b) {
     let result = 0;
     for (let i = 0; i < a.length; i++) {
