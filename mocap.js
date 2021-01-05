@@ -298,6 +298,7 @@ function drawTopDownMapParallelogramUnitGrid(canvas, frames, indexes, topLeft, b
     ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
     let meterSizeWidth = lerp(0, canvas.width, dmsize/mapScale);
     let meterSizeHeight = lerp(0, canvas.height, dmsize/mapScale);
+    let dmTextLabelPos = {x: 0, y: 0};
     let i = 0;
     while (canvas.width/2 + i*meterSizeWidth < canvas.width) {
         drawRectangle(ctx, {x:topLeft.x+canvas.width/2+i*meterSizeWidth, y:topLeft.y}, {x:bottomLeft.x+canvas.width/2+i*meterSizeWidth, y:bottomLeft.y}, 0.75, 0, 0);
@@ -307,11 +308,17 @@ function drawTopDownMapParallelogramUnitGrid(canvas, frames, indexes, topLeft, b
     while (canvas.height/2 + i*meterSizeHeight < canvas.height) {
         let startShiftX = shift-inverseLerp(0, height, i*meterSizeHeight)*shift;
         drawRectangle(ctx, {x:bottomLeft.x+startShiftX, y:topLeft.y+canvas.height/2+i*meterSizeHeight}, {x:bottomRight.x+startShiftX, y:topLeft.y+canvas.height/2+i*meterSizeHeight}, 0.75, 0, 0);
+        if (canvas.height/2 + (i+1)*meterSizeHeight > canvas.height) {
+            dmTextLabelPos.y = topLeft.y+canvas.height/2+i*meterSizeHeight;
+        }
         i++;
     }
     i = 1;
     while (canvas.width/2 - i*meterSizeWidth > 0) {
         drawRectangle(ctx, {x:topLeft.x+canvas.width/2-i*meterSizeWidth, y:topLeft.y}, {x:bottomLeft.x+canvas.width/2-i*meterSizeWidth, y:bottomLeft.y}, 0.75, 0, 0);
+        if (canvas.height/2 + (i+1)*meterSizeHeight > canvas.height) {
+            dmTextLabelPos.x = topLeft.x+canvas.width/2-i*meterSizeWidth+5;
+        }
         i++;
     }
     i = 1;
@@ -320,6 +327,7 @@ function drawTopDownMapParallelogramUnitGrid(canvas, frames, indexes, topLeft, b
         drawRectangle(ctx, {x:bottomLeft.x+startShiftX, y:topLeft.y+canvas.height/2-i*meterSizeHeight}, {x:bottomRight.x+startShiftX, y:topLeft.y+canvas.height/2-i*meterSizeHeight}, 0.75, 0, 0);
         i++;
     }
+    ctx.fillText("1 dm", dmTextLabelPos.x, dmTextLabelPos.y);
     for (let i = 0; i < drawUntilFrame; i++) {
         let x = frames[i][0].x-coreX;
         let z = frames[i][0].z-coreZ;
