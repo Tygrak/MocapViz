@@ -390,7 +390,15 @@ function findMaximumsFromFrame(frame) {
     return xyz;
 }
 
-function findKeyframes(frames, numKeyframes) {
+function findKeyframesEquidistant(frames, numKeyframes) {
+    let result = [];
+    for (let i = 0; i < numKeyframes; i++) {
+        result.push(i*Math.floor((frames.length-1)/(numKeyframes-1)));
+    }
+    return result;
+}
+
+function findKeyframesEuclidean(frames, numKeyframes) {
     let result = [0, frames.length-1];
     for (let k = 0; k < numKeyframes-2; k++) {
         let dmax = 0;
@@ -400,8 +408,6 @@ function findKeyframes(frames, numKeyframes) {
             let dmin = Infinity;
             for (let j = 0; j < result.length; j++) {
                 const keyframe = frames[result[j]];
-                //frametimedistance broken? gives shit results
-                //let d = frameTimeDistance(frame, keyframe, i, result[j]);
                 let d = frameDistance(frame, keyframe);
                 if (d < dmin) {
                     dmin = d;
@@ -414,9 +420,49 @@ function findKeyframes(frames, numKeyframes) {
         }
         result.push(index);
     }
-    //result = result.splice(1, 1);
-    //result.push(frames.length-1);
     return result.sort((a, b) => a-b);
+}
+
+function findKeyframesDot(frames, numKeyframes) {
+    let result = [0, frames.length-1];
+    for (let i = 0; i < numKeyframes-2; i++) {
+        let maxDot = -Infinity;
+        let minDotIndex = -1;
+        let k = 1;
+        for (let j = 1; j < frames.length-1; j++) {
+            while (j > result[k]) {
+                k++;
+            }
+            if (j == result[k]) {
+                continue;
+            }
+            let dot = frameDistance(frames[result[k-1]], frames[j])+frameDistance(frames[result[k]], frames[j]);
+            //let dot = frameCosineSimilarity(frames[result[k-1]], frames[result[k]], frames[j]);
+            if (dot > maxDot) {
+                maxDot = dot;
+                minDotIndex = j;
+            }
+        }
+        if (minDotIndex != -1) {
+            result.splice(sortedIndex(result, minDotIndex), 0, minDotIndex);
+        }
+    }
+    return result;
+}
+
+function sortedIndex(array, value) {
+    let low = 0;
+    let high = array.length;
+    while (low < high) {
+        var mid = Math.floor((low + high)/2);
+        if (array[mid] < value) {
+            low = mid + 1;
+        }
+        else {
+            high = mid;
+        }
+    }
+    return low;
 }
 
 function findBestRotation(frames, numSamples) {
@@ -560,13 +606,12 @@ function frameDistance(a, b) {
     return Math.sqrt(result);
 }
 
-function frameTimeDistance(a, b, aFrame, bFrame) {
+function frameCosineSimilarity(a, b, c) {
     let result = 0;
     for (let i = 0; i < a.length; i++) {
-        result += (a[i].x-b[i].x)*(a[i].x-b[i].x)+(a[i].y-b[i].y)*(a[i].y-b[i].y)+(a[i].z-b[i].z)*(a[i].z-b[i].z);
+        result += (b[i].x-a[i].x)*(c[i].x-a[i].x)+(b[i].y-a[i].y)*(c[i].y-a[i].y)+(b[i].z-a[i].z)*(c[i].z-a[i].z);
     }
-    result += (aFrame-bFrame);
-    return Math.sqrt(result);
+    return result/(frameDistance(a, b)*frameDistance(a, c));
 }
 
 function vecXZDistance(a, b) {

@@ -41,6 +41,7 @@ const timeScaleInput = document.getElementById("timeScaleInput");
 const timeImageScaleInput = document.getElementById("timeImageScaleInput");
 const mapScalingEnabledInput = document.getElementById("mapScaleInput");
 const mapUnitGridInput = document.getElementById("mapUnitGridInput");
+const keyframeSelectionInput = document.getElementById("keyframeSelectionInput");
 const actorHeightInput = document.getElementById("actorHeightInput");
 const calculateConversionButton = document.getElementById("calculateConversionButton");
 const contentDiv = document.getElementById("content");
@@ -106,6 +107,9 @@ function processSelectedSequence(selectedSequence, canvas, numKeyframes) {
     }
     let frames = processSequenceToFrames(sequences[selectedSequence], canvas.height, figureScale*defaultScale);
     if (autoscaleInput.checked) {
+        if (figureScale < 0) {
+            figureScale = 1;
+        }
         if (frames.length == 0) {
             frames = processSequenceToFrames2d(sequences[selectedSequence], canvas.height, figureScale*defaultScale);
             figureScale = figureScale*findOptimalScale(frames, canvas, numKeyframes);
@@ -196,7 +200,14 @@ function drawSequenceMain() {
 }
 
 function drawSequence(canvas, map, frames, numKeyframes) {
-    let keyframes = findKeyframes(frames, numKeyframes);
+    let keyframes;
+    if (keyframeSelectionInput.value == "Equidistant") {
+        keyframes = findKeyframesEquidistant(frames, numKeyframes);
+    } else if (keyframeSelectionInput.value == "CurveEuclidean") {
+        keyframes = findKeyframesEuclidean(frames, numKeyframes);
+    } else if (keyframeSelectionInput.value == "CurveDot") {
+        keyframes = findKeyframesDot(frames, numKeyframes);
+    }
     drawSequenceKeyframesBlur(canvas, frames, keyframes, numKeyframes, drawStyle, drawStyleBlur, 0, true);
     if (map != null) {
         let framesMin = findSequenceMinimums(frames, numKeyframes);

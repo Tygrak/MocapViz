@@ -36,7 +36,7 @@
                 </div>
                 <div class="sideMenuItem">
                     <div class="sideMenuItemLabel">Number of sequences to draw:</div>
-                    <input type="number" id="numSequencesInput" name="numSequencesInput" value="5">
+                    <input type="number" id="numSequencesInput" name="numSequencesInput" value="6">
                 </div>
                 <div class="sideMenuItem">
                     <div class="sideMenuItemLabel">Number of sequences per page:</div>
@@ -87,6 +87,12 @@
                         <input type="checkbox" id="mapsParallelogramInput" name="mapsParallelogramInput">
                         <label for="mapsParallelogramInput">Create parallelogram maps</label>
                     </div>
+                    <div class="sideMenuItemLabel">Keyframe selection algorithm:</div>
+                    <select id="keyframeSelectionInput" name="keyframeSelectionInput">
+                        <option value="Equidistant">Equidistant</option>
+                        <option value="CurveEuclidean" selected>Simplification Distance</option>
+                        <option value="CurveDot">Simplification Line</option>
+                    </select>
                 </div>
                 <div class="sideMenuItem">
                     <div class="sideMenuItemLabel">Actor Height:</div>
