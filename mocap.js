@@ -296,38 +296,41 @@ function drawTopDownMapParallelogramUnitGrid(canvas, frames, indexes, topLeft, b
     let coreX = frames[0][0].x;
     let coreZ = frames[0][0].z;
     ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
-    let meterSizeWidth = lerp(0, canvas.width, dmsize/mapScale);
-    let meterSizeHeight = lerp(0, canvas.height, dmsize/mapScale);
+    let dmSizeWidth = lerp(0, canvas.width, dmsize/mapScale);
+    let dmSizeHeight = lerp(0, canvas.height, dmsize/mapScale);
     let dmTextLabelPos = {x: 0, y: 0};
     let i = 0;
-    while (canvas.width/2 + i*meterSizeWidth < canvas.width) {
-        drawRectangle(ctx, {x:topLeft.x+canvas.width/2+i*meterSizeWidth, y:topLeft.y}, {x:bottomLeft.x+canvas.width/2+i*meterSizeWidth, y:bottomLeft.y}, 0.75, 0, 0);
+    while (canvas.width/2 + i*dmSizeWidth < canvas.width) {
+        drawRectangle(ctx, {x:topLeft.x+canvas.width/2+i*dmSizeWidth, y:topLeft.y}, {x:bottomLeft.x+canvas.width/2+i*dmSizeWidth, y:bottomLeft.y}, 0.75, 0, 0);
         i++;
     }
     i = 0;
-    while (canvas.height/2 + i*meterSizeHeight < canvas.height) {
-        let startShiftX = shift-inverseLerp(0, height, i*meterSizeHeight)*shift;
-        drawRectangle(ctx, {x:bottomLeft.x+startShiftX, y:topLeft.y+canvas.height/2+i*meterSizeHeight}, {x:bottomRight.x+startShiftX, y:topLeft.y+canvas.height/2+i*meterSizeHeight}, 0.75, 0, 0);
-        if (canvas.height/2 + (i+1)*meterSizeHeight > canvas.height) {
-            dmTextLabelPos.y = topLeft.y+canvas.height/2+i*meterSizeHeight;
+    while (canvas.height/2 + i*dmSizeHeight < canvas.height) {
+        let startShiftX = shift-inverseLerp(0, height, i*dmSizeHeight)*shift;
+        drawRectangle(ctx, {x:bottomLeft.x+startShiftX, y:topLeft.y+canvas.height/2+i*dmSizeHeight}, {x:bottomRight.x+startShiftX, y:topLeft.y+canvas.height/2+i*dmSizeHeight}, 0.75, 0, 0);
+        if (canvas.height/2 + (i+1)*dmSizeHeight > canvas.height) {
+            dmTextLabelPos.y = topLeft.y+canvas.height/2+i*dmSizeHeight;
         }
         i++;
     }
     i = 1;
-    while (canvas.width/2 - i*meterSizeWidth > 0) {
-        drawRectangle(ctx, {x:topLeft.x+canvas.width/2-i*meterSizeWidth, y:topLeft.y}, {x:bottomLeft.x+canvas.width/2-i*meterSizeWidth, y:bottomLeft.y}, 0.75, 0, 0);
-        if (canvas.height/2 + (i+1)*meterSizeHeight > canvas.height) {
-            dmTextLabelPos.x = topLeft.x+canvas.width/2-i*meterSizeWidth+5;
+    while (canvas.width/2 - i*dmSizeWidth > 0) {
+        drawRectangle(ctx, {x:topLeft.x+canvas.width/2-i*dmSizeWidth, y:topLeft.y}, {x:bottomLeft.x+canvas.width/2-i*dmSizeWidth, y:bottomLeft.y}, 0.75, 0, 0);
+        if (canvas.height/2 + (i+1)*dmSizeHeight > canvas.height) {
+            dmTextLabelPos.x = topLeft.x+canvas.width/2-i*dmSizeWidth;
         }
         i++;
     }
     i = 1;
-    while (canvas.height/2 - i*meterSizeHeight > 0) {
-        let startShiftX = shift-inverseLerp(0, height, i*meterSizeHeight)*shift;
-        drawRectangle(ctx, {x:bottomLeft.x+startShiftX, y:topLeft.y+canvas.height/2-i*meterSizeHeight}, {x:bottomRight.x+startShiftX, y:topLeft.y+canvas.height/2-i*meterSizeHeight}, 0.75, 0, 0);
+    while (canvas.height/2 - i*dmSizeHeight > 0) {
+        let startShiftX = shift-inverseLerp(0, height, i*dmSizeHeight)*shift;
+        drawRectangle(ctx, {x:bottomLeft.x+startShiftX, y:topLeft.y+canvas.height/2-i*dmSizeHeight}, {x:bottomRight.x+startShiftX, y:topLeft.y+canvas.height/2-i*dmSizeHeight}, 0.75, 0, 0);
         i++;
     }
-    ctx.fillText("1 dm", dmTextLabelPos.x, dmTextLabelPos.y);
+    ctx.fillStyle = "rgba(0, 0, 0, 0.95)";
+    ctx.fillText("1 dm", dmTextLabelPos.x+2, dmTextLabelPos.y-2);
+    drawRectangle(ctx, {x: dmTextLabelPos.x, y: dmTextLabelPos.y}, {x: dmTextLabelPos.x+dmSizeWidth, y: dmTextLabelPos.y}, 0.75, 0, 0);
+    ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
     for (let i = 0; i < drawUntilFrame; i++) {
         let x = frames[i][0].x-coreX;
         let z = frames[i][0].z-coreZ;

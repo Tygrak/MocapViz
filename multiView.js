@@ -208,7 +208,7 @@ function drawSequence(canvas, map, frames, numKeyframes) {
     } else if (keyframeSelectionInput.value == "CurveDot") {
         keyframes = findKeyframesDot(frames, numKeyframes);
     }
-    drawSequenceKeyframesBlur(canvas, frames, keyframes, numKeyframes, drawStyle, drawStyleBlur, 0, true);
+    drawSequenceKeyframesBlur(canvas, frames, keyframes, numBlurPositions, drawStyle, drawStyleBlur, 0, true);
     if (map != null) {
         let framesMin = findSequenceMinimums(frames, numKeyframes);
         let framesMax = findSequenceMaximums(frames, numKeyframes);
