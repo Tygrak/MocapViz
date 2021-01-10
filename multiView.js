@@ -41,6 +41,7 @@ const timeScaleInput = document.getElementById("timeScaleInput");
 const timeImageScaleInput = document.getElementById("timeImageScaleInput");
 const mapScalingEnabledInput = document.getElementById("mapScaleInput");
 const mapUnitGridInput = document.getElementById("mapUnitGridInput");
+const xAxisTimeInput = document.getElementById("xAxisTimeInput");
 const keyframeSelectionInput = document.getElementById("keyframeSelectionInput");
 const actorHeightInput = document.getElementById("actorHeightInput");
 const calculateConversionButton = document.getElementById("calculateConversionButton");
@@ -208,7 +209,7 @@ function drawSequence(canvas, map, frames, numKeyframes) {
     } else if (keyframeSelectionInput.value == "CurveDot") {
         keyframes = findKeyframesDot(frames, numKeyframes);
     }
-    drawSequenceKeyframesBlur(canvas, frames, keyframes, numBlurPositions, drawStyle, drawStyleBlur, 0, true);
+    drawSequenceKeyframesBlur(canvas, frames, keyframes, numBlurPositions, drawStyle, drawStyleBlur, 0, true, xAxisTimeInput.checked);
     if (map != null) {
         let framesMin = findSequenceMinimums(frames, numKeyframes);
         let framesMax = findSequenceMaximums(frames, numKeyframes);

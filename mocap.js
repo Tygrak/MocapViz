@@ -35,20 +35,24 @@ function drawSequenceKeyframes(canvas, frames, indexes, drawStyle, yShift = 0, c
     drawSequenceKeyframesBlur(canvas, frames, indexes, 0, drawStyle, drawStyle, yShift, clear);
 }
 
-function drawSequenceKeyframesBlur(canvas, frames, indexes, numBlurPositions, drawStyle, drawStyleBlur, yShift = 0, clear = true) {
+function drawSequenceKeyframesBlur(canvas, frames, indexes, numBlurPositions, drawStyle, drawStyleBlur, yShift = 0, clear = true, trueTime = true) {
     let ctx = canvas.getContext("2d");
     if (clear) {
         clearCanvas(canvas);
     }
     let firstFrame = moveOriginXBy(frames[0], frames[0][0].x);
-    let minimums = findMinimumsFromFrame(firstFrame);
+    let minimumsFirst = findMinimumsFromFrame(firstFrame);
+    let maximumsFirst = findMaximumsFromFrame(firstFrame);
     let lastFrame = moveOriginXBy(frames[frames.length-1], frames[frames.length-1][0].x);
     let maximums = findMaximumsFromFrame(lastFrame);
     let sequenceMaximums = findSequenceMaximums(frames, indexes.length);
     sequenceMaximums.y = sequenceMaximums.y-3;
     for (let i = 0; i < indexes.length; i++) {
         let coreX = frames[indexes[i]][0].x;
-        let xShift = (i/indexes.length)*(canvas.width+minimums.x+maximums.x/2-20)-minimums.x+30;
+        let xShift = (i/indexes.length)*(canvas.width+minimumsFirst.x+maximums.x/2-20)-minimumsFirst.x+30;
+        if (trueTime) {
+            xShift = (indexes[i]/frames.length)*(canvas.width-(maximumsFirst.x-minimumsFirst.x)-20)+(maximumsFirst.x-minimumsFirst.x)/2+10;
+        }
         for (let j = 1; j < numBlurPositions+1; j++) {
             if (indexes[i]-j < 0) {
                 continue;
