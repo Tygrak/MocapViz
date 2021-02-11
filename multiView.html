@@ -91,11 +91,16 @@
                         <input type="checkbox" id="mapsParallelogramInput" name="mapsParallelogramInput">
                         <label for="mapsParallelogramInput">Create parallelogram maps</label>
                     </div>
+                    <div>
+                        <input type="checkbox" id="addFillKeyframesInput" name="addFillKeyframesInput">
+                        <label for="addFillKeyframesInput">Add filling keyframes</label>
+                    </div>
                     <div class="sideMenuItemLabel">Keyframe selection algorithm:</div>
                     <select id="keyframeSelectionInput" name="keyframeSelectionInput">
                         <option value="Equidistant">Equidistant</option>
                         <option value="CurveEuclidean" selected>Simplification Distance</option>
                         <option value="CurveDot">Simplification Line</option>
+                        <option value="CurveTemporal">Simplification Temporal</option>
                     </select>
                 </div>
                 <div class="sideMenuItem">

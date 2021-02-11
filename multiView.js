@@ -41,6 +41,7 @@ const timeScaleInput = document.getElementById("timeScaleInput");
 const timeImageScaleInput = document.getElementById("timeImageScaleInput");
 const mapScalingEnabledInput = document.getElementById("mapScaleInput");
 const mapUnitGridInput = document.getElementById("mapUnitGridInput");
+const addFillKeyframesInput = document.getElementById("addFillKeyframesInput");
 const xAxisTimeInput = document.getElementById("xAxisTimeInput");
 const keyframeSelectionInput = document.getElementById("keyframeSelectionInput");
 const actorHeightInput = document.getElementById("actorHeightInput");
@@ -208,6 +209,15 @@ function drawSequence(canvas, map, frames, numKeyframes) {
         keyframes = findKeyframesEuclidean(frames, numKeyframes);
     } else if (keyframeSelectionInput.value == "CurveDot") {
         keyframes = findKeyframesDot(frames, numKeyframes);
+    } else if (keyframeSelectionInput.value == "CurveTemporal") {
+        keyframes = findKeyframesTemporal(frames, numKeyframes);
+    }
+    if (addFillKeyframesInput.checked) {
+        let fillKeyframes = getFillKeyframes(frames, keyframes);
+        keyframes = keyframes.concat(fillKeyframes);
+        //todo: make more opaque filled keyframes
+        //let fillStyle = MocapDrawStyle(drawStyle.bonesModel, draw) drawStyle;
+        //drawSequenceKeyframesBlur(canvas, frames, fillKeyframes, numBlurPositions, drawStyle, drawStyleBlur, 0, true, xAxisTimeInput.checked);
     }
     drawSequenceKeyframesBlur(canvas, frames, keyframes, numBlurPositions, drawStyle, drawStyleBlur, 0, true, xAxisTimeInput.checked);
     if (map != null) {

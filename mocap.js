@@ -433,8 +433,8 @@ function findKeyframesEuclidean(frames, numKeyframes) {
 function findKeyframesDot(frames, numKeyframes) {
     let result = [0, frames.length-1];
     for (let i = 0; i < numKeyframes-2; i++) {
-        let maxDot = -Infinity;
-        let minDotIndex = -1;
+        let maxD = -Infinity;
+        let minDIndex = -1;
         let k = 1;
         for (let j = 1; j < frames.length-1; j++) {
             while (j > result[k]) {
@@ -443,18 +443,54 @@ function findKeyframesDot(frames, numKeyframes) {
             if (j == result[k]) {
                 continue;
             }
-            let dot = frameDistance(frames[result[k-1]], frames[j])+frameDistance(frames[result[k]], frames[j]);
+            let d = frameDistance(frames[result[k-1]], frames[j])+frameDistance(frames[result[k]], frames[j]);
             //let dot = frameCosineSimilarity(frames[result[k-1]], frames[result[k]], frames[j]);
-            if (dot > maxDot) {
-                maxDot = dot;
-                minDotIndex = j;
+            if (d > maxD) {
+                maxD = d;
+                minDIndex = j;
             }
         }
-        if (minDotIndex != -1) {
-            result.splice(sortedIndex(result, minDotIndex), 0, minDotIndex);
+        if (minDIndex != -1) {
+            result.splice(sortedIndex(result, minDIndex), 0, minDIndex);
         }
     }
     return result;
+}
+
+function findKeyframesTemporal(frames, numKeyframes) {
+    let result = [0, frames.length-1];
+    for (let k = 0; k < numKeyframes-2; k++) {
+        let dmax = 0;
+        let index = 0;
+        for (let i = 0; i < frames.length; i++) {
+            const frame = frames[i];
+            let dmin = Infinity;
+            for (let j = 0; j < result.length; j++) {
+                const keyframe = frames[result[j]];
+                let d = frameDistanceTemporal(frame, keyframe, i, result[j]);
+                if (d < dmin) {
+                    dmin = d;
+                }
+            }
+            if (dmin > dmax) {
+                dmax = dmin;
+                index = i;
+            }
+        }
+        result.push(index);
+    }
+    return result.sort((a, b) => a-b);
+}
+
+function getFillKeyframes(frames, keyframes) {
+    numKeyframes = keyframes.length;
+    result = [];
+    for (let i = 1; i < keyframes.length; i++) {
+        if (keyframes[i]-keyframes[i-1] > frames.length/numKeyframes) {
+            result.push(Math.round((keyframes[i]+keyframes[i-1])/2));
+        }
+    }
+    return result.sort((a, b) => a-b);
 }
 
 function sortedIndex(array, value) {
@@ -611,6 +647,14 @@ function frameDistance(a, b) {
         result += (a[i].x-b[i].x)*(a[i].x-b[i].x)+(a[i].y-b[i].y)*(a[i].y-b[i].y)+(a[i].z-b[i].z)*(a[i].z-b[i].z);
     }
     return Math.sqrt(result);
+}
+
+function frameDistanceTemporal(a, b, aFrame, bFrame) {
+    let result = 0;
+    for (let i = 0; i < a.length; i++) {
+        result += (a[i].x-b[i].x)*(a[i].x-b[i].x)+(a[i].y-b[i].y)*(a[i].y-b[i].y)+(a[i].z-b[i].z)*(a[i].z-b[i].z);
+    }
+    return result + 2*Math.pow(Math.abs(aFrame-bFrame), 3);
 }
 
 function frameCosineSimilarity(a, b, c) {
