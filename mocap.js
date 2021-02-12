@@ -485,9 +485,13 @@ function findKeyframesTemporal(frames, numKeyframes) {
 function getFillKeyframes(frames, keyframes) {
     numKeyframes = keyframes.length;
     result = [];
-    for (let i = 1; i < keyframes.length; i++) {
-        if (keyframes[i]-keyframes[i-1] > frames.length/numKeyframes) {
-            result.push(Math.round((keyframes[i]+keyframes[i-1])/2));
+    let helpKeyframes = keyframes.slice();
+    for (let i = 1; i < helpKeyframes.length; i++) {
+        if (helpKeyframes[i]-helpKeyframes[i-1] > frames.length/numKeyframes) {
+            let element = Math.round((helpKeyframes[i]+helpKeyframes[i-1])/2);
+            helpKeyframes.splice(i, 0, element);
+            result.push(element);
+            i--;
         }
     }
     return result.sort((a, b) => a-b);

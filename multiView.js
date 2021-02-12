@@ -214,12 +214,15 @@ function drawSequence(canvas, map, frames, numKeyframes) {
     }
     if (addFillKeyframesInput.checked) {
         let fillKeyframes = getFillKeyframes(frames, keyframes);
-        keyframes = keyframes.concat(fillKeyframes);
-        //todo: make more opaque filled keyframes
-        //let fillStyle = MocapDrawStyle(drawStyle.bonesModel, draw) drawStyle;
-        //drawSequenceKeyframesBlur(canvas, frames, fillKeyframes, numBlurPositions, drawStyle, drawStyleBlur, 0, true, xAxisTimeInput.checked);
+        let fillStyle = Object.assign({}, drawStyle);
+        fillStyle.boneStyle = {r: boneStyle.r, g: boneStyle.g, b: boneStyle.b, a: boneStyle.a*0.55};
+        fillStyle.leftBoneStyle = {r: leftBoneStyle.r, g: leftBoneStyle.g, b: leftBoneStyle.b, a: leftBoneStyle.a*0.55};
+        fillStyle.rightBoneStyle = {r: rightBoneStyle.r, g: rightBoneStyle.g, b: rightBoneStyle.b, a: rightBoneStyle.a*0.55};
+        drawSequenceKeyframesBlur(canvas, frames, fillKeyframes, 0, fillStyle, drawStyleBlur, 0, true, xAxisTimeInput.checked);
+        drawSequenceKeyframesBlur(canvas, frames, keyframes, numBlurPositions, drawStyle, drawStyleBlur, 0, false, xAxisTimeInput.checked);
+    } else {
+        drawSequenceKeyframesBlur(canvas, frames, keyframes, numBlurPositions, drawStyle, drawStyleBlur, 0, true, xAxisTimeInput.checked);
     }
-    drawSequenceKeyframesBlur(canvas, frames, keyframes, numBlurPositions, drawStyle, drawStyleBlur, 0, true, xAxisTimeInput.checked);
     if (map != null) {
         let framesMin = findSequenceMinimums(frames, numKeyframes);
         let framesMax = findSequenceMaximums(frames, numKeyframes);
