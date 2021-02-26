@@ -482,6 +482,38 @@ function findKeyframesTemporal(frames, numKeyframes) {
     return result.sort((a, b) => a-b);
 }
 
+function findKeyframesDecimation(frames, numKeyframes) {
+    let result = [];
+    let costs = [];
+    result.push(0);
+    costs.push(Infinity);
+    for (let i = 1; i < frames.length-1; i++) {
+        result.push(i);
+        costs.push(frameDistanceTemporal(frames[i-1], frames[i+1], i-1, i+1));
+    }
+    result.push(frames.length-1);
+    costs.push(Infinity);
+    for (let i = 0; i < frames.length-numKeyframes; i++) {
+        let minId = 0;
+        let min = Infinity;
+        for (let j = 0; j < result.length; j++) {
+            let cost = costs[result[j]];
+            if (cost < min) {
+                min = cost;
+                minId = j;
+            }
+        }
+        result.splice(minId, 1);
+        if (result[minId-1] > 0) {
+            costs[result[minId-1]] = frameDistanceTemporal(frames[result[minId-2]], frames[result[minId]], result[minId-2], result[minId]);
+        }
+        if (result[minId] < frames.length-1) {
+            costs[result[minId]] = frameDistanceTemporal(frames[result[minId-1]], frames[result[minId+1]], result[minId-1], result[minId+1]);
+        }
+    }
+    return result;
+}
+
 function getFillKeyframes(frames, keyframes) {
     numKeyframes = keyframes.length;
     result = [];

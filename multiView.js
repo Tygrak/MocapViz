@@ -211,6 +211,8 @@ function drawSequence(canvas, map, frames, numKeyframes) {
         keyframes = findKeyframesDot(frames, numKeyframes);
     } else if (keyframeSelectionInput.value == "CurveTemporal") {
         keyframes = findKeyframesTemporal(frames, numKeyframes);
+    } else if (keyframeSelectionInput.value == "CurveDecimation") {
+        keyframes = findKeyframesDecimation(frames, numKeyframes);
     }
     if (addFillKeyframesInput.checked) {
         let fillKeyframes = getFillKeyframes(frames, keyframes);
