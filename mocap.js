@@ -514,6 +514,36 @@ function findKeyframesDecimation(frames, numKeyframes) {
     return result;
 }
 
+function findKeyframesLowe(frames, numKeyframes) {
+    /*n_vector pa = P - A
+    n_vector ba = B - A
+    double t = dot(pa, ba)/dot(ba, ba)
+    double d = length(pa - t * ba)*/
+    let result = [0, frames.length-1];
+    for (let k = 0; k < numKeyframes-2; k++) {
+        let dmax = 0;
+        let index = 0;
+        let pos = 1;
+        for (let i = 1; i < frames.length-1; i++) {
+            if (result[pos] <= i) {
+                pos++;
+            }
+            const frame = frames[i];
+            let pa = frameSubtract(frame, frames[result[pos-1]]);
+            let ba = frameSubtract(frames[result[pos-1]], frames[result[pos]]);
+            let t = frameDot(pa, ba)/frameDot(ba, ba);
+            let d = frameLength(frameSubtract(pa, frameScale(ba, t)));
+            if (dmax < d) {
+                dmax = d;
+                index = i;
+            }
+        }
+        result.push(index);
+        result = result.sort((a, b) => a-b);
+    }
+    return result.sort((a, b) => a-b);
+}
+
 function getFillKeyframes(frames, keyframes) {
     numKeyframes = keyframes.length;
     result = [];
@@ -675,6 +705,38 @@ function findMeterConversion(sequences, actorHeight) {
     heights.sort((a, b) => a - b);
     console.log(heights);
     return actorHeight/heights[Math.round(heights.length/2)];
+}
+
+function frameSubtract(a, b) {
+    let result = [];
+    for (let i = 0; i < a.length; i++) {
+        result[i] = {x: a[i].x-b[i].x, y: a[i].y-b[i].y, z: a[i].z-b[i].z};
+    }
+    return result;
+}
+
+function frameLength(a) {
+    let result = 0;
+    for (let i = 0; i < a.length; i++) {
+        result += (a[i].x*a[i].x)+(a[i].y*a[i].y)+(a[i].z*a[i].z);
+    }
+    return Math.sqrt(result);
+}
+
+function frameDot(a, b) {
+    let result = 0;
+    for (let i = 0; i < a.length; i++) {
+        result += (a[i].x*b[i].x)+(a[i].y*b[i].y)+(a[i].z*b[i].z);
+    }
+    return result;
+}
+
+function frameScale(a, scale) {
+    let result = [];
+    for (let i = 0; i < a.length; i++) {
+        result[i] = {x: a[i].x*scale, y: a[i].y*scale, z: a[i].z*scale};
+    }
+    return result;
 }
 
 function frameDistance(a, b) {
