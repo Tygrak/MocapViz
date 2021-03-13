@@ -89,6 +89,9 @@ function loadModel(model) {
     this.model = model;
     defaultScale = model.defaultScale;
     modelFps = model.fps;
+    boneRadius = model.boneRadius;
+    jointRadius = model.jointRadius;
+    headRadius = model.headRadius;
     drawStyle.bonesModel = model.bonesModel;
     drawStyle.headJointIndex = model.headJointIndex;
     drawStyle.leftArmIndex = model.leftArmIndex;
@@ -106,6 +109,8 @@ function processSelectedSequence(selectedSequence, canvas, numKeyframes) {
         loadModel(modelKinect);
     } else if (bonesModelInput.value == "Kinect2d") {
         loadModel(modelKinect2d);
+    } else if (bonesModelInput.value == "PointCloud") {
+        loadModel(modelPointCloud);
     }
     let frames = processSequenceToFrames(sequences[selectedSequence], canvas.height, figureScale*defaultScale);
     if (autoscaleInput.checked) {
@@ -130,12 +135,19 @@ function processSelectedSequence(selectedSequence, canvas, numKeyframes) {
     drawStyleBlur.figureScale = figureScale;
     drawStyle.boneRadius = boneRadius*figureScale;
     drawStyleBlur.boneRadius = boneRadius*figureScale;
-    if (figureScale < 0.5) {
-        drawStyle.headRadius = headRadius*figureScale*0.75;
-        drawStyleBlur.headRadius = headRadius*figureScale*0.75;
+    drawStyle.jointRadius = jointRadius;
+    drawStyleBlur.jointRadius = jointRadius;
+    if (jointRadius < 0.1) {
+        if (figureScale < 0.5) {
+            drawStyle.headRadius = headRadius*figureScale*0.75;
+            drawStyleBlur.headRadius = headRadius*figureScale*0.75;
+        } else {
+            drawStyle.headRadius = headRadius*figureScale;
+            drawStyleBlur.headRadius = headRadius*figureScale;
+        }
     } else {
-        drawStyle.headRadius = headRadius*figureScale;
-        drawStyleBlur.headRadius = headRadius*figureScale;
+        drawStyle.headRadius = headRadius;
+        drawStyleBlur.headRadius = headRadius;
     }
     if (autorotateInput.checked) {
         let bestRotation = findBestRotation(frames, numKeyframes);
@@ -168,7 +180,7 @@ function drawSequenceMain() {
     for (let sequence = 0; sequence < numSequences; sequence++) {
         let div = document.createElement("div");
         div.className = "drawItem";
-        div.id = "drawItem-"+(startSequence+sequence)+"-"+motionCategories[getSequenceCategory(sequences[sequence])];
+        div.id = "drawItem-"+(startSequence+sequence)+"-"+motionCategories[getSequenceCategory(sequences[startSequence+sequence])];
         if (mapPerSequenceInput.checked) {
             let divMap = document.createElement("canvas");
             divMap.className = "mapDrawBox";

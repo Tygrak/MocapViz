@@ -31,9 +31,16 @@ const bonesKinect2d = [
     {a: 7, b: 13, type: BoneType.rightHand}, {a: 13, b: 14, type: BoneType.rightHand}, {a: 14, b: 15, type: BoneType.rightHand} // hand
 ]; //head = 9, origin = 6
 
-const modelVicon = {bonesModel: bonesVicon, fps: 120, headJointIndex: 16, leftArmIndex: 17, thoraxIndex: 13, defaultScale: 8, unitSize: 6.207};
-const modelKinect = {bonesModel: bonesKinect, fps: 30, headJointIndex: 3, leftArmIndex: 4, thoraxIndex: 20, defaultScale: 180, unitSize: 139.6575};
-const modelKinect2d = {bonesModel: bonesKinect2d, fps: 30, headJointIndex: 9, leftArmIndex: 12, thoraxIndex: 7, defaultScale: 0.6, unitSize: 0.4655};
+const bonesPointCloud = [];
+
+const modelVicon = {bonesModel: bonesVicon, fps: 120, headJointIndex: 16, leftArmIndex: 17, thoraxIndex: 13, 
+    defaultScale: 8, unitSize: 6.207, boneRadius: 2, jointRadius: 0, headRadius: 10};
+const modelKinect = {bonesModel: bonesKinect, fps: 30, headJointIndex: 3, leftArmIndex: 4, thoraxIndex: 20, 
+    defaultScale: 180, unitSize: 139.6575, boneRadius: 2, jointRadius: 0, headRadius: 10};
+const modelKinect2d = {bonesModel: bonesKinect2d, fps: 30, headJointIndex: 9, leftArmIndex: 12, thoraxIndex: 7, 
+    defaultScale: 0.6, unitSize: 0.4655, boneRadius: 2, jointRadius: 0, headRadius: 10};
+const modelPointCloud = {bonesModel: bonesPointCloud, fps: 30, headJointIndex: 0, leftArmIndex: 0, thoraxIndex: 0, 
+    defaultScale: 1, unitSize: 1, boneRadius: 0, jointRadius: 3, headRadius: 3};
 
 const motionCategories = {
     "1":"cartwheel",

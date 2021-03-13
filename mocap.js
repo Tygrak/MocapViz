@@ -669,20 +669,26 @@ function findOptimalScale(frames, canvas, numFrames) {
     let minimums = findMinimumsFromFrame(frames[0]);
     let maxWidth = maximums.x-minimums.x;
     let maxHeight = maximums.y-minimums.y;
+    let maxY = maximums.y;
+    let minY = minimums.y;
     for (let i = 0; i < numFrames; i++) {
         let index = Math.floor((i/numFrames)*frames.length);
         maximums = findMaximumsFromFrame(frames[index]);
         minimums = findMinimumsFromFrame(frames[index]);
         let width = maximums.x-minimums.x;
         let height = maximums.y-minimums.y;
-        if (width > maxWidth) {
+        maxWidth = Math.max(maxWidth, width);
+        maxHeight = Math.max(maxHeight, height);
+        /*if (width > maxWidth) {
             maxWidth = width;
         }
         if (height > maxHeight) {
             maxHeight = height;
-        }
+        }*/
+        maxY = Math.max(maxY, maximums.y);
+        minY = Math.min(minY, minimums.y);
     }
-    return Math.min((canvas.height-38)/maxHeight, (canvas.width/(numFrames-1))/maxWidth);
+    return Math.min((canvas.height-28)/(maxY-minY), (canvas.width/(numFrames-1))/maxWidth);
     //return ((canvas.height)/2-40)/maxHeight;
 }
 
@@ -704,7 +710,7 @@ function findMeterConversion(sequences, actorHeight) {
     }
     heights.sort((a, b) => a - b);
     console.log(heights);
-    return actorHeight/heights[Math.round(heights.length/2)];
+    return actorHeight/heights[Math.round(heights.length/2)-1];
 }
 
 function frameSubtract(a, b) {
