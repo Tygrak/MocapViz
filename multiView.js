@@ -53,6 +53,7 @@ sequenceInputLoadButton.onclick = drawSequenceMain;
 calculateConversionButton.onclick = calculateConversion;
 const drawContainer = document.getElementById("drawContainer");
 let defaultScale = 1;
+let loadingFile = false;
 
 //const queryString = window.location.search;
 //console.log(queryString);
@@ -61,16 +62,34 @@ let defaultScale = 1;
 loadDataFile();
 
 function loadDataFile() {
-    if (dataFileInput.files.length == 0) {
+    if (dataFileInput.files.length == 0 || loadingFile) {
         return;
-    } 
+    }
+    loadingFile = true;
+    availableSequencesText.innerText = 0;
+    sequences = [];
+    let fileLocation = 0;
     let reader = new FileReader();
+    let last = "";
+    let loadMbSize = 10;
     reader.onload = function (textResult) {
         let text = textResult.target.result;
-        sequences = text.split("#objectKey").filter((s) => {return s != "";}).map((s) => s.split("\n"));
+        let split = text.split("#objectKey");
+        split[0] = last+split[0];
+        last = split[split.length-1];
+        split.pop();
+        sequences.push(...split.filter((s) => {return s != "";}).map((s) => s.split("\n")));
         availableSequencesText.innerText = sequences.length;
+        fileLocation += loadMbSize*1024*1024;
+        if (dataFileInput.files[0].size > fileLocation) {
+            reader.readAsText(dataFileInput.files[0].slice(fileLocation, fileLocation+loadMbSize*1024*1024), "UTF-8");
+        } else if (last.trim() != "") {
+            sequences.push(last.split("\n"));
+            availableSequencesText.innerText = sequences.length;
+            loadingFile = false;
+        }
     }
-    reader.readAsText(dataFileInput.files[0], "UTF-8");
+    reader.readAsText(dataFileInput.files[0].slice(0, loadMbSize*1024*1024), "UTF-8");
 }
 
 function loadDataText() {
