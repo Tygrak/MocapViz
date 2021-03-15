@@ -134,6 +134,97 @@ function drawSequenceBlur(canvas, frames, numPositions, numBlurPositions, drawSt
     drawSequenceKeyframesBlur(canvas, frames, indexes, numBlurPositions, drawStyle, drawStyleBlur, 0, false);
 }
 
+function loadDataFromString(dataString) {
+    return dataString.split("#objectKey").filter((s) => {return s != "";}).map((s) => s.split("\n"));
+}
+
+function appendVisualizationToElement(element, sequence, model, numKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight) {
+    let div = document.createElement("div");
+    div.className = "drawItem-"+motionCategories[getSequenceCategory(sequence)];
+    let map = document.createElement("canvas");
+    map.className = "drawItemMap";
+    map.width = mapWidth;
+    map.height = mapHeight;
+    div.appendChild(map);
+    let canvas = document.createElement("canvas");
+    canvas.className = "drawItemVisualization";
+    canvas.width = visualizationWidth;
+    canvas.height = visualizationHeight;
+    div.appendChild(canvas);
+    element.appendChild(div);
+    let figureScale = model.defaultScale;
+    let frames = processSequenceToFrames(sequence, canvas.height, figureScale*model.defaultScale);
+    if (figureScale < 0) {
+        figureScale = 1;
+    }
+    if (frames.length == 0) {
+        frames = processSequenceToFrames2d(sequence, canvas.height, figureScale*model.defaultScale);
+        figureScale = figureScale*findOptimalScale(frames, canvas, numKeyframes);
+        frames = processSequenceToFrames2d(sequence, canvas.height, figureScale*model.defaultScale);
+    } else {
+        figureScale = figureScale*findOptimalScale(frames, canvas, numKeyframes);
+        frames = processSequenceToFrames(sequence, canvas.height, figureScale*model.defaultScale);
+    }
+    let drawStyle = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, model.boneRadius, model.jointRadius,
+                                       model.headRadius, boneStyleDefault, leftBoneStyleDefault, rightBoneStyleDefault, jointStyleDefault, figureScale);
+    let drawStyleBlur = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, model.boneRadius, model.jointRadius,
+                                       model.headRadius, blurStyleDefault, blurStyleDefault, blurStyleDefault, blurStyleDefault, figureScale);
+    drawStyle.figureScale = figureScale;
+    drawStyleBlur.figureScale = figureScale;
+    drawStyle.boneRadius = model.boneRadius*figureScale;
+    drawStyleBlur.boneRadius = model.boneRadius*figureScale;
+    drawStyle.jointRadius = model.jointRadius;
+    drawStyleBlur.jointRadius = model.jointRadius;
+    if (model.jointRadius < 0.1) {
+        if (figureScale < 0.5) {
+            drawStyle.headRadius = model.headRadius*figureScale*0.75;
+            drawStyleBlur.headRadius = model.headRadius*figureScale*0.75;
+        } else {
+            drawStyle.headRadius = model.headRadius*figureScale;
+            drawStyleBlur.headRadius = model.headRadius*figureScale;
+        }
+    } else {
+        drawStyle.headRadius = model.headRadius;
+        drawStyleBlur.headRadius = model.headRadius;
+    }
+    let bestRotation = findBestRotation(frames, numKeyframes);
+    for (let i = 0; i < frames.length; i++) {
+        frames[i] = frameRotateY(frames[i], bestRotation);
+    }
+    let keyframes = findKeyframesDecimation(frames, numKeyframes);
+    let fillKeyframes = getFillKeyframes(frames, keyframes);
+    let fillStyle = Object.assign({}, drawStyle);
+    fillStyle.boneStyle = {r: fillStyle.boneStyle.r, g: fillStyle.boneStyle.g, b: fillStyle.boneStyle.b, a: fillStyle.boneStyle.a*0.55};
+    fillStyle.leftBoneStyle = {r: fillStyle.leftBoneStyle.r, g: fillStyle.leftBoneStyle.g, b: fillStyle.leftBoneStyle.b, a: fillStyle.leftBoneStyle.a*0.55};
+    fillStyle.rightBoneStyle = {r: fillStyle.rightBoneStyle.r, g: fillStyle.rightBoneStyle.g, b: fillStyle.rightBoneStyle.b, a: fillStyle.rightBoneStyle.a*0.55};
+    let ctx = canvas.getContext("2d");
+    ctx.fillStyle = "white";
+    ctx.beginPath();
+    ctx.rect(0, 0, canvas.width, canvas.height);
+    ctx.fill();
+    ctx = map.getContext("2d");
+    ctx.fillStyle = "white";
+    ctx.beginPath();
+    ctx.rect(0, 0, map.width, map.height);
+    ctx.fill();
+    drawSequenceKeyframesBlur(canvas, frames, fillKeyframes, 0, fillStyle, drawStyleBlur, 0, false, true);
+    drawSequenceKeyframesBlur(canvas, frames, keyframes, numBlurPositions, drawStyle, drawStyleBlur, 0, false, true);
+    let framesMin = findSequenceMinimums(frames, numKeyframes);
+    let framesMax = findSequenceMaximums(frames, numKeyframes);
+    let maxWidth = Math.max(framesMax.x-framesMin.x, framesMax.z-framesMin.z);
+    let mapScale = 100*figureScale*model.defaultScale;
+    if (maxWidth > canvas.width) {
+        mapScale = canvas.width*1.5;
+    } else {
+        mapScale = Math.floor(maxWidth/12.5)*25+25;
+    }
+    drawMapMeterScale(map, (model.unitSize*figureScale)*100, mapScale);
+    drawTopDownMapParallelogram(map, frames, keyframes, 
+        {x:-1, y:-1, z:0}, 
+        {x:-1, y:map.height+1, z:0}, 
+        {x:map.width+1, y:map.height+1, z:0}, frames.length, mapScale, false);
+}
+
 function processSequenceToFrames(rawData, canvasHeight, figureScale) {
     let lines = rawData;
     let frames = lines.map((frame) => {
@@ -205,18 +296,6 @@ function drawMapMeterScale(canvas, meterSize, mapSize) {
     meterPosition = lerp(0, canvas.width, (meterSize/10)/mapSize);
     drawRectangle(ctx, {x:canvas.width/10, y:canvas.height-5, z:0}, {x:meterPosition+canvas.width/10, y:canvas.height-5, z:0}, 2, 0, 0);
     ctx.fillText("1 dm", canvas.width/10+3, canvas.height-8);
-    /*if (meterPosition/2 > canvas.width-20) {
-        meterPosition = lerp(0, canvas.width, (meterSize/10)/mapSize);
-        drawRectangle(ctx, {x:10,y:canvas.height-5, z:0}, {x:meterPosition, y:canvas.height-5, z:0}, 2, 0, 0);
-        ctx.fillText("1 dm", 13, canvas.height-8);
-    } else if (meterPosition > canvas.width-20) {
-        meterPosition = lerp(0, canvas.width, (meterSize/2)/mapSize);
-        drawRectangle(ctx, {x:10,y:canvas.height-5, z:0}, {x:meterPosition, y:canvas.height-5, z:0}, 2, 0, 0);
-        ctx.fillText("5 dm", 13, canvas.height-8);
-    } else {
-        drawRectangle(ctx, {x:10,y:canvas.height-5, z:0}, {x:meterPosition, y:canvas.height-5, z:0}, 2, 0, 0);
-        ctx.fillText("1 m", 13, canvas.height-8);
-    }*/
 }
 
 function drawTimeScale(canvas, fps, length, keyframes) {
@@ -679,17 +758,10 @@ function findOptimalScale(frames, canvas, numFrames) {
         let height = maximums.y-minimums.y;
         maxWidth = Math.max(maxWidth, width);
         maxHeight = Math.max(maxHeight, height);
-        /*if (width > maxWidth) {
-            maxWidth = width;
-        }
-        if (height > maxHeight) {
-            maxHeight = height;
-        }*/
         maxY = Math.max(maxY, maximums.y);
         minY = Math.min(minY, minimums.y);
     }
     return Math.min((canvas.height-28)/(maxY-minY), (canvas.width/(numFrames-1))/maxWidth);
-    //return ((canvas.height)/2-40)/maxHeight;
 }
 
 function findMeterConversion(sequences, actorHeight) {

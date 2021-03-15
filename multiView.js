@@ -71,7 +71,7 @@ function loadDataFile() {
     let fileLocation = 0;
     let reader = new FileReader();
     let last = "";
-    let loadMbSize = 10;
+    let loadChunkMbSize = 10;
     reader.onload = function (textResult) {
         let text = textResult.target.result;
         let split = text.split("#objectKey");
@@ -80,23 +80,26 @@ function loadDataFile() {
         split.pop();
         sequences.push(...split.filter((s) => {return s != "";}).map((s) => s.split("\n")));
         availableSequencesText.innerText = sequences.length;
-        fileLocation += loadMbSize*1024*1024;
+        fileLocation += loadChunkMbSize*1024*1024;
         if (dataFileInput.files[0].size > fileLocation) {
-            reader.readAsText(dataFileInput.files[0].slice(fileLocation, fileLocation+loadMbSize*1024*1024), "UTF-8");
+            reader.readAsText(dataFileInput.files[0].slice(fileLocation, fileLocation+loadChunkMbSize*1024*1024), "UTF-8");
         } else if (last.trim() != "") {
             sequences.push(last.split("\n"));
             availableSequencesText.innerText = sequences.length;
             loadingFile = false;
         }
     }
-    reader.readAsText(dataFileInput.files[0].slice(0, loadMbSize*1024*1024), "UTF-8");
+    reader.onerror = function (e) {
+        console.log("Loading the data file failed, most likely because of how big the file is.");
+    }
+    reader.readAsText(dataFileInput.files[0].slice(0, loadChunkMbSize*1024*1024), "UTF-8");
 }
 
 function loadDataText() {
     if (dataTextInput.value.length == 0) {
         return;
     } 
-    sequences = dataTextInput.value.split("#objectKey").filter((s) => {return s != "";}).map((s) => s.split("\n"));
+    sequences = loadDataFromString(dataTextInput.value);
     availableSequencesText.innerText = sequences.length;
 }
 
