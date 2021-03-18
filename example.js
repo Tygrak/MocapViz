@@ -132,4 +132,4 @@ const data = `#objectKey messif.objects.keys.AbstractObjectKey 3215_114_2173_123
 
 let sequence = loadDataFromString(data)[0];
 let targetElement = document.getElementById("drawContainer");
-appendVisualizationToElement(targetElement, sequence, modelVicon, 12, 150, 150, 600, 150);
+targetElement.appendChild(createVisualizationElement(sequence, modelVicon, 12, 8, 150, 150, 900, 150));

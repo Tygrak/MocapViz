@@ -1,0 +1,60 @@
+* {
+    box-sizing: border-box
+}
+
+body {
+    margin: 0px;
+    background-color: #fbcdcf;
+}
+
+#gridWrapper {
+    display: grid;
+    grid-template-columns: 15em 1fr;
+    grid-gap: 10px;
+    grid-auto-rows: 100%;
+}
+
+.drawBox {
+    background-color: white;
+    border: 2px solid black;
+}
+
+.mapDrawBox {
+    background-color: white;
+    border: 2px solid black;
+}
+
+.horizontallyCentered {
+    width: 95%;
+    margin: 2em;
+}
+
+.answerButton {
+    margin: 0.1em 1em 0.1em 0.1em;
+    min-width: 20em;
+    min-height: 3em;
+}
+
+#resultText {
+    height: 4em;
+    font-size: 1.3em;
+    color: black;
+}
+
+#drawContainer {
+    margin: 1em 1em 1em 1em;
+    height: 20%;
+}
+
+#sideMenu {
+    height: 100%;
+    width: 100%;
+    background-color: rgb(146, 146, 146);
+    overflow-x: hidden;
+    padding-top: 1.5em;
+    padding-left: 1em;
+}
+
+.sideMenuItem {
+    padding-bottom: 1em;
+}

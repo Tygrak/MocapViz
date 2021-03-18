@@ -138,7 +138,7 @@ function loadDataFromString(dataString) {
     return dataString.split("#objectKey").filter((s) => {return s != "";}).map((s) => s.split("\n"));
 }
 
-function appendVisualizationToElement(element, sequence, model, numKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight) {
+function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight) {
     let div = document.createElement("div");
     div.className = "drawItem-"+motionCategories[getSequenceCategory(sequence)];
     let map = document.createElement("canvas");
@@ -151,7 +151,6 @@ function appendVisualizationToElement(element, sequence, model, numKeyframes, nu
     canvas.width = visualizationWidth;
     canvas.height = visualizationHeight;
     div.appendChild(canvas);
-    element.appendChild(div);
     let figureScale = model.defaultScale;
     let frames = processSequenceToFrames(sequence, canvas.height, figureScale*model.defaultScale);
     if (figureScale < 0) {
@@ -208,7 +207,7 @@ function appendVisualizationToElement(element, sequence, model, numKeyframes, nu
     ctx.rect(0, 0, map.width, map.height);
     ctx.fill();
     drawSequenceKeyframesBlur(canvas, frames, fillKeyframes, 0, fillStyle, drawStyleBlur, 0, false, true);
-    drawSequenceKeyframesBlur(canvas, frames, keyframes, numBlurPositions, drawStyle, drawStyleBlur, 0, false, true);
+    drawSequenceKeyframesBlur(canvas, frames, keyframes, numBlurFrames, drawStyle, drawStyleBlur, 0, false, true);
     let framesMin = findSequenceMinimums(frames, numKeyframes);
     let framesMax = findSequenceMaximums(frames, numKeyframes);
     let maxWidth = Math.max(framesMax.x-framesMin.x, framesMax.z-framesMin.z);
@@ -223,6 +222,7 @@ function appendVisualizationToElement(element, sequence, model, numKeyframes, nu
         {x:-1, y:-1, z:0}, 
         {x:-1, y:map.height+1, z:0}, 
         {x:map.width+1, y:map.height+1, z:0}, frames.length, mapScale, false);
+    return div;
 }
 
 function processSequenceToFrames(rawData, canvasHeight, figureScale) {
@@ -761,7 +761,7 @@ function findOptimalScale(frames, canvas, numFrames) {
         maxY = Math.max(maxY, maximums.y);
         minY = Math.min(minY, minimums.y);
     }
-    return Math.min((canvas.height-28)/(maxY-minY), (canvas.width/(numFrames-1))/maxWidth);
+    return Math.min((canvas.height-28)/(maxY-minY), (canvas.width/(numFrames-1))/(maxWidth-20));
 }
 
 function findMeterConversion(sequences, actorHeight) {
