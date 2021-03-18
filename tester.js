@@ -11,7 +11,7 @@ loadData(function(response) {
 function loadData(callback) {   
     let xobj = new XMLHttpRequest();
     xobj.overrideMimeType("application/text");
-    xobj.open('GET', 'hdm05slice2.data', true);
+    xobj.open('GET', 'hdm05part.data', true);
     xobj.onreadystatechange = function () {
         if (xobj.readyState == 4 && xobj.status == "200") {
             callback(xobj.responseText);

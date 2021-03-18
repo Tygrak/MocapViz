@@ -1,2 +1,3 @@
 /data
 *.data
+!hdm05part.data
