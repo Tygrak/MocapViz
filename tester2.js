@@ -1,4 +1,4 @@
-let loaded = false;
+let loaded = true;
 let sequences = [];
 let currentSequences = [];
 let selectedSequences = [];
@@ -12,12 +12,14 @@ const resultText = document.getElementById("resultText");
 loadButton.onclick = loadDataFile;
 submitButton.onclick = submitAnswers;
 
+/*
+loaded = false;
 loadData(function(response) {
     sequences = loadDataFromString(response);
     console.log("Loaded " + sequences.length + " sequences.");
     loaded = true;
     createRandomTest();
-});
+});*/
 
 function loadData(callback) {   
     let xobj = new XMLHttpRequest();

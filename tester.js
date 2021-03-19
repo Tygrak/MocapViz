@@ -1,15 +1,17 @@
-let loaded = false;
+let loaded = true;
 let sequences = [];
 const dataFileInput = document.getElementById("dataFileInput");
 const loadButton = document.getElementById("dataInputLoadButton");
 loadButton.onclick = loadDataFile;
 
+/*
+loaded = false;
 loadData(function(response) {
     sequences = loadDataFromString(response);
     console.log("Loaded " + sequences.length + " sequences.");
     loaded = true;
     createRandomTest();
-});
+});*/
 
 function loadData(callback) {   
     let xobj = new XMLHttpRequest();
