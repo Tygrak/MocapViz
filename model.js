@@ -42,6 +42,7 @@ const modelKinect2d = {bonesModel: bonesKinect2d, fps: 30, headJointIndex: 9, le
 const modelPointCloud = {bonesModel: bonesPointCloud, fps: 30, headJointIndex: 0, leftArmIndex: 0, thoraxIndex: 0, 
     defaultScale: 1, unitSize: 1, boneRadius: 0, jointRadius: 3, headRadius: 3};
 
+const KeyframeSelectionAlgorithmEnum = {Equidistant: 1, Euclidean: 2, Temporal: 3, Lowe: 4, Decimation: 5};
 
 const jointStyleDefault = {r:0, g:0, b:0, a:1};
 const boneStyleDefault = {r:0, g:0, b:0, a:1};

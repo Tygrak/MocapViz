@@ -26,13 +26,24 @@ body {
 
 .horizontallyCentered {
     width: 95%;
-    margin: 2em;
+    margin: 1em;
 }
 
 .answerButton {
     margin: 0.1em 1em 0.1em 0.1em;
     min-width: 20em;
     min-height: 3em;
+}
+
+.sequenceCheckbox {
+    padding-top: 30px;
+    padding-bottom: 30px;
+    width: 1em;
+    height: 1em;
+}
+
+.correctAnswer {
+    background-color: #b8b8df;
 }
 
 #resultText {

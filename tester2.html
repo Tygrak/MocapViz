@@ -1,0 +1,29 @@
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>
+            Mocap Vizualization Test
+        </title>     
+        <link rel="stylesheet" href="tester.css">
+    </head>
+    
+    <body>
+        <div id="content">
+            <div class="horizontallyCentered">
+                <div class="sideMenuItemLabel">Select data file:</div>
+                <input type="file" id="dataFileInput" name="dataFileInput" accept=".data,.txt">
+                <button id="dataInputLoadButton">Load Data</button>
+            </div>
+            <div class="horizontallyCentered" id="resultText">
+            </div>
+            <div class="horizontallyCentered" id="drawRegion">
+            </div>
+            <div class="horizontallyCentered" id="answerButtons">
+                <button class="answerButton" id="submitAnswersButton">Submit Answers</button>
+            </div>
+        </div>
+        <script src="mocap.js"></script>
+        <script src="model.js"></script>
+        <script src="tester2.js"></script>  
+    </body>
+</html>

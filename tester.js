@@ -1,5 +1,8 @@
 let loaded = false;
 let sequences = [];
+const dataFileInput = document.getElementById("dataFileInput");
+const loadButton = document.getElementById("dataInputLoadButton");
+loadButton.onclick = loadDataFile;
 
 loadData(function(response) {
     sequences = loadDataFromString(response);
@@ -18,6 +21,38 @@ function loadData(callback) {
         }
     };
     xobj.send(null);  
+}
+
+function loadDataFile() {
+    if (dataFileInput.files.length == 0 || !loaded) {
+        return;
+    }
+    loaded = false;
+    sequences = [];
+    let fileLocation = 0;
+    let reader = new FileReader();
+    let last = "";
+    let loadChunkMbSize = 10;
+    reader.onload = function (textResult) {
+        let text = textResult.target.result;
+        let split = text.split("#objectKey");
+        split[0] = last+split[0];
+        last = split[split.length-1];
+        split.pop();
+        sequences.push(...split.filter((s) => {return s != "";}).map((s) => s.split("\n")));
+        fileLocation += loadChunkMbSize*1024*1024;
+        if (dataFileInput.files[0].size > fileLocation) {
+            reader.readAsText(dataFileInput.files[0].slice(fileLocation, fileLocation+loadChunkMbSize*1024*1024), "UTF-8");
+        } else if (last.trim() != "") {
+            sequences.push(last.split("\n"));
+            loaded = true;
+            console.log("Loaded " + sequences.length + " sequences.");
+        }
+    }
+    reader.onerror = function (e) {
+        console.log("Loading the data file failed, most likely because of how big the file is.");
+    }
+    reader.readAsText(dataFileInput.files[0].slice(0, loadChunkMbSize*1024*1024), "UTF-8");
 }
 
 function getRandomInt(max) {

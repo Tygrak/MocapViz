@@ -138,7 +138,7 @@ function loadDataFromString(dataString) {
     return dataString.split("#objectKey").filter((s) => {return s != "";}).map((s) => s.split("\n"));
 }
 
-function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight) {
+function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight, addTimeScale = false, addFillingKeyframes = true, keyframeSelectionAlgorithm = 4) {
     let div = document.createElement("div");
     div.className = "drawItem-"+motionCategories[getSequenceCategory(sequence)];
     let map = document.createElement("canvas");
@@ -190,12 +190,18 @@ function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames
     for (let i = 0; i < frames.length; i++) {
         frames[i] = frameRotateY(frames[i], bestRotation);
     }
-    let keyframes = findKeyframesDecimation(frames, numKeyframes);
-    let fillKeyframes = getFillKeyframes(frames, keyframes);
-    let fillStyle = Object.assign({}, drawStyle);
-    fillStyle.boneStyle = {r: fillStyle.boneStyle.r, g: fillStyle.boneStyle.g, b: fillStyle.boneStyle.b, a: fillStyle.boneStyle.a*0.55};
-    fillStyle.leftBoneStyle = {r: fillStyle.leftBoneStyle.r, g: fillStyle.leftBoneStyle.g, b: fillStyle.leftBoneStyle.b, a: fillStyle.leftBoneStyle.a*0.55};
-    fillStyle.rightBoneStyle = {r: fillStyle.rightBoneStyle.r, g: fillStyle.rightBoneStyle.g, b: fillStyle.rightBoneStyle.b, a: fillStyle.rightBoneStyle.a*0.55};
+    let keyframes;
+    if (keyframeSelectionAlgorithm == KeyframeSelectionAlgorithmEnum.Decimation) {
+        keyframes = findKeyframesDecimation(frames, numKeyframes);
+    } else if (keyframeSelectionAlgorithm == KeyframeSelectionAlgorithmEnum.Lowe) {
+        keyframes = findKeyframesLowe(frames, numKeyframes);
+    } else if (keyframeSelectionAlgorithm == KeyframeSelectionAlgorithmEnum.Euclidean) {
+        keyframes = findKeyframesEuclidean(frames, numKeyframes);
+    } else if (keyframeSelectionAlgorithm == KeyframeSelectionAlgorithmEnum.Equidistant) {
+        keyframes = findKeyframesEquidistant(frames, numKeyframes);
+    } else {
+        keyframes = findKeyframesTemporal(frames, numKeyframes);
+    }
     let ctx = canvas.getContext("2d");
     ctx.fillStyle = "white";
     ctx.beginPath();
@@ -206,7 +212,14 @@ function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames
     ctx.beginPath();
     ctx.rect(0, 0, map.width, map.height);
     ctx.fill();
-    drawSequenceKeyframesBlur(canvas, frames, fillKeyframes, 0, fillStyle, drawStyleBlur, 0, false, true);
+    if (addFillingKeyframes) {
+        let fillKeyframes = getFillKeyframes(frames, keyframes);
+        let fillStyle = Object.assign({}, drawStyle);
+        fillStyle.boneStyle = {r: fillStyle.boneStyle.r, g: fillStyle.boneStyle.g, b: fillStyle.boneStyle.b, a: fillStyle.boneStyle.a*0.55};
+        fillStyle.leftBoneStyle = {r: fillStyle.leftBoneStyle.r, g: fillStyle.leftBoneStyle.g, b: fillStyle.leftBoneStyle.b, a: fillStyle.leftBoneStyle.a*0.55};
+        fillStyle.rightBoneStyle = {r: fillStyle.rightBoneStyle.r, g: fillStyle.rightBoneStyle.g, b: fillStyle.rightBoneStyle.b, a: fillStyle.rightBoneStyle.a*0.55};
+        drawSequenceKeyframesBlur(canvas, frames, fillKeyframes, 0, fillStyle, drawStyleBlur, 0, false, true);
+    }
     drawSequenceKeyframesBlur(canvas, frames, keyframes, numBlurFrames, drawStyle, drawStyleBlur, 0, false, true);
     let framesMin = findSequenceMinimums(frames, numKeyframes);
     let framesMax = findSequenceMaximums(frames, numKeyframes);
@@ -217,11 +230,13 @@ function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames
     } else {
         mapScale = Math.floor(maxWidth/12.5)*25+25;
     }
-    drawMapMeterScale(map, (model.unitSize*figureScale)*100, mapScale);
-    drawTopDownMapParallelogram(map, frames, keyframes, 
+    if (addTimeScale) {
+        drawTimeScale(canvas, model.fps, frames.length, keyframes);
+    }
+    drawTopDownMapParallelogramUnitGrid(map, frames, keyframes, 
         {x:-1, y:-1, z:0}, 
         {x:-1, y:map.height+1, z:0}, 
-        {x:map.width+1, y:map.height+1, z:0}, frames.length, mapScale, false);
+        {x:map.width+1, y:map.height+1, z:0}, frames.length, mapScale, (model.unitSize*figureScale)*10, false);
     return div;
 }
 
