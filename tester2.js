@@ -55,6 +55,7 @@ function loadDataFile() {
             sequences.push(last.split("\n"));
             loaded = true;
             console.log("Loaded " + sequences.length + " sequences.");
+            createRandomTest();
         }
     }
     reader.onerror = function (e) {
@@ -78,6 +79,7 @@ function createRandomTest() {
     currentSequences = [];
     selectedSequences = [];
     currentVisualizationDivs = [];
+    submittedAnswers = false;
     for (let i = 0; i < Math.min(sequences.length, 10); i++) {
         let randomNum = getRandomInt(sequences.length);
         while (currentSequences.indexOf(randomNum) != -1) {

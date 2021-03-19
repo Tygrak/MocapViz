@@ -47,6 +47,7 @@ function loadDataFile() {
             sequences.push(last.split("\n"));
             loaded = true;
             console.log("Loaded " + sequences.length + " sequences.");
+            createRandomTest();
         }
     }
     reader.onerror = function (e) {
