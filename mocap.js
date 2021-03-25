@@ -904,6 +904,14 @@ function normalize(vec) {
     return new Vec3(vec.x/len, vec.y/len, vec.z/len);
 }
 
+function lerpFrame(a, b, value) {
+    let result = [];
+    for (let i = 0; i < a.length; i++) {
+        result[i] = {x: lerp(a[i].x, b[i].x, value), y: lerp(a[i].y, b[i].y, value), z: lerp(a[i].z, b[i].z, value)};
+    }
+    return result;
+}
+
 function lerp(a, b, value) {
     return (b-a)*value+a;
 }
