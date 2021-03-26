@@ -89,7 +89,7 @@ function createRandomTest() {
         }
         currentSequences.push(randomNum);
         let sequence = sequences[randomNum];
-        let visualization = createVisualizationElement(sequence, modelVicon, 10, 10, 200, 200, 1000, 200, true);
+        let visualization = createVisualizationElement(sequence, modelVicon, 10, 10, 150, 150, 750, 150, true);
         visualization.children[0].classList.add("drawBox");
         visualization.children[1].classList.add("drawBox");
         let checkbox = document.createElement("input");

@@ -35,7 +35,7 @@ function drawSequenceKeyframes(canvas, frames, indexes, drawStyle, yShift = 0, c
     drawSequenceKeyframesBlur(canvas, frames, indexes, 0, drawStyle, drawStyle, yShift, clear);
 }
 
-function drawSequenceKeyframesBlur(canvas, frames, indexes, numBlurPositions, drawStyle, drawStyleBlur, yShift = 0, clear = true, trueTime = true) {
+function drawSequenceKeyframesBlur(canvas, frames, indexes, numBlurPositions, drawStyle, drawStyleBlur, yShift = 0, clear = true, trueTime = true, labelFrames = true) {
     let ctx = canvas.getContext("2d");
     if (clear) {
         clearCanvas(canvas);
@@ -60,12 +60,16 @@ function drawSequenceKeyframesBlur(canvas, frames, indexes, numBlurPositions, dr
             drawFrame(canvas, moveOriginXBy(frames[indexes[i]-j], coreX), xShift, yShift, drawStyleBlur);
         }
         drawFrame(canvas, moveOriginXBy(frames[indexes[i]], coreX), xShift, yShift, drawStyle);
-        ctx.font = '12px serif';
-        ctx.fillStyle = 'black';
-        ctx.fillText(indexes[i], xShift, sequenceMaximums.y+yShift+14);
+        if (labelFrames) {
+            ctx.font = '12px serif';
+            ctx.fillStyle = 'black';
+            ctx.fillText(indexes[i], xShift, sequenceMaximums.y+yShift+14);
+        }
     }
     ctx.fillStyle = 'black';
-    drawRectangle(ctx, {x: 0, y: sequenceMaximums.y, z: 0}, {x: canvas.width, y: sequenceMaximums.y, z: 0}, 1, 0, yShift+1);
+    if (labelFrames) {
+        drawRectangle(ctx, {x: 0, y: sequenceMaximums.y, z: 0}, {x: canvas.width, y: sequenceMaximums.y, z: 0}, 1, 0, yShift+1);
+    }
 }
 
 function drawSequenceKeyframesBlurWithMaps(canvas, frames, indexes, numBlurPositions, drawStyle, drawStyleBlur, mapScale, yShift = 0, clear = true) {
@@ -218,7 +222,7 @@ function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames
         fillStyle.boneStyle = {r: fillStyle.boneStyle.r, g: fillStyle.boneStyle.g, b: fillStyle.boneStyle.b, a: fillStyle.boneStyle.a*0.55};
         fillStyle.leftBoneStyle = {r: fillStyle.leftBoneStyle.r, g: fillStyle.leftBoneStyle.g, b: fillStyle.leftBoneStyle.b, a: fillStyle.leftBoneStyle.a*0.55};
         fillStyle.rightBoneStyle = {r: fillStyle.rightBoneStyle.r, g: fillStyle.rightBoneStyle.g, b: fillStyle.rightBoneStyle.b, a: fillStyle.rightBoneStyle.a*0.55};
-        drawSequenceKeyframesBlur(canvas, frames, fillKeyframes, 0, fillStyle, drawStyleBlur, 0, false, true);
+        drawSequenceKeyframesBlur(canvas, frames, fillKeyframes, 0, fillStyle, drawStyleBlur, 0, false, true, false);
     }
     drawSequenceKeyframesBlur(canvas, frames, keyframes, numBlurFrames, drawStyle, drawStyleBlur, 0, false, true);
     let framesMin = findSequenceMinimums(frames, numKeyframes);

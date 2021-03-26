@@ -71,7 +71,7 @@ function createRandomTest() {
     let sequence = sequences[randomNum];
     let targetElement = document.getElementById("drawRegion");
     targetElement.innerHTML = "";
-    let visualization = createVisualizationElement(sequence, modelVicon, 10, 10, 200, 200, 1000, 200);
+    let visualization = createVisualizationElement(sequence, modelVicon, 10, 10, 150, 150, 750, 150);
     visualization.children[0].classList.add("drawBox");
     visualization.children[1].classList.add("drawBox");
     targetElement.appendChild(visualization);
