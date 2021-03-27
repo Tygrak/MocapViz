@@ -93,7 +93,7 @@ function createRandomTest() {
         //console.log("Incorrect " + i + " " + motionCategories[category]);
         chosenCategories.push(category);
         buttons[i].innerText = motionCategories[category.toFixed(0)];
-        buttons[i].onclick = function () {resultText.innerText = "Wrong! Correct was: " + motionCategories[correctCategory]; createRandomTest();};
+        buttons[i].onclick = function () {resultText.innerText = "Wrong! Correct was: " + motionCategoriesHuman[correctCategory]; createRandomTest();};
     }
     console.log("Correct " + correct + " " + motionCategories[correctCategory]);
     console.log("Sequence " + randomNum);

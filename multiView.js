@@ -19,6 +19,9 @@ let modelFps = 120;
 let model = modelVicon;
 let drawStyle = new MocapDrawStyle(bonesVicon, headJointIndex, 17, 13, boneRadius, jointRadius, headRadius, boneStyle, leftBoneStyle, rightBoneStyle, jointStyle, 8);
 let drawStyleBlur = new MocapDrawStyle(bonesVicon, headJointIndex, 17, 13, boneRadius, jointRadius, headRadius, blurStyle, blurStyle, blurStyle, blurStyle, 8);
+let timerKeyframeExtraction = 0;
+let timerVisualizationDrawing = 0;
+
 
 const availableSequencesText = document.getElementById("availableSequencesText");
 const sequenceNumberInput = document.getElementById("sequenceNumberInput");
@@ -153,6 +156,9 @@ function processSelectedSequence(selectedSequence, canvas, numKeyframes) {
             frames = processSequenceToFrames2d(sequences[selectedSequence], canvas.height, figureScale*defaultScale);
         }
     }
+    if (figureScale < 0) {
+        figureScale = 1;
+    }
     drawStyle.figureScale = figureScale;
     drawStyleBlur.figureScale = figureScale;
     drawStyle.boneRadius = boneRadius*figureScale;
@@ -183,6 +189,8 @@ function processSelectedSequence(selectedSequence, canvas, numKeyframes) {
 }
 
 function drawSequenceMain() {
+    timerKeyframeExtraction = 0;
+    timerVisualizationDrawing = 0;
     let a = performance.now();
     drawContainer.innerHTML = "";
     let numSequences = parseInt(numSequencesInput.value);
@@ -224,6 +232,7 @@ function drawSequenceMain() {
         let selectedSequence = startSequence+sequence;
         let canvas = canvases[sequence];
         let numKeyframes = timeImageScaleInput.checked ? Math.ceil(numPositions*((sequences[selectedSequence].length-3)/maxSequenceLength)) : numPositions;
+        numKeyframes = numKeyframes > 1 ? numKeyframes : 2;
         //canvas.height = defaultHeight;
         canvas.width = timeImageScaleInput.checked ? canvasWidth*((sequences[selectedSequence].length-3)/maxSequenceLength) : canvasWidth;
         canvas.height = Math.floor((window.innerHeight-60)/numSequencesPerPage);
@@ -233,9 +242,12 @@ function drawSequenceMain() {
     let b = performance.now();
     console.log("Result time ("+numSequences+" sequences):");
     console.log((b-a)+" ms");
+    console.log("Keyframe extraction time: " + timerKeyframeExtraction + " ms.");
+    console.log("Visualization drawing time: " + timerVisualizationDrawing + " ms.");
 }
 
 function drawSequence(canvas, map, frames, numKeyframes) {
+    let a = performance.now();
     let keyframes;
     if (keyframeSelectionInput.value == "Equidistant") {
         keyframes = findKeyframesEquidistant(frames, numKeyframes);
@@ -250,6 +262,8 @@ function drawSequence(canvas, map, frames, numKeyframes) {
     } else if (keyframeSelectionInput.value == "CurveLowe") {
         keyframes = findKeyframesLowe(frames, numKeyframes);
     }
+    timerKeyframeExtraction += performance.now()-a;
+    a = performance.now();
     if (addFillKeyframesInput.checked) {
         let fillKeyframes = getFillKeyframes(frames, keyframes);
         let fillStyle = Object.assign({}, drawStyle);
@@ -303,4 +317,5 @@ function drawSequence(canvas, map, frames, numKeyframes) {
     if (timeScaleInput.checked) {
         drawTimeScale(canvas, modelFps, frames.length, keyframes);
     }
+    timerVisualizationDrawing += performance.now()-a;
 }

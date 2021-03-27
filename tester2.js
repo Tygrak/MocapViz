@@ -109,7 +109,7 @@ function createRandomTest() {
         chosenCategories.push(category);
     }
     currentCategory = chosenCategories[getRandomInt(chosenCategories.length)];
-    resultText.innerHTML = "Select all sequences of category " + motionCategories[currentCategory];
+    resultText.innerHTML = "Select all sequences of category " + motionCategoriesHuman[currentCategory];
 } 
 
 function submitAnswers() {

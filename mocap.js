@@ -497,6 +497,10 @@ function findMaximumsFromFrame(frame) {
 
 function findKeyframesEquidistant(frames, numKeyframes) {
     let result = [];
+    if (numKeyframes == 1) {
+        result.push(frames.length-1);
+        return result;
+    }
     for (let i = 0; i < numKeyframes; i++) {
         result.push(i*Math.floor((frames.length-1)/(numKeyframes-1)));
     }
@@ -780,7 +784,16 @@ function findOptimalScale(frames, canvas, numFrames) {
         maxY = Math.max(maxY, maximums.y);
         minY = Math.min(minY, minimums.y);
     }
-    return Math.min((canvas.height-28)/(maxY-minY), (canvas.width/(numFrames-1))/(maxWidth-20));
+    let scaleHeight = (canvas.height-28)/(maxY-minY);
+    let scaleWidth = (canvas.width/(numFrames-1))/(maxWidth-20);
+    if (scaleHeight < 0 && scaleWidth < 0) {
+        return 1;
+    } else if (scaleHeight < 0) {
+        return scaleWidth;
+    } else if (scaleWidth < 0) {
+        return scaleHeight;
+    }
+    return Math.min(scaleHeight, scaleWidth);
 }
 
 function findMeterConversion(sequences, actorHeight) {
