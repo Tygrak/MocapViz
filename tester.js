@@ -4,19 +4,19 @@ const dataFileInput = document.getElementById("dataFileInput");
 const loadButton = document.getElementById("dataInputLoadButton");
 loadButton.onclick = loadDataFile;
 
-/*
+
 loaded = false;
 loadData(function(response) {
     sequences = loadDataFromString(response);
     console.log("Loaded " + sequences.length + " sequences.");
     loaded = true;
     createRandomTest();
-});*/
+});
 
 function loadData(callback) {   
     let xobj = new XMLHttpRequest();
     xobj.overrideMimeType("application/text");
-    xobj.open('GET', 'hdm05part.data', true);
+    xobj.open('GET', 'hdm05part.txt', true);
     xobj.onreadystatechange = function () {
         if (xobj.readyState == 4 && xobj.status == "200") {
             callback(xobj.responseText);
@@ -80,7 +80,7 @@ function createRandomTest() {
     let buttons = document.getElementById("answerButtons").getElementsByTagName("button");
     let resultText = document.getElementById("resultText");
     let correct = getRandomInt(buttons.length);
-    buttons[correct].innerText = motionCategories[correctCategory];
+    buttons[correct].innerText = motionCategoriesHuman[correctCategory];
     buttons[correct].onclick = function () {resultText.innerText = "Correct!"; createRandomTest();};
     for (let i = 0; i < buttons.length; i++) {
         if (i == correct) {
@@ -92,7 +92,7 @@ function createRandomTest() {
         }
         //console.log("Incorrect " + i + " " + motionCategories[category]);
         chosenCategories.push(category);
-        buttons[i].innerText = motionCategories[category.toFixed(0)];
+        buttons[i].innerText = motionCategoriesHuman[category.toFixed(0)];
         buttons[i].onclick = function () {resultText.innerText = "Wrong! Correct was: " + motionCategoriesHuman[correctCategory]; createRandomTest();};
     }
     console.log("Correct " + correct + " " + motionCategories[correctCategory]);

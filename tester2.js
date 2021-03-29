@@ -12,19 +12,19 @@ const resultText = document.getElementById("resultText");
 loadButton.onclick = loadDataFile;
 submitButton.onclick = submitAnswers;
 
-/*
+
 loaded = false;
 loadData(function(response) {
     sequences = loadDataFromString(response);
     console.log("Loaded " + sequences.length + " sequences.");
     loaded = true;
     createRandomTest();
-});*/
+});
 
 function loadData(callback) {   
     let xobj = new XMLHttpRequest();
     xobj.overrideMimeType("application/text");
-    xobj.open('GET', 'hdm05part.data', true);
+    xobj.open('GET', 'hdm05part.txt', true);
     xobj.onreadystatechange = function () {
         if (xobj.readyState == 4 && xobj.status == "200") {
             callback(xobj.responseText);

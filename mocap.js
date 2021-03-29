@@ -449,7 +449,9 @@ function drawTopDownMapParallelogramUnitGrid(canvas, frames, indexes, topLeft, b
             ctx.closePath();
             ctx.fill();
         } else {
-            ctx.fillStyle = rgbaToColorString({r: (i/frames.length)*255, g: 0, b: 128, a:0.3});
+            let color = hslToRgb((i/frames.length)*0.95, 0.9, 0.5);
+            color.a = 0.35;
+            ctx.fillStyle = rgbaToColorString(color);
             ctx.beginPath();
             ctx.rect(bottomLeft.x+transformedX+startShiftX, topLeft.y+transformedZ, 3, 3);
             ctx.closePath();
@@ -937,6 +939,32 @@ function inverseLerp(a, b, value) {
     return (value-a)/(b-a);
 }
 
+function hue2rgb(p, q, t){
+    if(t < 0) t += 1;
+    if(t > 1) t -= 1;
+    if(t < 1/6) return p + (q - p) * 6 * t;
+    if(t < 1/2) return q;
+    if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+    return p;
+}
+
+//h, s, and l are in <0, 1>
+function hslToRgb(h, s, l){
+    let r;
+    let g;
+    let b;
+    if(s == 0){
+        r = g = b = l;
+    } else {
+        let q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        let p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1/3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1/3);
+    }
+    return {r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255), a: 1};
+}
+
 function scaleRgbaColor(rgba, scalar) {
     let result = {r:clamp(0, 255, rgba.r*scalar), g:clamp(0, 255, rgba.g*scalar), b:clamp(0, 255, rgba.b*scalar), a:rgba.a};
     return result;
@@ -1000,6 +1028,22 @@ function drawFrame(canvas, frame, xShift, yShift, drawStyle) {
         } else {
             ctx.fillStyle = rgbaToColorString(drawStyle.boneStyle);
         }
+        /*if (bones[i].type == BoneType.rightHand || bones[i].type == BoneType.rightLeg) {
+            //ctx.fillStyle = rgbaToColorString(drawStyle.rightBoneStyle);
+            let color = scaleRgbaColor(drawStyle.rightBoneStyle, 0.35+0.65*(i/bones.length));
+            color.a = Math.max(Math.min(0.5, color.a), color.a*(0.7+0.3*(i/bones.length)));
+            ctx.fillStyle = rgbaToColorString(color);
+        } else if (bones[i].type == BoneType.leftHand || bones[i].type == BoneType.leftLeg) {
+            //ctx.fillStyle = rgbaToColorString(drawStyle.leftBoneStyle);
+            let color = scaleRgbaColor(drawStyle.leftBoneStyle, 0.35+0.65*(i/bones.length));
+            color.a = Math.max(Math.min(0.5, color.a), color.a*(0.7+0.3*(i/bones.length)));
+            ctx.fillStyle = rgbaToColorString(color);
+        } else {
+            //ctx.fillStyle = rgbaToColorString(drawStyle.boneStyle);
+            let color = scaleRgbaColor(drawStyle.boneStyle, 1);
+            color.a = Math.max(Math.min(0.5, color.a), color.a*(0.7+0.3*(i/bones.length)));
+            ctx.fillStyle = rgbaToColorString(color);
+        }*/
         drawRectangle(ctx, a, b, drawStyle.boneRadius+1*(i/bones.length), xShift, yShift);
     }
     if (nosePos.z >= frame[drawStyle.headJointIndex].z) {
