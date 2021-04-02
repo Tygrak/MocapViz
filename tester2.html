@@ -22,6 +22,42 @@
                 <button class="answerButton" id="submitAnswersButton">Submit Answers</button>
             </div>
         </div>
+        <div id="sidemenubuttondiv">
+            <button id="sidemenubutton" class="" onclick="toggleButton(this)"></button>
+        </div>
+        <nav class="sidemenu sidemenu-vertical sidemenu-right" id="sidemenu">
+            <h3>User Guide</h3>
+            <div class="sidemenuitem" class="">
+                <h4>General</h4>
+                <ul>
+                    <li>Motion blur shows fast movement.</li>
+                    <li>The most important poses - keyframes are drawn with darker colors.</li>
+                </ul>
+                <h4>Orientation</h4>
+                <ul>
+                    <li>Direction the skeleton is facing is indicated with pink line drawn from the head.</li>
+                    <li>Right-sided limbs are color-coded with blue. Left-sided limbs are color-coded with red.</li>
+                </ul>
+                <h4>Minimap</h4>
+                <ul>
+                    <li>Movement on minimap always starts from the middle of the map.</li>
+                    <li>The colors on the minimap go from red/yellowish (beginning of sequence) to purple/blueish (end of sequence). Black squares signify keyframes.</li>
+                    <li>Each square of the grid on the minimap is roughly 1*1dm large.</li>
+                </ul>
+                <h4>Time</h4>
+                <ul>
+                    <li>Below each keyframe is it's number.</li>
+                    <li>The length of the sequence is visualized using a line drawn at the top left of the visualization. One second is marked with black markers,
+                         keyframes are marked with blue markers.</li>
+                </ul>
+            </div>
+        </nav>
+        <script>
+            function toggleButton(butt){
+                butt.classList.toggle('button-active');
+                document.getElementById("sidemenu").classList.toggle('sidemenu-open');
+            };
+        </script>
         <script src="mocap.js"></script>
         <script src="model.js"></script>
         <script src="tester2.js"></script>  
