@@ -296,6 +296,15 @@ function getSequenceCategory(rawData) {
     return category;
 }
 
+function getSequenceLength(rawData) {
+    let lines = rawData;
+    let description = lines[1].match(/\d+(?=;)/);
+    if (description == null) {
+        return -1;
+    }
+    return parseInt(description);
+}
+
 function drawMapScale(canvas, markerDistance) {
     let ctx = canvas.getContext("2d");
     ctx.fillStyle = "rgba(0, 0, 0, 1)";

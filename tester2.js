@@ -74,6 +74,21 @@ function getRandomIntRange(min, max) {
     return Math.floor(Math.random()*Math.floor(max-min)+min);
 }
 
+function getSimilarCategory(category) {
+    return Math.min(152, Math.max(22, getRandomIntRange(category-4, category+5)));
+}
+
+function shuffle(a) {
+    var j, x, i;
+    for (i = a.length - 1; i > 0; i--) {
+        j = Math.floor(Math.random() * (i + 1));
+        x = a[i];
+        a[i] = a[j];
+        a[j] = x;
+    }
+    return a;
+}
+
 function createRandomTest() {
     let targetElement = document.getElementById("drawRegion");
     targetElement.innerHTML = "";
@@ -82,14 +97,58 @@ function createRandomTest() {
     selectedSequences = [];
     currentVisualizationDivs = [];
     submittedAnswers = false;
-    for (let i = 0; i < Math.min(sequences.length, 10); i++) {
-        let randomNum = getRandomInt(sequences.length);
-        while (currentSequences.indexOf(randomNum) != -1) {
-            randomNum = getRandomInt(sequences.length);
+    let longestSequenceLength = 0;
+    let targetLength = getRandomIntRange(100, 480);
+    if (sequences.length > 150) {
+        console.log("Target length: " + targetLength);
+        let amountMult = getRandomIntRange(1, 5); 
+        let multTarget = getRandomInt(sequences.length);
+        while (getSequenceLength(sequences[multTarget]) > targetLength*1.25+10 || getSequenceLength(sequences[multTarget]) < targetLength*0.75-10) {
+            multTarget = getRandomInt(sequences.length);
         }
-        currentSequences.push(randomNum);
-        let sequence = sequences[randomNum];
-        let visualization = createVisualizationElement(sequence, modelVicon, 10, 10, 150, 150, 750, 150, true);
+        let multTargetCategory = getSequenceCategory(sequences[multTarget]);
+        console.log("Target category: " + multTargetCategory);
+        currentSequences.push(multTarget);
+        longestSequenceLength = getSequenceLength(sequences[multTarget]);
+        for (let i = 0; i < amountMult; i++) {
+            let randomNum = getRandomInt(sequences.length);
+            while (currentSequences.indexOf(randomNum) != -1 || getSequenceCategory(sequences[randomNum]) > multTargetCategory+4 || getSequenceCategory(sequences[randomNum]) < multTargetCategory-4 
+                    || getSequenceLength(sequences[randomNum]) > targetLength*1.25+10 || getSequenceLength(sequences[randomNum]) < targetLength*0.75-10) {
+                randomNum = getRandomInt(sequences.length);
+            }
+            currentSequences.push(randomNum);
+            if (getSequenceLength(sequences[randomNum]) > longestSequenceLength) {
+                longestSequenceLength = getSequenceLength(sequences[randomNum]);
+            }
+        }
+        for (let i = 0; i < 9-amountMult; i++) {
+            let randomNum = getRandomInt(sequences.length);
+            while (currentSequences.indexOf(randomNum) != -1 
+                    || getSequenceLength(sequences[randomNum]) > targetLength*1.25+10 || getSequenceLength(sequences[randomNum]) < targetLength*0.75-10) {
+                randomNum = getRandomInt(sequences.length);
+            }
+            currentSequences.push(randomNum);
+            if (getSequenceLength(sequences[randomNum]) > longestSequenceLength) {
+                longestSequenceLength = getSequenceLength(sequences[randomNum]);
+            }
+        }
+    } else {
+        for (let i = 0; i < Math.min(sequences.length, 10); i++) {
+            let randomNum = getRandomInt(sequences.length);
+            while (currentSequences.indexOf(randomNum) != -1) {
+                randomNum = getRandomInt(sequences.length);
+            }
+            currentSequences.push(randomNum);
+            if (getSequenceLength(sequences[randomNum]) > longestSequenceLength) {
+                longestSequenceLength = getSequenceLength(sequences[randomNum]);
+            }
+        }
+    }
+    shuffle(currentSequences);
+    for (let i = 0; i < currentSequences.length; i++) {
+        let sequence = sequences[currentSequences[i]];
+        let visualization = createVisualizationElement(sequence, modelVicon, Math.ceil(10*(sequence.length/longestSequenceLength)), 10, 
+                                                       150, 150, 850*(sequence.length/longestSequenceLength), 150, true);
         visualization.children[0].classList.add("drawBox");
         visualization.children[1].classList.add("drawBox");
         let checkbox = document.createElement("input");
@@ -109,7 +168,7 @@ function createRandomTest() {
         chosenCategories.push(category);
     }
     currentCategory = chosenCategories[getRandomInt(chosenCategories.length)];
-    resultText.innerHTML = "Select all sequences of category " + motionCategoriesHuman[currentCategory];
+    resultText.innerHTML = "Select all sequences of category '" + motionCategoriesHuman[currentCategory] + "'";
 } 
 
 function submitAnswers() {
@@ -140,6 +199,6 @@ function submitAnswers() {
             selectedCorrect++;
         }
     }
-    resultText.innerHTML = "Selected " + selectedCorrect + "/" + correct.length + " of category " + motionCategories[currentCategory] + ". " + mistakes + " mistakes. Press submit again to continue.";
+    resultText.innerHTML = "Selected " + selectedCorrect + "/" + correct.length + " of category " + motionCategoriesHuman[currentCategory] + ". " + mistakes + " mistakes. Press submit again to continue.";
     window.scrollTo(0, 0);
 }
