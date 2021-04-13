@@ -257,7 +257,7 @@ const motionCategoriesHuman = {
     "48":"Run On Place Start Floor 4 Steps Right Start",
     "49":"Run On Place Start Air 2 Steps Left Start",
     "50":"Run On Place Start Air 4 Steps Left Start",
-    "51":"Run On Place Start Air 2 Steps Righ Start",
+    "51":"Run On Place Start Air 2 Steps Right Start",
     "52":"Walk On Place 2 Steps Right Start",
     "53":"Walk On Place 4 Steps Right Start",
     "54":"Walk On Place 2 Steps Left Start",

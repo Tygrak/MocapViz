@@ -8,9 +8,13 @@ let submittedAnswers = false;
 const dataFileInput = document.getElementById("dataFileInput");
 const loadButton = document.getElementById("dataInputLoadButton");
 const submitButton = document.getElementById("submitAnswersButton");
+const saveQuestionFileButton = document.getElementById("saveQuestionFileButton");
+const loadQuestionFileButton = document.getElementById("loadQuestionFileButton");
 const resultText = document.getElementById("resultText");
 loadButton.onclick = loadDataFile;
 submitButton.onclick = submitAnswers;
+saveQuestionFileButton.onclick = saveQuestion;
+loadQuestionFileButton.onclick = loadQuestion;
 
 
 loaded = false;
@@ -89,6 +93,57 @@ function shuffle(a) {
     return a;
 }
 
+function download(data, filename) {
+    let file = new Blob([data], {type: "text/plain"});
+    if (window.navigator.msSaveOrOpenBlob) // IE10+
+        window.navigator.msSaveOrOpenBlob(file, filename);
+    else { // Others
+        let a = document.createElement("a");
+        let url = URL.createObjectURL(file);
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function() {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);  
+        }, 0); 
+    }
+}
+
+function saveQuestion() {
+    let result = currentCategory + "\n";
+    for (let i = 0; i < currentSequences.length; i++) {
+        result += "#objectKey"+sequences[currentSequences[i]].join("\n");
+    }
+    download(result, "question.txt");
+}
+
+function loadQuestion() {
+    if (dataFileInput.files.length == 0 || !loaded) {
+        return;
+    }
+    loaded = false;
+    sequences = [];
+    let fileLocation = 0;
+    let reader = new FileReader();
+    let last = "";
+    let loadChunkMbSize = 10;
+    reader.onload = function (textResult) {
+        let text = textResult.target.result;
+        let targetCategory = parseInt(text.split("\n")[0]);
+        text = text.split("\n").slice(1).join("\n");
+        sequences = loadDataFromString(text);
+        createRandomTest();
+        currentCategory = targetCategory;
+        console.log("Loaded " + sequences.length + " sequences from question.");
+    }
+    reader.onerror = function (e) {
+        console.log("Loading the data file failed, most likely because of how big the file is.");
+    }
+    reader.readAsText(dataFileInput.files[0], "UTF-8");
+}
+
 function createRandomTest() {
     let targetElement = document.getElementById("drawRegion");
     targetElement.innerHTML = "";
@@ -98,7 +153,8 @@ function createRandomTest() {
     currentVisualizationDivs = [];
     submittedAnswers = false;
     let longestSequenceLength = 0;
-    let targetLength = getRandomIntRange(100, 480);
+    let targetLength = getRandomIntRange(130, 480);
+    let randomizations = 0;
     if (sequences.length > 150) {
         console.log("Target length: " + targetLength);
         let amountMult = getRandomIntRange(1, 5); 
@@ -112,9 +168,10 @@ function createRandomTest() {
         longestSequenceLength = getSequenceLength(sequences[multTarget]);
         for (let i = 0; i < amountMult; i++) {
             let randomNum = getRandomInt(sequences.length);
-            while (currentSequences.indexOf(randomNum) != -1 || getSequenceCategory(sequences[randomNum]) > multTargetCategory+4 || getSequenceCategory(sequences[randomNum]) < multTargetCategory-4 
-                    || getSequenceLength(sequences[randomNum]) > targetLength*1.25+10 || getSequenceLength(sequences[randomNum]) < targetLength*0.75-10) {
+            while (randomizations < 10000 && (currentSequences.indexOf(randomNum) != -1 || getSequenceCategory(sequences[randomNum]) > multTargetCategory+4 || getSequenceCategory(sequences[randomNum]) < multTargetCategory-4 
+                    || getSequenceLength(sequences[randomNum]) > targetLength*1.25+10 || getSequenceLength(sequences[randomNum]) < targetLength*0.75-10)) {
                 randomNum = getRandomInt(sequences.length);
+                randomizations++;
             }
             currentSequences.push(randomNum);
             if (getSequenceLength(sequences[randomNum]) > longestSequenceLength) {
@@ -123,9 +180,10 @@ function createRandomTest() {
         }
         for (let i = 0; i < 9-amountMult; i++) {
             let randomNum = getRandomInt(sequences.length);
-            while (currentSequences.indexOf(randomNum) != -1 
-                    || getSequenceLength(sequences[randomNum]) > targetLength*1.25+10 || getSequenceLength(sequences[randomNum]) < targetLength*0.75-10) {
+            while (randomizations < 10000 && (currentSequences.indexOf(randomNum) != -1 
+                    || getSequenceLength(sequences[randomNum]) > targetLength*1.25+10 || getSequenceLength(sequences[randomNum]) < targetLength*0.75-10)) {
                 randomNum = getRandomInt(sequences.length);
+                randomizations++;
             }
             currentSequences.push(randomNum);
             if (getSequenceLength(sequences[randomNum]) > longestSequenceLength) {
