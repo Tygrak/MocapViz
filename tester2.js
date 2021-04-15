@@ -206,7 +206,7 @@ function createRandomTest() {
     for (let i = 0; i < currentSequences.length; i++) {
         let sequence = sequences[currentSequences[i]];
         let visualization = createVisualizationElement(sequence, modelVicon, Math.ceil(10*(sequence.length/longestSequenceLength)), 10, 
-                                                       150, 150, 850*(sequence.length/longestSequenceLength), 150, true);
+                                                       150, 150, 850*(sequence.length/longestSequenceLength), 150, false);
         visualization.children[0].classList.add("drawBox");
         visualization.children[1].classList.add("drawBox");
         let checkbox = document.createElement("input");
