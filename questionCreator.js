@@ -5,17 +5,22 @@ let selectedSequences = [];
 let currentVisualizationDivs = [];
 let currentCategory = 0;
 let submittedAnswers = false;
+let supercategory = motionSuperCategories.cartwheel;
 let keyframeAlgorithm = KeyframeSelectionAlgorithmEnum.Decimation;
 const dataFileInput = document.getElementById("dataFileInput");
 const loadButton = document.getElementById("dataInputLoadButton");
 const submitButton = document.getElementById("submitAnswersButton");
+const newQuestionButton = document.getElementById("newQuestionButton");
 const saveQuestionFileButton = document.getElementById("saveQuestionFileButton");
 const loadQuestionFileButton = document.getElementById("loadQuestionFileButton");
 const resultText = document.getElementById("resultText");
-loadButton.onclick = loadDataFile;
+const superCategorySelection = document.getElementById("superCategorySelection");
+const keyframeAlgorithmSelection = document.getElementById("keyframeAlgorithmSelection");
+loadButton.onclick = loadCategoryDataFile;
 submitButton.onclick = submitAnswers;
 saveQuestionFileButton.onclick = saveQuestion;
 loadQuestionFileButton.onclick = loadQuestion;
+newQuestionButton.onclick = remakeTest;
 
 
 loaded = false;
@@ -37,6 +42,43 @@ function loadData(callback) {
     };
     xobj.send(null);  
 }
+function loadCategoryDataFile() {
+    if (dataFileInput.files.length == 0 || !loaded) {
+        return;
+    }
+    loaded = false;
+    sequences = [];
+    let fileLocation = 0;
+    let reader = new FileReader();
+    let last = "";
+    let loadChunkMbSize = 10;
+    supercategory = motionSuperCategories[superCategorySelection.value];
+    reader.onload = function (textResult) {
+        let text = textResult.target.result;
+        let split = text.split("#objectKey");
+        split[0] = last+split[0];
+        last = split[split.length-1];
+        split.pop();
+        let seqs = split.filter((s) => {return s != "";}).map((s) => s.split("\n"));
+        sequences.push(...seqs.filter((s) => {return supercategory.indexOf(getSequenceCategory(s)) != -1;}));
+        fileLocation += loadChunkMbSize*1024*1024;
+        if (dataFileInput.files[0].size > fileLocation) {
+            reader.readAsText(dataFileInput.files[0].slice(fileLocation, fileLocation+loadChunkMbSize*1024*1024), "UTF-8");
+        } else if (last.trim() != "") {
+            if (supercategory.indexOf(getSequenceCategory(last.trim().split("\n")) != -1)) {
+                //sequences.push(last.trim().split("\n"));
+            }
+            loaded = true;
+            console.log("Loaded " + sequences.length + " sequences.");
+            createRandomTest();
+        }
+    }
+    reader.onerror = function (e) {
+        console.log("Loading the data file failed, most likely because of how big the file is.");
+    }
+    reader.readAsText(dataFileInput.files[0].slice(0, loadChunkMbSize*1024*1024), "UTF-8");
+}
+
 
 function loadDataFile() {
     if (dataFileInput.files.length == 0 || !loaded) {
@@ -54,6 +96,7 @@ function loadDataFile() {
         split[0] = last+split[0];
         last = split[split.length-1];
         split.pop();
+        supercategory.indexOf(getSequenceCategory(s)) != -1;
         sequences.push(...split.filter((s) => {return s != "";}).map((s) => s.split("\n")));
         fileLocation += loadChunkMbSize*1024*1024;
         if (dataFileInput.files[0].size > fileLocation) {
@@ -154,31 +197,14 @@ function createRandomTest() {
     let longestSequenceLength = 0;
     let targetLength = getRandomIntRange(130, 480);
     let randomizations = 0;
-    if (sequences.length > 150) {
+    if (sequences.length > 25) {
+        let randomNum = getRandomInt(sequences.length);
+        currentSequences.push(randomNum);
+        longestSequenceLength = getSequenceLength(sequences[randomNum]);
+        targetLength = longestSequenceLength;
         console.log("Target length: " + targetLength);
-        let amountMult = getRandomIntRange(1, 5); 
-        let multTarget = getRandomInt(sequences.length);
-        while (getSequenceLength(sequences[multTarget]) > targetLength*1.25+10 || getSequenceLength(sequences[multTarget]) < targetLength*0.75-10) {
-            multTarget = getRandomInt(sequences.length);
-        }
-        let multTargetCategory = getSequenceCategory(sequences[multTarget]);
-        console.log("Target category: " + multTargetCategory);
-        currentSequences.push(multTarget);
-        longestSequenceLength = getSequenceLength(sequences[multTarget]);
-        for (let i = 0; i < amountMult; i++) {
-            let randomNum = getRandomInt(sequences.length);
-            while (randomizations < 10000 && (currentSequences.indexOf(randomNum) != -1 || getSequenceCategory(sequences[randomNum]) > multTargetCategory+4 || getSequenceCategory(sequences[randomNum]) < multTargetCategory-4 
-                    || getSequenceLength(sequences[randomNum]) > targetLength*1.25+10 || getSequenceLength(sequences[randomNum]) < targetLength*0.75-10)) {
-                randomNum = getRandomInt(sequences.length);
-                randomizations++;
-            }
-            currentSequences.push(randomNum);
-            if (getSequenceLength(sequences[randomNum]) > longestSequenceLength) {
-                longestSequenceLength = getSequenceLength(sequences[randomNum]);
-            }
-        }
-        for (let i = 0; i < 9-amountMult; i++) {
-            let randomNum = getRandomInt(sequences.length);
+        for (let i = 0; i < 9; i++) {
+            randomNum = getRandomInt(sequences.length);
             while (randomizations < 10000 && (currentSequences.indexOf(randomNum) != -1 
                     || getSequenceLength(sequences[randomNum]) > targetLength*1.25+10 || getSequenceLength(sequences[randomNum]) < targetLength*0.75-10)) {
                 randomNum = getRandomInt(sequences.length);
@@ -205,7 +231,7 @@ function createRandomTest() {
     for (let i = 0; i < currentSequences.length; i++) {
         let sequence = sequences[currentSequences[i]];
         let visualization = createVisualizationElement(sequence, modelVicon, Math.ceil(10*(sequence.length/longestSequenceLength)), 10, 
-                                                       150, 150, 850*(sequence.length/longestSequenceLength), 150, false, false, keyframeAlgorithm);
+                                                       150, 150, 850*(sequence.length/longestSequenceLength), 150, false, true, keyframeAlgorithm);
         visualization.children[0].classList.add("drawBox");
         visualization.children[1].classList.add("drawBox");
         let checkbox = document.createElement("input");
@@ -228,12 +254,16 @@ function createRandomTest() {
     resultText.innerHTML = "Select all sequences of category '" + motionCategoriesHuman[currentCategory] + "'";
 } 
 
+function remakeTest() {
+    window.scrollTo(0, 0);
+    keyframeAlgorithm = KeyframeSelectionAlgorithmEnum[keyframeAlgorithmSelection.value];
+    createRandomTest();
+    submittedAnswers = false;
+}
+
 function submitAnswers() {
     if (submittedAnswers) {
-        window.scrollTo(0, 0);
-        keyframeAlgorithm = KeyframeSelectionAlgorithmEnum[keyframeAlgorithmSelection.value];
-        createRandomTest();
-        submittedAnswers = false;
+        remakeTest();
         return;
     }
     submittedAnswers = true;
