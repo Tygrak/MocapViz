@@ -1,8 +1,3 @@
-
-
-
-
-
 const data = `#objectKey messif.objects.keys.AbstractObjectKey 3215_114_2173_123
 123;mcdr.objects.ObjectMocapPose
 -3.9806, 17.1221, 0.456548; -5.64334, 15.644651, 1.801716; -7.27837, 9.182609, 1.22156; -4.72671, 1.846909, 2.253426; -7.497594, 0.853734, 2.024997; -8.900558, 0.969846, 1.847703; -4.91366, 15.562641, -1.441301; -7.124718, 9.515886, -2.487873; -4.739091, 2.175161, -3.080781; -6.715339, 0.380842, -3.650472; -8.003167, 0.423206, -3.858499; -3.930615, 19.728672, 0.337865; -4.480268, 22.31207, 0.111462; -4.922802, 24.975601, -0.007642; -5.069181, 26.53066, -0.105236; -5.397403, 28.03245, 0.007977; -5.94555, 29.526428, 0.186004; -5.890488, 25.11249, 4.528152; -6.32807, 20.82116, 6.072223; -9.116115, 20.781523, 4.061292; -10.509737, 20.760763, 3.055292; -11.465531, 20.868057, 2.642547; -12.190827, 20.936975, 2.21685; -11.21944, 21.091652, 2.130798; -4.106019, 25.044174, -3.950549; -5.240958, 20.767233, -4.939593; -8.485794, 21.169579, -4.293131; -10.108371, 21.36878, -3.969477; -10.769926, 22.387428, -3.988595; -11.33336, 23.182299, -3.88906; -10.652954, 22.476402, -3.295682
@@ -131,5 +126,29 @@ const data = `#objectKey messif.objects.keys.AbstractObjectKey 3215_114_2173_123
 `
 
 let sequence = loadDataFromString(data)[0];
-let targetElement = document.getElementById("drawContainer");
-targetElement.appendChild(createVisualizationElement(sequence, modelVicon, 12, 8, 150, 150, 900, 150));
+
+const renderer = new THREE.WebGLRenderer();
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 500);
+camera.position.set(0, 0, 10);
+camera.lookAt(0, 0, 0);
+const scene = new THREE.Scene();
+//create a blue LineBasicMaterial
+const material = new THREE.LineBasicMaterial({ color: 0x0000ff } );
+const points = [];
+points.push(new THREE.Vector3(-1, 0, 0));
+points.push(new THREE.Vector3(0, 1, 0));
+points.push(new THREE.Vector3(1, 0, 0));
+const geometry = new THREE.BufferGeometry().setFromPoints( points );
+const line = new THREE.Line( geometry, material );
+scene.add( line );
+renderer.render(scene, camera);
+
+function animate() {
+	requestAnimationFrame(animate);
+	renderer.render(scene, camera);
+    line.rotation.x += 0.01;
+    line.rotation.y += 0.01;
+}
+animate();

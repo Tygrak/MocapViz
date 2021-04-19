@@ -381,4 +381,5 @@ const motionSuperCategories = {
     "cartwheel":["136", "138", "139"],
     "hop":["141", "142", "143", "144", "145", "146", "147", "148", "149"],
     "staircase":["150", "151", "152"],
+    "allCategories":[...Array(153).keys()].map((x) => x+"").slice(22),
 }

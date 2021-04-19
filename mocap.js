@@ -142,6 +142,30 @@ function loadDataFromString(dataString) {
     return dataString.split("#objectKey").filter((s) => {return s != "";}).map((s) => s.split("\n"));
 }
 
+function createZoomableVisualizationElement(sequence, model, numKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight, addTimeScale = false, addFillingKeyframes = true, keyframeSelectionAlgorithm = 4) {
+    let main = createVisualizationElement(sequence, model, numKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight, addTimeScale, addFillingKeyframes, keyframeSelectionAlgorithm);
+    let zoomWidth = Math.floor(document.body.clientWidth-document.body.clientWidth/24);
+    let zoomHeight = Math.floor(document.body.clientHeight*0.6-document.body.clientWidth/16);
+    let bg = document.createElement("div");
+    let zoomed = createVisualizationElement(sequence, model, 12, numBlurFrames, 0, 0, zoomWidth, zoomHeight, addTimeScale, addFillingKeyframes, keyframeSelectionAlgorithm);
+    zoomed.style = "z-index: 9999; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; border: 2px solid black; display: block;";
+    bg.style = "display: none;";
+    let fun = () => {
+        let hide = main.classList.toggle("hidden");
+        if (!hide) {
+            bg.style = "display: none;";
+        } else {
+            bg.style = "z-index: 9998; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.9); display: block;";
+        }
+    };
+    bg.onclick = fun;
+    main.children[0].onclick = fun;
+    main.children[1].onclick = fun;
+    bg.appendChild(zoomed);
+    main.appendChild(bg);
+    return main;
+}
+
 function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight, addTimeScale = false, addFillingKeyframes = true, keyframeSelectionAlgorithm = 4) {
     let div = document.createElement("div");
     div.className = "drawItem-"+motionCategories[getSequenceCategory(sequence)];

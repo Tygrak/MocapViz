@@ -25,7 +25,7 @@ body {
 }
 
 .horizontallyCentered {
-    width: 95%;
+    width: 97%;
     margin: 1em;
 }
 
@@ -149,7 +149,7 @@ body {
 	width: 30em;
 	height: 100%;
 	top: 0;
-	z-index: 1000;
+	z-index: 100;
 }
 
 /* Vertical menu that slides from the left or right */
