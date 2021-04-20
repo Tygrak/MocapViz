@@ -186,10 +186,10 @@ function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames
     }
     if (frames.length == 0) {
         frames = processSequenceToFrames2d(sequence, canvas.height, figureScale*model.defaultScale);
-        figureScale = figureScale*findOptimalScale(frames, canvas, numKeyframes);
+        figureScale = figureScale*findOptimalScale(frames, canvas.width, canvas.height, numKeyframes);
         frames = processSequenceToFrames2d(sequence, canvas.height, figureScale*model.defaultScale);
     } else {
-        figureScale = figureScale*findOptimalScale(frames, canvas, numKeyframes);
+        figureScale = figureScale*findOptimalScale(frames, canvas.width, canvas.height, numKeyframes);
         frames = processSequenceToFrames(sequence, canvas.height, figureScale*model.defaultScale);
     }
     let drawStyle = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, model.boneRadius, model.jointRadius,
@@ -268,7 +268,24 @@ function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames
     return div;
 }
 
-function processSequenceToFrames(rawData, canvasHeight, figureScale) {
+function processSequenceToFramesAuto(sequence, width, height, defaultScale, switchY = false) {
+    let figureScale = 1;
+    let frames = processSequenceToFrames(sequence, 0, figureScale, switchY);
+    if (figureScale < 0) {
+        figureScale = 1;
+    }
+    if (frames.length == 0) {
+        frames = processSequenceToFrames2d(sequence, 0, figureScale, switchY);
+        figureScale = figureScale*findOptimalScale(frames, width, height, 12);
+        frames = processSequenceToFrames2d(sequence, 0, figureScale*defaultScale, switchY);
+    } else {
+        figureScale = figureScale*findOptimalScale(frames, width, height, 12);
+        frames = processSequenceToFrames(sequence, 40, figureScale*defaultScale, switchY);
+    }
+    return frames;
+}
+
+function processSequenceToFrames(rawData, canvasHeight, figureScale, switchY = false) {
     let lines = rawData;
     let frames = lines.map((frame) => {
         return frame.replace(" ", "").split(';').map((joint) => {
@@ -280,31 +297,39 @@ function processSequenceToFrames(rawData, canvasHeight, figureScale) {
     if (frames.length == 0) {
         return frames;
     } 
-    let yShift = -20+canvasHeight-Math.max(findMaximumsFromFrame(frames[0]).y, findMaximumsFromFrame(frames[frames.length-1]).y);
+    let yShift = canvasHeight-Math.max(findMaximumsFromFrame(frames[0]).y, findMaximumsFromFrame(frames[frames.length-1]).y);
     for (let i = 0; i < frames.length; i++) {
         for (let j = 0; j < frames[i].length; j++) {
-            frames[i][j].y += yShift; 
+            if (switchY) {
+                frames[i][j].y = -frames[i][j].y-yShift;
+            } else {
+                frames[i][j].y = frames[i][j].y+yShift;
+            }
         }
     }
     return frames;
 }
 
-function processSequenceToFrames2d(rawData, canvasHeight, figureScale) {
+function processSequenceToFrames2d(rawData, canvasHeight, figureScale, switchY = false) {
     let lines = rawData;
     let frames = lines.map((frame) => {
         return frame.replace(" ", "").split(';').map((joint) => {
             let xy = joint.split(',');
-            return {x:parseFloat(xy[0])*figureScale, y:parseFloat(xy[1])*figureScale + canvasHeight-10, z:0};
+            return {x:parseFloat(xy[0])*figureScale, y:parseFloat(xy[1])*figureScale + canvasHeight, z:0};
         });
     });
     frames = frames.filter((f) => {return f.length > 0 && !isNaN(f[0].x) && !isNaN(f[0].y)});
     if (frames.length == 0) {
         return frames;
     } 
-    let yShift = -20+canvasHeight-Math.max(findMaximumsFromFrame(frames[0]).y, findMaximumsFromFrame(frames[frames.length-1]).y);
+    let yShift = canvasHeight-Math.max(findMaximumsFromFrame(frames[0]).y, findMaximumsFromFrame(frames[frames.length-1]).y);
     for (let i = 0; i < frames.length; i++) {
         for (let j = 0; j < frames[i].length; j++) {
-            frames[i][j].y += yShift; 
+            if (switchY) {
+                frames[i][j].y = -frames[i][j].y-yShift;
+            } else {
+                frames[i][j].y = frames[i][j].y+yShift;
+            }
         }
     }
     return frames;
@@ -801,7 +826,7 @@ function findSequenceMaximums(frames, numSamples) {
     return framesMax;
 }
 
-function findOptimalScale(frames, canvas, numFrames) {
+function findOptimalScale(frames, width, height, numFrames) {
     let maximums = findMaximumsFromFrame(frames[0]);
     let minimums = findMinimumsFromFrame(frames[0]);
     let maxWidth = maximums.x-minimums.x;
@@ -819,8 +844,8 @@ function findOptimalScale(frames, canvas, numFrames) {
         maxY = Math.max(maxY, maximums.y);
         minY = Math.min(minY, minimums.y);
     }
-    let scaleHeight = (canvas.height-28)/(maxY-minY);
-    let scaleWidth = (canvas.width/(numFrames-1))/(maxWidth-20);
+    let scaleHeight = (height)/(maxY-minY);
+    let scaleWidth = (width/(numFrames-1))/(maxWidth);
     if (scaleHeight < 0 && scaleWidth < 0) {
         return 1;
     } else if (scaleHeight < 0) {
@@ -1004,7 +1029,7 @@ function scaleRgbaColor(rgba, scalar) {
 }
 
 function rgbaToColorString(rgba) {
-    return "rgba("+rgba.r+","+rgba.g+","+rgba.b+","+rgba.a+")";
+    return "rgba("+Math.floor(rgba.r)+","+Math.floor(rgba.g)+","+Math.floor(rgba.b)+","+rgba.a+")";
 }
 
 function drawRectangle(ctx, a, b, radius, xShift, yShift) {
