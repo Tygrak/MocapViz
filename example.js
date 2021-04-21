@@ -1,4 +1,4 @@
-import * as THREE from './lib/three.module.js';
+import * as Mocap from './mocap.js';
 
 const data = `#objectKey messif.objects.keys.AbstractObjectKey 3215_114_2173_123
 123;mcdr.objects.ObjectMocapPose
@@ -127,118 +127,11 @@ const data = `#objectKey messif.objects.keys.AbstractObjectKey 3215_114_2173_123
 -4.094, 16.7933, -1.31008; -5.274251, 15.124422, 0.295813; -8.180685, 9.1065, 0.620081; -4.553903, 2.16405, 0.812547; -6.834917, 0.315228, 0.503991; -8.215694, 0.031387, 0.342411; -5.476, 15.349077, -3.015553; -6.33103, 8.931396, -2.222061; -3.857055, 1.693878, -3.416538; -6.360775, 0.936014, -2.637623; -7.443743, 1.553142, -2.250445; -3.805609, 19.370438, -1.603324; -4.010442, 21.995506, -1.910549; -4.143582, 24.693666, -1.991917; -4.186965, 26.24901, -2.15981; -4.431823, 27.76968, -2.100466; -4.889016, 29.295008, -1.931719; -4.662173, 24.900606, 2.614255; -7.08385, 21.072624, 3.302138; -9.445574, 23.341913, 2.257534; -10.626796, 24.475843, 1.734495; -11.220602, 25.33731, 1.760603; -11.699083, 26.027288, 1.676887; -10.979427, 25.519617, 1.230472; -3.6947, 24.702906, -5.994013; -4.603244, 21.09903, -8.591153; -7.599989, 22.026758, -7.465278; -9.099091, 22.488276, -6.902352; -9.574478, 23.576828, -6.647941; -9.979104, 24.410616, -6.331309; -9.368723, 23.509073, -5.973551
 `
 
-class Skeleton {
-    constructor (head, nose, bones) {
-        this.head = head;
-        this.nose = nose;
-        this.bones = bones;
-    }
-}
 
-function createBoxLine(pA, pB, color, radius = 1) {
-    let box = new THREE.Mesh(new THREE.BoxGeometry(radius, radius, 1), new THREE.MeshBasicMaterial({color: new THREE.Color(color)}));
-    box.scale.z = pA.distanceTo(pB);
-    box.position.set((pA.x+pB.x)/2, (pA.y+pB.y)/2, (pA.z+pB.z)/2);
-    box.lookAt(pB);
-    return box;
-}
+const canvas = document.getElementsByClassName("drawBox")[0];
+let width = Math.floor(window.innerWidth);
+let height = Math.floor(window.innerHeight);
 
-function moveBoxLine(box, pA, pB) {
-    box.scale.z = pA.distanceTo(pB);
-    box.position.set((pA.x+pB.x)/2, (pA.y+pB.y)/2, (pA.z+pB.z)/2);
-    box.lookAt(pB);
-}
+let sequence = Mocap.loadDataFromString(data)[0];
+Mocap.visualizeToCanvas(canvas, sequence, modelVicon, 12, 10, width, height, true, KeyframeSelectionAlgorithmEnum.Decimation);
 
-function createSkeleton(drawStyle) {
-    let nose = createBoxLine(new THREE.Vector3(), new THREE.Vector3(), rgbaToColorString({r: 192, g: 16, b:128, a: drawStyle.boneStyle.a}), 0.5);
-    let head = new THREE.Mesh(new THREE.SphereGeometry(drawStyle.headRadius, 32, 32), new THREE.MeshBasicMaterial({color: new THREE.Color(rgbaToColorString(drawStyle.jointStyle))}));
-    let modelBones = drawStyle.bonesModel.slice();
-    let bones = [];
-    for (let i = 0; i < modelBones.length; i++) {
-        let color = rgbaToColorString(drawStyle.boneStyle);
-        if (modelBones[i].type == BoneType.rightHand || modelBones[i].type == BoneType.rightLeg) {
-            color = rgbaToColorString(drawStyle.rightBoneStyle);
-        } else if (modelBones[i].type == BoneType.leftHand || modelBones[i].type == BoneType.leftLeg) {
-            color = rgbaToColorString(drawStyle.leftBoneStyle);
-        }
-        bones.push(createBoxLine(new THREE.Vector3(), new THREE.Vector3(), color, drawStyle.boneRadius));
-    }
-    return new Skeleton(head, nose, bones);
-}
-
-function modifySkeletonToFrame(skeleton, frame, drawStyle) {
-    let vecNose = crossProduct(new Vec3(frame[drawStyle.headJointIndex].x-frame[drawStyle.thoraxIndex].x, frame[drawStyle.headJointIndex].y-frame[drawStyle.thoraxIndex].y, frame[drawStyle.headJointIndex].z-frame[drawStyle.thoraxIndex].z),
-                               new Vec3(frame[drawStyle.leftArmIndex].x-frame[drawStyle.thoraxIndex].x, frame[drawStyle.leftArmIndex].y-frame[drawStyle.thoraxIndex].y, frame[drawStyle.leftArmIndex].z-frame[drawStyle.thoraxIndex].z));
-    vecNose = normalize(vecNose);
-    vecNose = new Vec3(-vecNose.x*8*drawStyle.figureScale, -vecNose.y*8*drawStyle.figureScale, -vecNose.z*8*drawStyle.figureScale);
-    let nosePos = new Vec3(frame[drawStyle.headJointIndex].x+vecNose.x, frame[drawStyle.headJointIndex].y+vecNose.y, frame[drawStyle.headJointIndex].z+vecNose.z);
-    let nosePoints = [new THREE.Vector3(nosePos.x, nosePos.y, nosePos.z), 
-                      new THREE.Vector3(frame[drawStyle.headJointIndex].x, frame[drawStyle.headJointIndex].y, frame[drawStyle.headJointIndex].z)];
-    moveBoxLine(skeleton.nose, nosePoints[0], nosePoints[1]);
-    skeleton.head.position.set(frame[drawStyle.headJointIndex].x, frame[drawStyle.headJointIndex].y, frame[drawStyle.headJointIndex].z);
-    let bones = drawStyle.bonesModel;
-    for (let i = 0; i < bones.length; i++) {
-        if (bones[i].a >= frame.length || bones[i].b >= frame.length) {
-            continue;
-        }
-        let a = frame[bones[i].a];
-        let b = frame[bones[i].b];
-        let pA = new THREE.Vector3(a.x, a.y, a.z);
-        let pB = new THREE.Vector3(b.x, b.y, b.z);
-        moveBoxLine(skeleton.bones[i], pA, pB);
-    }
-}
-
-function addSkeletonToScene(scene, skeleton) {
-    scene.add(skeleton.head);
-    scene.add(skeleton.nose);
-    for (let i = 0; i < skeleton.bones.length; i++) {
-        scene.add(skeleton.bones[i]);
-    }
-}
-
-let renderer = new THREE.WebGLRenderer();
-let width = window.innerWidth;
-let height = window.innerHeight;
-let ratio = width/height;
-renderer.setSize(width, height);
-document.body.appendChild(renderer.domElement);
-
-
-let sequence = loadDataFromString(data)[0];
-let frames = processSequenceToFramesAuto(sequence, 100, 100*ratio, 2, true);
-let bestRotation = findBestRotation(frames, 12);
-for (let i = 0; i < frames.length; i++) {
-    frames[i] = frameRotateY(frames[i], bestRotation);
-}
-
-let model = modelVicon;
-let drawStyle = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 1, 0,
-    2.5, boneStyleDefault, leftBoneStyleDefault, rightBoneStyleDefault, jointStyleDefault, 1);
-let drawStyleBlur = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, model.boneRadius, model.jointRadius,
-    model.headRadius, blurStyleDefault, blurStyleDefault, blurStyleDefault, blurStyleDefault, 1);
-
-let scene = new THREE.Scene();
-scene.background = new THREE.Color(0xffffff);
-//let camera = new THREE.PerspectiveCamera(60, ratio, 0.1, 1000);
-let camera = new THREE.OrthographicCamera(-100, 100, 100/ratio, -100/ratio, 0.1, 10000);
-camera.position.set(0, 0, 50);
-camera.lookAt(0, 0, 0);
-let skeleton = createSkeleton(drawStyle);
-addSkeletonToScene(scene, skeleton);
-modifySkeletonToFrame(skeleton, frames[0], drawStyle);
-
-let frame = 0;
-
-const animate = function () {
-    frame = (frame+1)%frames.length;
-    modifySkeletonToFrame(skeleton, frames[frame], drawStyle);
-    requestAnimationFrame(animate);
-    renderer.render(scene, camera);
-};
-
-animate();
-
-
-
-//drawFrame(renderer, width, height, frames[0], 0, 0, drawStyle);

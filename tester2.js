@@ -1,3 +1,5 @@
+import * as Mocap from "./mocap.js";
+
 let loaded = true;
 let sequences = [];
 let currentSequences = [];
@@ -20,7 +22,7 @@ loadQuestionFileButton.onclick = loadQuestion;
 
 loaded = false;
 loadData(function(response) {
-    sequences = loadDataFromString(response);
+    sequences = Mocap.loadDataFromString(response);
     console.log("Loaded " + sequences.length + " sequences.");
     loaded = true;
     createRandomTest();
@@ -132,7 +134,7 @@ function loadQuestion() {
         currentCategory = parseInt(text[0]);
         keyframeAlgorithm = parseInt(text[1]);
         text = text.slice(2).join("\n");
-        sequences = loadDataFromString(text);
+        sequences = Mocap.loadDataFromString(text);
         createRandomTest();
         console.log("Loaded " + sequences.length + " sequences from question.");
         loaded = true;
@@ -158,35 +160,35 @@ function createRandomTest() {
         console.log("Target length: " + targetLength);
         let amountMult = getRandomIntRange(1, 5); 
         let multTarget = getRandomInt(sequences.length);
-        while (getSequenceLength(sequences[multTarget]) > targetLength*1.25+10 || getSequenceLength(sequences[multTarget]) < targetLength*0.75-10) {
+        while (Mocap.getSequenceLength(sequences[multTarget]) > targetLength*1.25+10 || Mocap.getSequenceLength(sequences[multTarget]) < targetLength*0.75-10) {
             multTarget = getRandomInt(sequences.length);
         }
-        let multTargetCategory = getSequenceCategory(sequences[multTarget]);
+        let multTargetCategory = Mocap.getSequenceCategory(sequences[multTarget]);
         console.log("Target category: " + multTargetCategory);
         currentSequences.push(multTarget);
-        longestSequenceLength = getSequenceLength(sequences[multTarget]);
+        longestSequenceLength = Mocap.getSequenceLength(sequences[multTarget]);
         for (let i = 0; i < amountMult; i++) {
             let randomNum = getRandomInt(sequences.length);
-            while (randomizations < 10000 && (currentSequences.indexOf(randomNum) != -1 || getSequenceCategory(sequences[randomNum]) > multTargetCategory+4 || getSequenceCategory(sequences[randomNum]) < multTargetCategory-4 
-                    || getSequenceLength(sequences[randomNum]) > targetLength*1.25+10 || getSequenceLength(sequences[randomNum]) < targetLength*0.75-10)) {
+            while (randomizations < 10000 && (currentSequences.indexOf(randomNum) != -1 || Mocap.getSequenceCategory(sequences[randomNum]) > multTargetCategory+4 || Mocap.getSequenceCategory(sequences[randomNum]) < multTargetCategory-4 
+                    || Mocap.getSequenceLength(sequences[randomNum]) > targetLength*1.25+10 || Mocap.getSequenceLength(sequences[randomNum]) < targetLength*0.75-10)) {
                 randomNum = getRandomInt(sequences.length);
                 randomizations++;
             }
             currentSequences.push(randomNum);
-            if (getSequenceLength(sequences[randomNum]) > longestSequenceLength) {
-                longestSequenceLength = getSequenceLength(sequences[randomNum]);
+            if (Mocap.getSequenceLength(sequences[randomNum]) > longestSequenceLength) {
+                longestSequenceLength = Mocap.getSequenceLength(sequences[randomNum]);
             }
         }
         for (let i = 0; i < 9-amountMult; i++) {
             let randomNum = getRandomInt(sequences.length);
             while (randomizations < 10000 && (currentSequences.indexOf(randomNum) != -1 
-                    || getSequenceLength(sequences[randomNum]) > targetLength*1.25+10 || getSequenceLength(sequences[randomNum]) < targetLength*0.75-10)) {
+                    || Mocap.getSequenceLength(sequences[randomNum]) > targetLength*1.25+10 || Mocap.getSequenceLength(sequences[randomNum]) < targetLength*0.75-10)) {
                 randomNum = getRandomInt(sequences.length);
                 randomizations++;
             }
             currentSequences.push(randomNum);
-            if (getSequenceLength(sequences[randomNum]) > longestSequenceLength) {
-                longestSequenceLength = getSequenceLength(sequences[randomNum]);
+            if (Mocap.getSequenceLength(sequences[randomNum]) > longestSequenceLength) {
+                longestSequenceLength = Mocap.getSequenceLength(sequences[randomNum]);
             }
         }
     } else {
@@ -196,15 +198,15 @@ function createRandomTest() {
                 randomNum = getRandomInt(sequences.length);
             }
             currentSequences.push(randomNum);
-            if (getSequenceLength(sequences[randomNum]) > longestSequenceLength) {
-                longestSequenceLength = getSequenceLength(sequences[randomNum]);
+            if (Mocap.getSequenceLength(sequences[randomNum]) > longestSequenceLength) {
+                longestSequenceLength = Mocap.getSequenceLength(sequences[randomNum]);
             }
         }
     }
     shuffle(currentSequences);
     for (let i = 0; i < currentSequences.length; i++) {
         let sequence = sequences[currentSequences[i]];
-        let visualization = createZoomableVisualizationElement(sequence, modelVicon, Math.ceil(10*(sequence.length/longestSequenceLength)), 10, 
+        let visualization = Mocap.createZoomableVisualizationElement(sequence, modelVicon, Math.ceil(10*(sequence.length/longestSequenceLength)), 10, 
                                                        150, 150, 850*(sequence.length/longestSequenceLength), 150, false, false, keyframeAlgorithm);
         visualization.children[0].classList.add("drawBox");
         visualization.children[1].classList.add("drawBox");
@@ -221,7 +223,7 @@ function createRandomTest() {
         currentVisualizationDivs.push(visualization);
         visualization.appendChild(checkbox);
         targetElement.appendChild(visualization);
-        let category = getSequenceCategory(sequence);
+        let category = Mocap.getSequenceCategory(sequence);
         chosenCategories.push(category);
     }
     currentCategory = chosenCategories[getRandomInt(chosenCategories.length)];
@@ -239,7 +241,7 @@ function submitAnswers() {
     submittedAnswers = true;
     let correct = [];
     for (let i = 0; i < currentSequences.length; i++) {
-        let category = getSequenceCategory(sequences[currentSequences[i]]);
+        let category = Mocap.getSequenceCategory(sequences[currentSequences[i]]);
         if (category == currentCategory) {
             correct.push(i);
             currentVisualizationDivs[i].classList.add("correctAnswer");

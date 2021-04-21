@@ -1,4 +1,6 @@
-function MocapDrawStyle(bonesModel, headJointIndex, leftArmIndex, thoraxIndex, boneRadius, jointRadius, headRadius, boneStyle, leftBoneStyle, rightBoneStyle, jointStyle, figureScale) {
+import * as THREE from './lib/three.module.js';
+
+function MocapDrawStyle(bonesModel, headJointIndex, leftArmIndex, thoraxIndex, boneRadius, jointRadius, headRadius, boneStyle, leftBoneStyle, rightBoneStyle, jointStyle, figureScale, noseStyle = "rgba(192, 16, 128, 1)", noseRadius = 0.85, opacity = 1) {
     this.bonesModel = bonesModel;
     this.headJointIndex = headJointIndex;
     this.leftArmIndex = leftArmIndex;
@@ -11,6 +13,9 @@ function MocapDrawStyle(bonesModel, headJointIndex, leftArmIndex, thoraxIndex, b
     this.rightBoneStyle = rightBoneStyle;
     this.jointStyle = jointStyle;
     this.figureScale = figureScale;
+    this.noseStyle = noseStyle;
+    this.noseRadius = noseRadius;
+    this.opacity = opacity;
 }
 
 function Vec3(x, y, z) {
@@ -27,115 +32,190 @@ const BoneType = {
     torso: 4
 };
 
-function drawSequence(canvas, frames, numPositions, drawStyle) {
-    drawSequenceBlur(canvas, frames, numPositions, 0, drawStyle, drawStyle);
+class Skeleton {
+    constructor (head, nose, bones) {
+        this.group = new THREE.Group();
+        this.head = head;
+        this.nose = nose;
+        this.bones = bones;
+        this.group.add(head);
+        this.group.add(nose);
+        for (let i = 0; i < bones.length; i++) {
+            this.group.add(bones[i]);
+        }
+    }
 }
 
-function drawSequenceKeyframes(canvas, frames, indexes, drawStyle, yShift = 0, clear = true) {
-    drawSequenceKeyframesBlur(canvas, frames, indexes, 0, drawStyle, drawStyle, yShift, clear);
+class MocapRenderer {
+    constructor (canvas, renderer, camera, skeleton, scene, drawStyle, drawStyleBlur) {
+        this.canvas = canvas;
+        this.renderer = renderer;
+        this.camera = camera;
+        this.skeleton = skeleton;
+        this.scene = scene;
+        this.drawStyle = drawStyle;
+        this.drawStyleBlur = drawStyleBlur;
+
+        this.clearScene = new THREE.Scene();
+        this.clearScene.background = new THREE.Color(0xffffff);
+    }
 }
 
-function drawSequenceKeyframesBlur(canvas, frames, indexes, numBlurPositions, drawStyle, drawStyleBlur, yShift = 0, clear = true, trueTime = true, labelFrames = true) {
-    let ctx = canvas.getContext("2d");
+function createBoxLine(pA, pB, color, radius = 1) {
+    let box = new THREE.Mesh(new THREE.BoxGeometry(radius, radius, 1), new THREE.MeshBasicMaterial({color: new THREE.Color(color)}));
+    box.scale.z = pA.distanceTo(pB);
+    box.position.set((pA.x+pB.x)/2, (pA.y+pB.y)/2, (pA.z+pB.z)/2);
+    box.lookAt(pB);
+    return box;
+}
+
+function moveBoxLine(box, pA, pB) {
+    box.scale.z = pA.distanceTo(pB);
+    box.position.set((pA.x+pB.x)/2, (pA.y+pB.y)/2, (pA.z+pB.z)/2);
+    box.lookAt(pB);
+}
+
+function createSkeleton(drawStyle) {
+    let nose = createBoxLine(new THREE.Vector3(), new THREE.Vector3(), drawStyle.noseStyle, 0.5);
+    let head = new THREE.Mesh(
+        new THREE.SphereGeometry(1, 32, 32), 
+        new THREE.MeshBasicMaterial({color: new THREE.Color(rgbaToColorString(drawStyle.jointStyle))}));
+    head.scale.set(drawStyle.headRadius, drawStyle.headRadius, drawStyle.headRadius);
+    let modelBones = drawStyle.bonesModel.slice();
+    let bones = [];
+    for (let i = 0; i < modelBones.length; i++) {
+        let color = rgbaToColorString(drawStyle.boneStyle);
+        if (modelBones[i].type == BoneType.rightHand || modelBones[i].type == BoneType.rightLeg) {
+            color = rgbaToColorString(drawStyle.rightBoneStyle);
+        } else if (modelBones[i].type == BoneType.leftHand || modelBones[i].type == BoneType.leftLeg) {
+            color = rgbaToColorString(drawStyle.leftBoneStyle);
+        }
+        bones.push(createBoxLine(new THREE.Vector3(), new THREE.Vector3(), color, drawStyle.boneRadius));
+    }
+    return new Skeleton(head, nose, bones);
+}
+
+function modifySkeletonToFrame(skeleton, frame, drawStyle, xShift, yShift, figureScale) {
+    let vecNose = new THREE.Vector3(frame[drawStyle.headJointIndex].x-frame[drawStyle.thoraxIndex].x, 
+                                    frame[drawStyle.headJointIndex].y-frame[drawStyle.thoraxIndex].y, 
+                                    frame[drawStyle.headJointIndex].z-frame[drawStyle.thoraxIndex].z);
+    vecNose.cross(new THREE.Vector3(frame[drawStyle.leftArmIndex].x-frame[drawStyle.thoraxIndex].x, 
+                                    frame[drawStyle.leftArmIndex].y-frame[drawStyle.thoraxIndex].y, 
+                                    frame[drawStyle.leftArmIndex].z-frame[drawStyle.thoraxIndex].z));
+    vecNose.normalize();
+    vecNose.multiplyScalar(-6*figureScale);
+    let nosePos = new THREE.Vector3(frame[drawStyle.headJointIndex].x+vecNose.x+xShift, frame[drawStyle.headJointIndex].y+vecNose.y+yShift, frame[drawStyle.headJointIndex].z+vecNose.z);
+    moveBoxLine(skeleton.nose, nosePos, new THREE.Vector3(frame[drawStyle.headJointIndex].x+xShift, frame[drawStyle.headJointIndex].y+yShift, frame[drawStyle.headJointIndex].z));
+    skeleton.nose.scale.x = drawStyle.noseRadius*figureScale;
+    skeleton.nose.scale.y = drawStyle.noseRadius*figureScale;
+    skeleton.head.position.set(frame[drawStyle.headJointIndex].x+xShift, frame[drawStyle.headJointIndex].y+yShift, frame[drawStyle.headJointIndex].z);
+    skeleton.head.scale.set(figureScale*drawStyle.headRadius, figureScale*drawStyle.headRadius, figureScale*drawStyle.headRadius);
+    if (drawStyle.opacity < 1) {
+        skeleton.nose.material.opacity = drawStyle.opacity;
+        skeleton.nose.material.transparent = true;
+        skeleton.head.material.opacity = drawStyle.opacity;
+        skeleton.head.material.transparent = true;
+    } else {
+        skeleton.nose.material.opacity = 1;
+        skeleton.nose.material.transparent = false;
+        skeleton.head.material.opacity = 1;
+        skeleton.head.material.transparent = false;
+    }
+    let bones = drawStyle.bonesModel;
+    for (let i = 0; i < bones.length; i++) {
+        if (bones[i].a >= frame.length || bones[i].b >= frame.length) {
+            continue;
+        }
+        let a = frame[bones[i].a];
+        let b = frame[bones[i].b];
+        let pA = new THREE.Vector3(a.x+xShift, a.y+yShift, a.z);
+        let pB = new THREE.Vector3(b.x+xShift, b.y+yShift, b.z);
+        moveBoxLine(skeleton.bones[i], pA, pB);
+        skeleton.bones[i].scale.x = drawStyle.boneRadius*figureScale;
+        skeleton.bones[i].scale.y = drawStyle.boneRadius*figureScale;
+        if (drawStyle.opacity < 1) {
+            skeleton.bones[i].material.opacity = drawStyle.opacity;
+            skeleton.bones[i].material.transparent = true;
+        } else {
+            skeleton.bones[i].material.opacity = 1;
+            skeleton.bones[i].material.transparent = false;
+        }
+    }
+}
+
+function drawSequence(mocapRenderer, frames, indexes, numBlurPositions, drawStyle, drawStyleBlur, figureScale, yShift = 0, clear = true) {
     if (clear) {
-        clearCanvas(canvas);
+        clearRenderer(mocapRenderer);
     }
     let firstFrame = moveOriginXBy(frames[0], frames[0][0].x);
     let minimumsFirst = findMinimumsFromFrame(firstFrame);
     let maximumsFirst = findMaximumsFromFrame(firstFrame);
     let lastFrame = moveOriginXBy(frames[frames.length-1], frames[frames.length-1][0].x);
-    let maximums = findMaximumsFromFrame(lastFrame);
+    let minimumsLast = findMinimumsFromFrame(lastFrame);
+    let maximumsLast = findMaximumsFromFrame(lastFrame);
     let sequenceMaximums = findSequenceMaximums(frames, indexes.length);
     sequenceMaximums.y = sequenceMaximums.y-3;
     for (let i = 0; i < indexes.length; i++) {
         let coreX = frames[indexes[i]][0].x;
-        let xShift = (i/indexes.length)*(canvas.width+minimumsFirst.x+maximums.x/2-20)-minimumsFirst.x+30;
-        if (trueTime) {
-            xShift = (indexes[i]/frames.length)*(canvas.width-(maximumsFirst.x-minimumsFirst.x)-20)+(maximumsFirst.x-minimumsFirst.x)/2+10;
-        }
+        let xShift = (indexes[i]/frames.length)*(96-(maximumsLast.x-minimumsLast.x))+(maximumsFirst.x-minimumsFirst.x)/2+2;
         for (let j = 1; j < numBlurPositions+1; j++) {
             if (indexes[i]-j < 0) {
                 continue;
             }
-            drawFrame(canvas, moveOriginXBy(frames[indexes[i]-j], coreX), xShift, yShift, drawStyleBlur);
+            drawFrame(mocapRenderer, moveOriginXBy(frames[indexes[i]-j], coreX), figureScale, xShift, yShift, drawStyleBlur, false);
         }
-        drawFrame(canvas, moveOriginXBy(frames[indexes[i]], coreX), xShift, yShift, drawStyle);
-        if (labelFrames) {
+        drawFrame(mocapRenderer, moveOriginXBy(frames[indexes[i]], coreX), figureScale, xShift, yShift, drawStyle, false);
+        //todo: add labels
+        /*if (labelFrames) {
             ctx.font = '12px serif';
             ctx.fillStyle = 'black';
             ctx.fillText(indexes[i], xShift, sequenceMaximums.y+yShift+14);
-        }
-    }
-    ctx.fillStyle = 'black';
-    if (labelFrames) {
-        drawRectangle(ctx, {x: 0, y: sequenceMaximums.y, z: 0}, {x: canvas.width, y: sequenceMaximums.y, z: 0}, 1, 0, yShift+1);
+        }*/
     }
 }
 
-function drawSequenceKeyframesBlurWithMaps(canvas, frames, indexes, numBlurPositions, drawStyle, drawStyleBlur, mapScale, yShift = 0, clear = true) {
-    let ctx = canvas.getContext("2d");
-    if (clear) {
-        clearCanvas(canvas);
-    }
-    let firstFrame = moveOriginXBy(frames[0], frames[0][0].x);
-    let minimums = findMinimumsFromFrame(firstFrame);
-    let lastFrame = moveOriginXBy(frames[frames.length-1], frames[frames.length-1][0].x);
-    let maximums = findMaximumsFromFrame(lastFrame);
-    let sequenceMinimums = findSequenceMinimums(frames, indexes.length);
-    let sequenceMaximums = findSequenceMaximums(frames, indexes.length);
-    sequenceMaximums.y = sequenceMaximums.y-3;
-    for (let i = 0; i < indexes.length; i++) {
-        let coreX = frames[indexes[i]][0].x;
-        let xShift = (i/indexes.length)*(canvas.width+minimums.x+maximums.x/2-20)-minimums.x+30;
-        for (let j = 1; j < numBlurPositions+1; j++) {
-            if (indexes[i]-j < 0) {
-                continue;
-            }
-            drawFrame(canvas, moveOriginXBy(frames[indexes[i]-j], coreX), xShift, yShift, drawStyleBlur);
-        }
-        drawFrame(canvas, moveOriginXBy(frames[indexes[i]], coreX), xShift, yShift, drawStyle);
-        ctx.font = '12px serif';
-        ctx.fillStyle = 'black';
-        ctx.fillText(indexes[i], xShift, sequenceMaximums.y+yShift+14);
-        drawTopDownMapParallelogram(canvas, frames, indexes, 
-            {x:xShift-1.5*figureScale*canvas.height/24, y:sequenceMinimums.y-10-4*figureScale*canvas.height/24, z:0}, 
-            {x:xShift-2.5*figureScale*canvas.height/24, y:sequenceMinimums.y-10-1*figureScale*canvas.height/24, z:0}, 
-            {x:xShift+1.5*figureScale*canvas.height/24, y:sequenceMinimums.y-10-1*figureScale*canvas.height/24, z:0}, indexes[i]+1, mapScale, false);
-    }
-    ctx.fillStyle = 'black';
-    drawRectangle(ctx, {x: 0, y: sequenceMaximums.y, z: 0}, {x: canvas.width, y: sequenceMaximums.y, z: 0}, 1, 0, yShift+1);
-    drawMapScale(canvas, mapScale/10);
+function drawFrame(mocapRenderer, frame, figureScale, xShift, yShift, drawStyle, clear = false) {
+    mocapRenderer.renderer.autoClearColor = clear;
+    modifySkeletonToFrame(mocapRenderer.skeleton, frame, drawStyle, xShift, yShift, figureScale);
+    mocapRenderer.renderer.render(mocapRenderer.scene, mocapRenderer.camera);
 }
 
-function drawSequenceKeyframesBlurTrueTime(canvas, frames, indexes, numBlurPositions, drawStyle, drawStyleBlur, yShift = 0, clear = true) {
-    let ctx = canvas.getContext("2d");
-    if (clear) {
-        clearCanvas(canvas);
-    }
-    let firstFrame = moveOriginXBy(frames[0], frames[0][0].x);
-    let minX = findMinimumsFromFrame(firstFrame).x;
-    let lastFrame = moveOriginXBy(frames[frames.length-1], frames[frames.length-1][0].x);
-    let maxX = findMaximumsFromFrame(lastFrame).x;
-    for (let i = 0; i < indexes.length; i++) {
-        let coreX = frames[indexes[i]][0].x;
-        for (let j = 1; j < numBlurPositions+1; j++) {
-            if (indexes[i]-j < 0) {
-                continue;
-            }
-            drawFrame(canvas, moveOriginXBy(frames[indexes[i]-j], coreX), (indexes[i]/frames.length)*(canvas.width+minX-maxX-20)-minX+20, yShift, drawStyleBlur);
-        }
-        drawFrame(canvas, moveOriginXBy(frames[indexes[i]], coreX), (indexes[i]/frames.length)*(canvas.width+minX-maxX-20)-minX+20, yShift, drawStyle);
-    }
+function clearRenderer(mocapRenderer) {
+    mocapRenderer.renderer.autoClearColor = true;
+    mocapRenderer.renderer.render(mocapRenderer.clearScene, mocapRenderer.camera);
 }
 
-function drawSequenceBlur(canvas, frames, numPositions, numBlurPositions, drawStyle, drawStyleBlur) {
-    let indexes = [];
+function processSequence(sequence, numKeyframes, width, height) {
+    let ratio = width/height;
+    let processed = processSequenceToFramesAuto(sequence, numKeyframes, 100, 100/ratio, true);
+    let frames = processed.frames;
+    let figureScale = processed.figureScale;
+    let bestRotation = findBestRotation(frames, 12);
     for (let i = 0; i < frames.length; i++) {
-        if (Math.floor(i%(frames.length/(numPositions-1))) == 0 || i == frames.length-1) {
-            indexes.push(i);
-        }
+        frames[i] = frameRotateY(frames[i], bestRotation);
     }
-    drawSequenceKeyframesBlur(canvas, frames, indexes, numBlurPositions, drawStyle, drawStyleBlur, 0, false);
+    return {frames: frames, figureScale: figureScale};
+}
+
+function initializeMocapRenderer(canvas, width, height) {
+    let renderer = new THREE.WebGLRenderer({canvas, preserveDrawingBuffer: true, alpha: true,});
+    renderer.autoClearColor = false;
+    renderer.setSize(width, height);
+    let ratio = width/height;
+
+    let model = modelVicon;
+    let drawStyle = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.9, 0,
+        2.25, boneStyleDefault, leftBoneStyleDefault, rightBoneStyleDefault, jointStyleDefault, 1);
+
+    let scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xffffff);
+    
+    let camera = new THREE.OrthographicCamera(-50, 50, 50/ratio, -50/ratio, 0.1, 10000);
+    camera.position.set(50, 50/ratio, 100);
+    camera.lookAt(50, 50/ratio, 0);
+    let skeleton = createSkeleton(drawStyle);
+    scene.add(skeleton.group);
+    return new MocapRenderer(canvas, renderer, camera, skeleton, scene);
 }
 
 function loadDataFromString(dataString) {
@@ -166,58 +246,15 @@ function createZoomableVisualizationElement(sequence, model, numKeyframes, numBl
     return main;
 }
 
-function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight, addTimeScale = false, addFillingKeyframes = true, keyframeSelectionAlgorithm = 4) {
-    let div = document.createElement("div");
-    div.className = "drawItem-"+motionCategories[getSequenceCategory(sequence)];
-    let map = document.createElement("canvas");
-    map.className = "drawItemMap";
-    map.width = mapWidth;
-    map.height = mapHeight;
-    div.appendChild(map);
-    let canvas = document.createElement("canvas");
-    canvas.className = "drawItemVisualization";
-    canvas.width = visualizationWidth;
-    canvas.height = visualizationHeight;
-    div.appendChild(canvas);
-    let figureScale = model.defaultScale;
-    let frames = processSequenceToFrames(sequence, canvas.height, figureScale*model.defaultScale);
-    if (figureScale < 0) {
-        figureScale = 1;
-    }
-    if (frames.length == 0) {
-        frames = processSequenceToFrames2d(sequence, canvas.height, figureScale*model.defaultScale);
-        figureScale = figureScale*findOptimalScale(frames, canvas.width, canvas.height, numKeyframes);
-        frames = processSequenceToFrames2d(sequence, canvas.height, figureScale*model.defaultScale);
-    } else {
-        figureScale = figureScale*findOptimalScale(frames, canvas.width, canvas.height, numKeyframes);
-        frames = processSequenceToFrames(sequence, canvas.height, figureScale*model.defaultScale);
-    }
-    let drawStyle = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, model.boneRadius, model.jointRadius,
-                                       model.headRadius, boneStyleDefault, leftBoneStyleDefault, rightBoneStyleDefault, jointStyleDefault, figureScale);
-    let drawStyleBlur = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, model.boneRadius, model.jointRadius,
-                                       model.headRadius, blurStyleDefault, blurStyleDefault, blurStyleDefault, blurStyleDefault, figureScale);
-    drawStyle.figureScale = figureScale;
-    drawStyleBlur.figureScale = figureScale;
-    drawStyle.boneRadius = model.boneRadius*figureScale;
-    drawStyleBlur.boneRadius = model.boneRadius*figureScale;
-    drawStyle.jointRadius = model.jointRadius;
-    drawStyleBlur.jointRadius = model.jointRadius;
-    if (model.jointRadius < 0.1) {
-        if (figureScale < 0.5) {
-            drawStyle.headRadius = model.headRadius*figureScale*0.75;
-            drawStyleBlur.headRadius = model.headRadius*figureScale*0.75;
-        } else {
-            drawStyle.headRadius = model.headRadius*figureScale;
-            drawStyleBlur.headRadius = model.headRadius*figureScale;
-        }
-    } else {
-        drawStyle.headRadius = model.headRadius;
-        drawStyleBlur.headRadius = model.headRadius;
-    }
-    let bestRotation = findBestRotation(frames, numKeyframes);
-    for (let i = 0; i < frames.length; i++) {
-        frames[i] = frameRotateY(frames[i], bestRotation);
-    }
+function visualizeToCanvas(canvas, sequence, model, numKeyframes, numBlurFrames, width, height, addFillingKeyframes = true, keyframeSelectionAlgorithm = 4) {
+    let mocapRenderer = initializeMocapRenderer(canvas, width, height);
+    let processed = processSequence(sequence, numKeyframes, width, height);
+    let figureScale = processed.figureScale;
+    let frames = processed.frames;
+    let drawStyle = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.9, 0,
+        2.25, boneStyleDefault, leftBoneStyleDefault, rightBoneStyleDefault, jointStyleDefault, 1, "rgba(192, 16, 128, 1)", 0.9, 1);
+    let drawStyleBlur = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.9, 0,
+        2.25, blurStyleDefault, blurStyleDefault, blurStyleDefault, blurStyleDefault, 1, "rgba(192, 16, 128, 1)", 0.9, 0.125);
     let keyframes;
     if (keyframeSelectionAlgorithm == KeyframeSelectionAlgorithmEnum.Decimation) {
         keyframes = findKeyframesDecimation(frames, numKeyframes);
@@ -230,45 +267,73 @@ function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames
     } else {
         keyframes = findKeyframesTemporal(frames, numKeyframes);
     }
-    let ctx = canvas.getContext("2d");
-    ctx.fillStyle = "white";
-    ctx.beginPath();
-    ctx.rect(0, 0, canvas.width, canvas.height);
-    ctx.fill();
-    ctx = map.getContext("2d");
+    if (addFillingKeyframes) {
+        let fillKeyframes = getFillKeyframes(frames, keyframes);
+        let fillStyle = Object.assign({}, drawStyle);
+        fillStyle.opacity = 0.4;
+        drawSequence(mocapRenderer, frames, fillKeyframes, 0, fillStyle, drawStyleBlur, figureScale, 0, true);
+    }
+    drawSequence(mocapRenderer, frames, keyframes, numBlurFrames, drawStyle, drawStyleBlur, figureScale, 0, false);
+}
+
+function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight, addTimeScale = false, addFillingKeyframes = true, keyframeSelectionAlgorithm = 4) {
+    let div = document.createElement("div");
+    div.className = "drawItem-"+motionCategories[getSequenceCategory(sequence)];
+    let map = document.createElement("canvas");
+    map.className = "drawItemMap";
+    map.width = mapWidth;
+    map.height = mapHeight;
+    div.appendChild(map);
+    let canvas = document.createElement("canvas");
+    canvas.className = "drawItemVisualization";
+    div.appendChild(canvas);
+    let mocapRenderer = initializeMocapRenderer(canvas, visualizationWidth, visualizationHeight);
+    let processed = processSequence(sequence, numKeyframes, visualizationWidth, visualizationHeight);
+    let figureScale = processed.figureScale;
+    let frames = processed.frames;
+    let drawStyle = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.9, 0,
+        2.25, boneStyleDefault, leftBoneStyleDefault, rightBoneStyleDefault, jointStyleDefault, 1, "rgba(192, 16, 128, 1)", 0.9, 1);
+    let drawStyleBlur = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.9, 0,
+        2.25, blurStyleDefault, blurStyleDefault, blurStyleDefault, blurStyleDefault, 1, "rgba(192, 16, 128, 1)", 0.9, 0.125);
+    let keyframes;
+    if (keyframeSelectionAlgorithm == KeyframeSelectionAlgorithmEnum.Decimation) {
+        keyframes = findKeyframesDecimation(frames, numKeyframes);
+    } else if (keyframeSelectionAlgorithm == KeyframeSelectionAlgorithmEnum.Lowe) {
+        keyframes = findKeyframesLowe(frames, numKeyframes);
+    } else if (keyframeSelectionAlgorithm == KeyframeSelectionAlgorithmEnum.Euclidean) {
+        keyframes = findKeyframesEuclidean(frames, numKeyframes);
+    } else if (keyframeSelectionAlgorithm == KeyframeSelectionAlgorithmEnum.Equidistant) {
+        keyframes = findKeyframesEquidistant(frames, numKeyframes);
+    } else {
+        keyframes = findKeyframesTemporal(frames, numKeyframes);
+    }
+    let ctx = map.getContext("2d");
     ctx.fillStyle = "white";
     ctx.beginPath();
     ctx.rect(0, 0, map.width, map.height);
     ctx.fill();
+    clearRenderer(mocapRenderer);
     if (addFillingKeyframes) {
         let fillKeyframes = getFillKeyframes(frames, keyframes);
         let fillStyle = Object.assign({}, drawStyle);
-        fillStyle.boneStyle = {r: fillStyle.boneStyle.r, g: fillStyle.boneStyle.g, b: fillStyle.boneStyle.b, a: fillStyle.boneStyle.a*0.55};
-        fillStyle.leftBoneStyle = {r: fillStyle.leftBoneStyle.r, g: fillStyle.leftBoneStyle.g, b: fillStyle.leftBoneStyle.b, a: fillStyle.leftBoneStyle.a*0.55};
-        fillStyle.rightBoneStyle = {r: fillStyle.rightBoneStyle.r, g: fillStyle.rightBoneStyle.g, b: fillStyle.rightBoneStyle.b, a: fillStyle.rightBoneStyle.a*0.55};
-        drawSequenceKeyframesBlur(canvas, frames, fillKeyframes, 0, fillStyle, drawStyleBlur, 0, false, true, false);
+        fillStyle.opacity = 0.4;
+        drawSequence(mocapRenderer, frames, fillKeyframes, 0, fillStyle, drawStyleBlur, figureScale, 0, false);
     }
-    drawSequenceKeyframesBlur(canvas, frames, keyframes, numBlurFrames, drawStyle, drawStyleBlur, 0, false, true);
-    let framesMin = findSequenceMinimums(frames, numKeyframes);
-    let framesMax = findSequenceMaximums(frames, numKeyframes);
-    let maxWidth = Math.max(framesMax.x-framesMin.x, framesMax.z-framesMin.z);
-    let mapScale = 100*figureScale*model.defaultScale;
-    if (maxWidth > canvas.width) {
-        mapScale = canvas.width*1.5;
-    } else {
-        mapScale = Math.floor(maxWidth/12.5)*25+25;
-    }
-    if (addTimeScale) {
+    drawSequence(mocapRenderer, frames, keyframes, numBlurFrames, drawStyle, drawStyleBlur, figureScale, 0, false);
+    //todo: fix map
+    let mapScale = findMapScale(frames, numKeyframes, figureScale, map.width);
+    //todo: timescale option
+    /*if (addTimeScale) {
         drawTimeScale(canvas, model.fps, frames.length, keyframes);
-    }
-    drawTopDownMapParallelogramUnitGrid(map, frames, keyframes, 
+    }*/
+    drawTopDownMap(map, frames, keyframes, 
         {x:-1, y:-1, z:0}, 
         {x:-1, y:map.height+1, z:0}, 
         {x:map.width+1, y:map.height+1, z:0}, frames.length, mapScale, (model.unitSize*figureScale)*10, false);
     return div;
 }
 
-function processSequenceToFramesAuto(sequence, width, height, defaultScale, switchY = false) {
+function processSequenceToFramesAuto(sequence, numKeyframes, width, height, switchY = false) {
     let figureScale = 1;
     let frames = processSequenceToFrames(sequence, 0, figureScale, switchY);
     if (figureScale < 0) {
@@ -276,13 +341,13 @@ function processSequenceToFramesAuto(sequence, width, height, defaultScale, swit
     }
     if (frames.length == 0) {
         frames = processSequenceToFrames2d(sequence, 0, figureScale, switchY);
-        figureScale = figureScale*findOptimalScale(frames, width, height, 12);
-        frames = processSequenceToFrames2d(sequence, 0, figureScale*defaultScale, switchY);
+        figureScale = figureScale*findOptimalScale(frames, width*0.99, height*0.9, numKeyframes);
+        frames = processSequenceToFrames2d(sequence, 0, figureScale, switchY);
     } else {
-        figureScale = figureScale*findOptimalScale(frames, width, height, 12);
-        frames = processSequenceToFrames(sequence, 40, figureScale*defaultScale, switchY);
+        figureScale = figureScale*findOptimalScale(frames, width*0.99, height*0.9, numKeyframes);
+        frames = processSequenceToFrames(sequence, 0, figureScale, switchY);
     }
-    return frames;
+    return {frames: frames, figureScale: figureScale};
 }
 
 function processSequenceToFrames(rawData, canvasHeight, figureScale, switchY = false) {
@@ -395,56 +460,7 @@ function drawTimeScale(canvas, fps, length, keyframes) {
     }
 }
 
-function drawTopDownMapParallelogram(canvas, frames, indexes, topLeft, bottomLeft, bottomRight, drawUntilFrame, mapScale, clear = true) {
-    let ctx = canvas.getContext("2d");
-    if (clear) {
-        clearCanvas(canvas);
-    }
-    let shift = topLeft.x-bottomLeft.x;
-    let topRight = {x: bottomRight.x+shift, y: topLeft.y, z:0};
-    let width = topRight.x-topLeft.x;
-    let height = bottomRight.y-topLeft.y;
-    let coreX = frames[0][0].x;
-    let coreZ = frames[0][0].z;
-    ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
-    for (let i = 1; i < 10; i++) {
-        drawRectangle(ctx, {x:topLeft.x+i*width/10, y:topLeft.y}, {x:bottomLeft.x+i*width/10, y:bottomLeft.y}, 0.75, 0, 0);
-    }
-    for (let i = 1; i < 10; i++) {
-        let startShiftX = shift-inverseLerp(0, height, i*height/10)*shift;
-        drawRectangle(ctx, {x:bottomLeft.x+startShiftX, y:topLeft.y+i*height/10}, {x:bottomRight.x+startShiftX, y:topLeft.y+i*height/10}, 0.75, 0, 0);
-    }
-    for (let i = 0; i < drawUntilFrame; i++) {
-        let x = frames[i][0].x-coreX;
-        let z = frames[i][0].z-coreZ;
-        let transformedX = inverseLerp(-mapScale/2, mapScale/2, x)*width;
-        let transformedZ = inverseLerp(-mapScale/2, mapScale/2, z)*height;
-        if (transformedX < 2 || transformedZ < 2 || transformedX >= width-2 || transformedZ >= height-2) {
-            continue;
-        }
-        let startShiftX = shift-inverseLerp(0, height, transformedZ)*shift;
-        if (indexes.includes(i)) {
-            ctx.beginPath();
-            ctx.fillStyle = rgbaToColorString({r: 0, g: 0, b: 0, a:1});
-            ctx.rect(bottomLeft.x+transformedX+startShiftX, topLeft.y+transformedZ, 5, 5);
-            ctx.closePath();
-            ctx.fill();
-        } else {
-            ctx.fillStyle = rgbaToColorString({r: (i/frames.length)*255, g: 0, b: 128, a:0.3});
-            ctx.beginPath();
-            ctx.rect(bottomLeft.x+transformedX+startShiftX, topLeft.y+transformedZ, 3, 3);
-            ctx.closePath();
-            ctx.fill();
-        }
-    }
-    ctx.fillStyle = 'black';
-    drawRectangle(ctx, topLeft, topRight, 1, 0, 0);
-    drawRectangle(ctx, topRight, bottomRight, 1, 0, 0);
-    drawRectangle(ctx, bottomRight, bottomLeft, 1, 0, 0);
-    drawRectangle(ctx, bottomLeft, topLeft, 1, 0, 0);
-}
-
-function drawTopDownMapParallelogramUnitGrid(canvas, frames, indexes, topLeft, bottomLeft, bottomRight, drawUntilFrame, mapScale, dmsize, clear = true) {
+function drawTopDownMap(canvas, frames, indexes, topLeft, bottomLeft, bottomRight, drawUntilFrame, mapScale, dmsize, clear = true) {
     let ctx = canvas.getContext("2d");
     if (clear) {
         clearCanvas(canvas);
@@ -677,10 +693,6 @@ function findKeyframesDecimation(frames, numKeyframes) {
 }
 
 function findKeyframesLowe(frames, numKeyframes) {
-    /*n_vector pa = P - A
-    n_vector ba = B - A
-    double t = dot(pa, ba)/dot(ba, ba)
-    double d = length(pa - t * ba)*/
     let result = [0, frames.length-1];
     for (let k = 0; k < numKeyframes-2; k++) {
         let dmax = 0;
@@ -707,8 +719,8 @@ function findKeyframesLowe(frames, numKeyframes) {
 }
 
 function getFillKeyframes(frames, keyframes) {
-    numKeyframes = keyframes.length;
-    result = [];
+    let numKeyframes = keyframes.length;
+    let result = [];
     let helpKeyframes = keyframes.slice();
     for (let i = 1; i < helpKeyframes.length; i++) {
         if (helpKeyframes[i]-helpKeyframes[i-1] > frames.length/numKeyframes) {
@@ -734,6 +746,15 @@ function sortedIndex(array, value) {
         }
     }
     return low;
+}
+
+function findMapScale(frames, numKeyframes, figureScale, mapWidth) {
+    let framesMin = findSequenceMinimums(frames, numKeyframes);
+    let framesMax = findSequenceMaximums(frames, numKeyframes);
+    let maxWidth = Math.max(framesMax.x-framesMin.x, framesMax.z-framesMin.z);
+    let mapScale = 100*figureScale;
+    mapScale = Math.floor(maxWidth/12.5)*25+25;
+    return mapScale;
 }
 
 function findBestRotation(frames, numSamples) {
@@ -844,8 +865,8 @@ function findOptimalScale(frames, width, height, numFrames) {
         maxY = Math.max(maxY, maximums.y);
         minY = Math.min(minY, minimums.y);
     }
-    let scaleHeight = (height)/(maxY-minY);
-    let scaleWidth = (width/(numFrames-1))/(maxWidth);
+    let scaleHeight = (height)/(maxHeight);
+    let scaleWidth = (width/(numFrames+1))/(maxWidth);
     if (scaleHeight < 0 && scaleWidth < 0) {
         return 1;
     } else if (scaleHeight < 0) {
@@ -972,15 +993,6 @@ function clamp(a, b, value) {
     }
 }
 
-function crossProduct(a, b) {
-    return new Vec3(a.y*b.z-a.z*b.y, -(a.x*b.z-a.z*b.x), a.x*b.y-a.y*b.x);
-}
-
-function normalize(vec) {
-    let len = Math.sqrt(vec.x*vec.x+vec.y*vec.y+vec.z*vec.z);
-    return new Vec3(vec.x/len, vec.y/len, vec.z/len);
-}
-
 function lerpFrame(a, b, value) {
     let result = [];
     for (let i = 0; i < a.length; i++) {
@@ -1047,65 +1059,4 @@ function drawRectangle(ctx, a, b, radius, xShift, yShift) {
     ctx.fill();
 }
 
-function drawFrame(canvas, frame, xShift, yShift, drawStyle) {
-    let ctx = canvas.getContext("2d");
-    let bones = drawStyle.bonesModel.slice();
-    bones.sort((a, b) => (frame[a.a].z+frame[a.b].z)/2-(frame[b.a].z+frame[b.b].z)/2);
-    //ctx.fillStyle = rgbaToColorString(drawStyle.leftBoneStyle);
-    let vecNose = crossProduct(new Vec3(frame[drawStyle.headJointIndex].x-frame[drawStyle.thoraxIndex].x, frame[drawStyle.headJointIndex].y-frame[drawStyle.thoraxIndex].y, frame[drawStyle.headJointIndex].z-frame[drawStyle.thoraxIndex].z),
-                               new Vec3(frame[drawStyle.leftArmIndex].x-frame[drawStyle.thoraxIndex].x, frame[drawStyle.leftArmIndex].y-frame[drawStyle.thoraxIndex].y, frame[drawStyle.leftArmIndex].z-frame[drawStyle.thoraxIndex].z));
-    vecNose = normalize(vecNose);
-    vecNose = new Vec3(vecNose.x*35*drawStyle.figureScale, vecNose.y*35*drawStyle.figureScale, vecNose.z*35*drawStyle.figureScale);
-    let nosePos = new Vec3(frame[drawStyle.headJointIndex].x+vecNose.x, frame[drawStyle.headJointIndex].y+vecNose.y, frame[drawStyle.headJointIndex].z+vecNose.z);
-    if (nosePos.z < frame[drawStyle.headJointIndex].z) {
-        ctx.fillStyle = rgbaToColorString({r: 192, g: 16, b:128, a: drawStyle.boneStyle.a});
-        drawRectangle(ctx, nosePos, frame[drawStyle.headJointIndex], drawStyle.boneRadius, xShift, yShift);
-    }
-    for (let i = 0; i < frame.length; i++) {
-        ctx.beginPath();
-        ctx.fillStyle = rgbaToColorString(drawStyle.jointStyle);
-        let radius = drawStyle.jointRadius;
-        if (i == drawStyle.headJointIndex) {
-            radius = drawStyle.headRadius;
-        }
-        ctx.arc(frame[i].x+xShift, frame[i].y+yShift, radius, 0, 2 * Math.PI);
-        ctx.fill();
-    }
-    for (let i = 0; i < bones.length; i++) {
-        if (bones[i].a >= frame.length || bones[i].b >= frame.length) {
-            continue;
-        }
-        let a = frame[bones[i].a];
-        let b = frame[bones[i].b];
-        if (bones[i].type == BoneType.rightHand || bones[i].type == BoneType.rightLeg) {
-            //ctx.fillStyle = rgbaToColorString(drawStyle.leftBoneStyle);
-            ctx.fillStyle = rgbaToColorString(scaleRgbaColor(drawStyle.rightBoneStyle, 0.35+0.65*(i/bones.length)));
-        } else if (bones[i].type == BoneType.leftHand || bones[i].type == BoneType.leftLeg) {
-            //ctx.fillStyle = rgbaToColorString(drawStyle.rightBoneStyle);
-            ctx.fillStyle = rgbaToColorString(scaleRgbaColor(drawStyle.leftBoneStyle, 0.35+0.65*(i/bones.length)));
-        } else {
-            ctx.fillStyle = rgbaToColorString(drawStyle.boneStyle);
-        }
-        /*if (bones[i].type == BoneType.rightHand || bones[i].type == BoneType.rightLeg) {
-            //ctx.fillStyle = rgbaToColorString(drawStyle.rightBoneStyle);
-            let color = scaleRgbaColor(drawStyle.rightBoneStyle, 0.35+0.65*(i/bones.length));
-            color.a = Math.max(Math.min(0.5, color.a), color.a*(0.7+0.3*(i/bones.length)));
-            ctx.fillStyle = rgbaToColorString(color);
-        } else if (bones[i].type == BoneType.leftHand || bones[i].type == BoneType.leftLeg) {
-            //ctx.fillStyle = rgbaToColorString(drawStyle.leftBoneStyle);
-            let color = scaleRgbaColor(drawStyle.leftBoneStyle, 0.35+0.65*(i/bones.length));
-            color.a = Math.max(Math.min(0.5, color.a), color.a*(0.7+0.3*(i/bones.length)));
-            ctx.fillStyle = rgbaToColorString(color);
-        } else {
-            //ctx.fillStyle = rgbaToColorString(drawStyle.boneStyle);
-            let color = scaleRgbaColor(drawStyle.boneStyle, 1);
-            color.a = Math.max(Math.min(0.5, color.a), color.a*(0.7+0.3*(i/bones.length)));
-            ctx.fillStyle = rgbaToColorString(color);
-        }*/
-        drawRectangle(ctx, a, b, drawStyle.boneRadius+1*(i/bones.length), xShift, yShift);
-    }
-    if (nosePos.z >= frame[drawStyle.headJointIndex].z) {
-        ctx.fillStyle = rgbaToColorString({r: 192, g: 16, b:128, a: drawStyle.boneStyle.a});
-        drawRectangle(ctx, nosePos, frame[drawStyle.headJointIndex], drawStyle.boneRadius, xShift, yShift);
-    }
-}
+export {loadDataFromString, getSequenceLength, getSequenceCategory, visualizeToCanvas, createVisualizationElement, createZoomableVisualizationElement};

@@ -1,3 +1,11 @@
+const BoneType = {
+    leftLeg: 0,
+    rightLeg: 1,
+    leftHand: 2,
+    rightHand: 3,
+    torso: 4
+};
+
 const bonesVicon = [
     {a: 0, b: 1, type: BoneType.leftLeg}, {a: 1, b: 2, type: BoneType.leftLeg}, {a: 2, b: 3, type: BoneType.leftLeg}, 
     {a: 3, b: 4, type: BoneType.leftLeg}, {a: 4, b: 5, type: BoneType.leftLeg}, // leg
