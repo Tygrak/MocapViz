@@ -1,4 +1,6 @@
 import * as THREE from './lib/three.module.js';
+import * as Model from './model.js';
+import {OrbitControls} from './lib/OrbitControls.js';
 
 function MocapDrawStyle(bonesModel, headJointIndex, leftArmIndex, thoraxIndex, boneRadius, jointRadius, headRadius, boneStyle, leftBoneStyle, rightBoneStyle, jointStyle, figureScale, noseStyle = "rgba(192, 16, 128, 1)", noseRadius = 0.85, opacity = 1) {
     this.bonesModel = bonesModel;
@@ -18,19 +20,7 @@ function MocapDrawStyle(bonesModel, headJointIndex, leftArmIndex, thoraxIndex, b
     this.opacity = opacity;
 }
 
-function Vec3(x, y, z) {
-    this.x = x;
-    this.y = y;
-    this.z = z;
-}
-
-const BoneType = {
-    leftLeg: 0,
-    rightLeg: 1,
-    leftHand: 2,
-    rightHand: 3,
-    torso: 4
-};
+const KeyframeSelectionAlgorithmEnum = {Equidistant: 1, Euclidean: 2, Temporal: 3, Lowe: 4, Decimation: 5};
 
 class Skeleton {
     constructor (head, nose, bones) {
@@ -47,14 +37,12 @@ class Skeleton {
 }
 
 class MocapRenderer {
-    constructor (canvas, renderer, camera, skeleton, scene, drawStyle, drawStyleBlur) {
+    constructor (canvas, renderer, camera, skeleton, scene) {
         this.canvas = canvas;
         this.renderer = renderer;
         this.camera = camera;
         this.skeleton = skeleton;
         this.scene = scene;
-        this.drawStyle = drawStyle;
-        this.drawStyleBlur = drawStyleBlur;
 
         this.clearScene = new THREE.Scene();
         this.clearScene.background = new THREE.Color(0xffffff);
@@ -85,13 +73,25 @@ function createSkeleton(drawStyle) {
     let bones = [];
     for (let i = 0; i < modelBones.length; i++) {
         let color = rgbaToColorString(drawStyle.boneStyle);
-        if (modelBones[i].type == BoneType.rightHand || modelBones[i].type == BoneType.rightLeg) {
+        if (modelBones[i].type == Model.BoneType.rightHand || modelBones[i].type == Model.BoneType.rightLeg) {
             color = rgbaToColorString(drawStyle.rightBoneStyle);
-        } else if (modelBones[i].type == BoneType.leftHand || modelBones[i].type == BoneType.leftLeg) {
+        } else if (modelBones[i].type == Model.BoneType.leftHand || modelBones[i].type == Model.BoneType.leftLeg) {
             color = rgbaToColorString(drawStyle.leftBoneStyle);
         }
         bones.push(createBoxLine(new THREE.Vector3(), new THREE.Vector3(), color, drawStyle.boneRadius));
     }
+    //todo: add pointcloud support
+    /*let joints = [];
+    if (drawStyle.jointRadius > 0) {
+        for (let i = 0; i < array.length; i++) {
+            const element = array[i];
+            
+        }
+        let joint = new THREE.Mesh(
+            new THREE.SphereGeometry(1, 32, 32), 
+            new THREE.MeshBasicMaterial({color: new THREE.Color(rgbaToColorString(drawStyle.jointStyle))}));
+        joint.scale.set(drawStyle.jointRadius, drawStyle.jointRadius, drawStyle.jointRadius);
+    }*/
     return new Skeleton(head, nose, bones);
 }
 
@@ -197,15 +197,11 @@ function processSequence(sequence, numKeyframes, width, height) {
     return {frames: frames, figureScale: figureScale};
 }
 
-function initializeMocapRenderer(canvas, width, height) {
+function initializeMocapRenderer(canvas, width, height, drawStyle) {
     let renderer = new THREE.WebGLRenderer({canvas, preserveDrawingBuffer: true, alpha: true,});
     renderer.autoClearColor = false;
     renderer.setSize(width, height);
     let ratio = width/height;
-
-    let model = modelVicon;
-    let drawStyle = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.9, 0,
-        2.25, boneStyleDefault, leftBoneStyleDefault, rightBoneStyleDefault, jointStyleDefault, 1);
 
     let scene = new THREE.Scene();
     scene.background = new THREE.Color(0xffffff);
@@ -220,6 +216,39 @@ function initializeMocapRenderer(canvas, width, height) {
 
 function loadDataFromString(dataString) {
     return dataString.split("#objectKey").filter((s) => {return s != "";}).map((s) => s.split("\n"));
+}
+
+function createAnimationElement(sequence, model, visualizationWidth, visualizationHeight) {
+    let drawStyle = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.9, 0,
+        2.25, Model.boneStyleDefault, Model.leftBoneStyleDefault, Model.rightBoneStyleDefault, Model.jointStyleDefault, 1, "rgba(192, 16, 128, 1)", 0.9, 1);
+    let div = document.createElement("div");
+    div.className = "drawItem-"+Model.motionCategories[getSequenceCategory(sequence)];
+    let canvas = document.createElement("canvas");
+    canvas.className = "drawItemVisualization";
+    div.appendChild(canvas);
+    let mocapRenderer = initializeMocapRenderer(canvas, visualizationWidth, visualizationHeight, drawStyle);
+    let processed = processSequence(sequence, 12, visualizationWidth, visualizationHeight);
+    let figureScale = processed.figureScale;
+    let frames = processed.frames;
+    let controls = new OrbitControls(mocapRenderer.camera, mocapRenderer.renderer.domElement);
+    controls.listenToKeyEvents(window);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.screenSpacePanning = false;
+    controls.maxPolarAngle = Math.PI / 2;
+    controls.maxZoom = 1.5;
+    controls.minZoom = 0.8;
+    let frame = 0;
+    let animate = () => {
+        if (div.classList.contains("hidden") || !document.body.contains(canvas)) {
+            return;
+        }
+        drawFrame(mocapRenderer, frames[frame], figureScale, 0, 0, drawStyle, true);
+        frame = (frame+1)%frames.length;
+        requestAnimationFrame(animate);
+    }
+    requestAnimationFrame(animate);
+    return div;
 }
 
 function createZoomableVisualizationElement(sequence, model, numKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight, addTimeScale = false, addFillingKeyframes = true, keyframeSelectionAlgorithm = 4) {
@@ -246,15 +275,15 @@ function createZoomableVisualizationElement(sequence, model, numKeyframes, numBl
     return main;
 }
 
-function visualizeToCanvas(canvas, sequence, model, numKeyframes, numBlurFrames, width, height, addFillingKeyframes = true, keyframeSelectionAlgorithm = 4) {
-    let mocapRenderer = initializeMocapRenderer(canvas, width, height);
+function visualizeToCanvas(canvas, sequence, model, numKeyframes, numBlurFrames, width, height, addTimeScale = false, addFillingKeyframes = true, keyframeSelectionAlgorithm = 4) {
+    let drawStyle = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.9, 0,
+        2.25, Model.boneStyleDefault, Model.leftBoneStyleDefault, Model.rightBoneStyleDefault, Model.jointStyleDefault, 1, "rgba(192, 16, 128, 1)", 0.9, 1);
+    let drawStyleBlur = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.9, 0,
+        2.25, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, 1, "rgba(192, 16, 128, 1)", 0.9, 0.125);
+    let mocapRenderer = initializeMocapRenderer(canvas, width, height, drawStyle);
     let processed = processSequence(sequence, numKeyframes, width, height);
     let figureScale = processed.figureScale;
     let frames = processed.frames;
-    let drawStyle = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.9, 0,
-        2.25, boneStyleDefault, leftBoneStyleDefault, rightBoneStyleDefault, jointStyleDefault, 1, "rgba(192, 16, 128, 1)", 0.9, 1);
-    let drawStyleBlur = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.9, 0,
-        2.25, blurStyleDefault, blurStyleDefault, blurStyleDefault, blurStyleDefault, 1, "rgba(192, 16, 128, 1)", 0.9, 0.125);
     let keyframes;
     if (keyframeSelectionAlgorithm == KeyframeSelectionAlgorithmEnum.Decimation) {
         keyframes = findKeyframesDecimation(frames, numKeyframes);
@@ -274,27 +303,31 @@ function visualizeToCanvas(canvas, sequence, model, numKeyframes, numBlurFrames,
         drawSequence(mocapRenderer, frames, fillKeyframes, 0, fillStyle, drawStyleBlur, figureScale, 0, true);
     }
     drawSequence(mocapRenderer, frames, keyframes, numBlurFrames, drawStyle, drawStyleBlur, figureScale, 0, false);
+    if (addTimeScale) {
+        drawTimeScale(mocapRenderer, mocapRenderer.camera.right-mocapRenderer.camera.left, mocapRenderer.camera.top-mocapRenderer.camera.bottom, model.fps, frames.length, keyframes);
+    }
 }
 
 function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight, addTimeScale = false, addFillingKeyframes = true, keyframeSelectionAlgorithm = 4) {
+    let drawStyle = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.9, 0,
+        2.25, Model.boneStyleDefault, Model.leftBoneStyleDefault, Model.rightBoneStyleDefault, Model.jointStyleDefault, 1, "rgba(192, 16, 128, 1)", 0.9, 1);
+    let drawStyleBlur = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.9, 0,
+        2.25, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, 1, "rgba(192, 16, 128, 1)", 0.9, 0.125);
     let div = document.createElement("div");
-    div.className = "drawItem-"+motionCategories[getSequenceCategory(sequence)];
+    div.className = "drawItem-"+Model.motionCategories[getSequenceCategory(sequence)];
     let map = document.createElement("canvas");
     map.className = "drawItemMap";
     map.width = mapWidth;
     map.height = mapHeight;
+    map.style = "width: "+mapWidth+"px; height: "+mapHeight+"px;";
     div.appendChild(map);
     let canvas = document.createElement("canvas");
     canvas.className = "drawItemVisualization";
     div.appendChild(canvas);
-    let mocapRenderer = initializeMocapRenderer(canvas, visualizationWidth, visualizationHeight);
+    let mocapRenderer = initializeMocapRenderer(canvas, visualizationWidth, visualizationHeight, drawStyle);
     let processed = processSequence(sequence, numKeyframes, visualizationWidth, visualizationHeight);
     let figureScale = processed.figureScale;
     let frames = processed.frames;
-    let drawStyle = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.9, 0,
-        2.25, boneStyleDefault, leftBoneStyleDefault, rightBoneStyleDefault, jointStyleDefault, 1, "rgba(192, 16, 128, 1)", 0.9, 1);
-    let drawStyleBlur = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.9, 0,
-        2.25, blurStyleDefault, blurStyleDefault, blurStyleDefault, blurStyleDefault, 1, "rgba(192, 16, 128, 1)", 0.9, 0.125);
     let keyframes;
     if (keyframeSelectionAlgorithm == KeyframeSelectionAlgorithmEnum.Decimation) {
         keyframes = findKeyframesDecimation(frames, numKeyframes);
@@ -320,16 +353,18 @@ function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames
         drawSequence(mocapRenderer, frames, fillKeyframes, 0, fillStyle, drawStyleBlur, figureScale, 0, false);
     }
     drawSequence(mocapRenderer, frames, keyframes, numBlurFrames, drawStyle, drawStyleBlur, figureScale, 0, false);
-    //todo: fix map
     let mapScale = findMapScale(frames, numKeyframes, figureScale, map.width);
-    //todo: timescale option
-    /*if (addTimeScale) {
-        drawTimeScale(canvas, model.fps, frames.length, keyframes);
-    }*/
+    let mSize = 100/(model.unitSize/figureScale);
+    if (mapScale < mSize*2.5) {
+        mapScale = mSize*2.5;
+    }
+    if (addTimeScale) {
+        drawTimeScale(mocapRenderer, mocapRenderer.camera.right-mocapRenderer.camera.left, mocapRenderer.camera.top-mocapRenderer.camera.bottom, model.fps, frames.length, keyframes);
+    }
     drawTopDownMap(map, frames, keyframes, 
         {x:-1, y:-1, z:0}, 
         {x:-1, y:map.height+1, z:0}, 
-        {x:map.width+1, y:map.height+1, z:0}, frames.length, mapScale, (model.unitSize*figureScale)*10, false);
+        {x:map.width+1, y:map.height+1, z:0}, frames.length, mapScale, 100/(model.unitSize/figureScale), false, true, model.fps);
     return div;
 }
 
@@ -419,48 +454,22 @@ function getSequenceLength(rawData) {
     return parseInt(description);
 }
 
-function drawMapScale(canvas, markerDistance) {
-    let ctx = canvas.getContext("2d");
-    ctx.fillStyle = "rgba(0, 0, 0, 1)";
-    for (let i = 1; i < 10; i++) {
-        ctx.beginPath();
-        ctx.rect(i*markerDistance, canvas.height-5, 3, 5);
-        ctx.closePath();
-        ctx.fill();
-    }
-}
-
-function drawMapMeterScale(canvas, meterSize, mapSize) {
-    let ctx = canvas.getContext("2d");
-    ctx.fillStyle = "rgba(0, 0, 0, 1)";
-    let meterPosition = lerp(0, canvas.width, meterSize/mapSize);
-    ctx.font = '10px serif';
-    meterPosition = lerp(0, canvas.width, (meterSize/10)/mapSize);
-    drawRectangle(ctx, {x:canvas.width/10, y:canvas.height-5, z:0}, {x:meterPosition+canvas.width/10, y:canvas.height-5, z:0}, 2, 0, 0);
-    ctx.fillText("1 dm", canvas.width/10+3, canvas.height-8);
-}
-
-function drawTimeScale(canvas, fps, length, keyframes) {
-    let ctx = canvas.getContext("2d");
-    ctx.fillStyle = "rgba(64, 64, 64, 1)";
-    drawRectangle(ctx, {x: 0, y: 3}, {x: canvas.width*length/(fps*10), y: 1}, 3, 0, 0);
-    ctx.fillStyle = "rgba(0, 0, 0, 1)";
-    for (let i = 1; i < 10 && i*fps < length; i++) {
-        ctx.beginPath();
-        ctx.rect(canvas.width*i/10, 0, 3, 11);
-        ctx.closePath();
-        ctx.fill();
-    }
-    ctx.fillStyle = "rgba(64, 0, 192, 1)";
+function drawTimeScale(mocapRenderer, width, height, fps, length, keyframes) {
+    let scene = new THREE.Scene();
+    let line = createBoxLine(new THREE.Vector3(0, height-0.1, 1), new THREE.Vector3(width*length/(fps*10), height-0.1, 1), "rgba(64, 64, 64, 1)", 0.25);
+    scene.add(line);
     for (let i = 0; i < keyframes.length; i++) {
-        ctx.beginPath();
-        ctx.rect(canvas.width*keyframes[i]/(fps*10), 0, 3, 7);
-        ctx.closePath();
-        ctx.fill();
+        line = createBoxLine(new THREE.Vector3(width*keyframes[i]/(fps*10), height-0.1, 0), new THREE.Vector3(width*keyframes[i]/(fps*10), height-1.05, 0), "rgba(64, 0, 192, 1)", 0.25);
+        scene.add(line);
     }
+    for (let i = 1; i < 10 && i*fps < length; i++) {
+        line = createBoxLine(new THREE.Vector3(width*i/10, height-0.1, 0.5), new THREE.Vector3(width*i/10, height-1, 0.5), "rgba(0, 0, 0, 1)", 0.375);
+        scene.add(line);
+    }
+    mocapRenderer.renderer.render(scene, mocapRenderer.camera);
 }
 
-function drawTopDownMap(canvas, frames, indexes, topLeft, bottomLeft, bottomRight, drawUntilFrame, mapScale, dmsize, clear = true) {
+function drawTopDownMap(canvas, frames, indexes, topLeft, bottomLeft, bottomRight, drawUntilFrame, mapScale, dmsize, clear = true, drawLength = false, fps = 120) {
     let ctx = canvas.getContext("2d");
     if (clear) {
         clearCanvas(canvas);
@@ -504,7 +513,7 @@ function drawTopDownMap(canvas, frames, indexes, topLeft, bottomLeft, bottomRigh
         i++;
     }
     ctx.fillStyle = "rgba(0, 0, 0, 0.95)";
-    ctx.fillText("1 dm", dmTextLabelPos.x+2, dmTextLabelPos.y-2);
+    ctx.fillText("1 m", dmTextLabelPos.x+2, dmTextLabelPos.y-2);
     drawRectangle(ctx, {x: dmTextLabelPos.x, y: dmTextLabelPos.y}, {x: dmTextLabelPos.x+dmSizeWidth, y: dmTextLabelPos.y}, 0.75, 0, 0);
     ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
     for (let i = 0; i < drawUntilFrame; i++) {
@@ -531,6 +540,12 @@ function drawTopDownMap(canvas, frames, indexes, topLeft, bottomLeft, bottomRigh
             ctx.closePath();
             ctx.fill();
         }
+    }
+    if (drawLength) {
+        ctx.font = '12px serif';
+        ctx.textAlign = "right";
+        ctx.fillStyle = 'black';
+        ctx.fillText((frames.length/fps).toFixed(2) + "s", canvas.width-5, canvas.height-5);
     }
     ctx.fillStyle = 'black';
     drawRectangle(ctx, topLeft, topRight, 1, 0, 0);
@@ -753,7 +768,7 @@ function findMapScale(frames, numKeyframes, figureScale, mapWidth) {
     let framesMax = findSequenceMaximums(frames, numKeyframes);
     let maxWidth = Math.max(framesMax.x-framesMin.x, framesMax.z-framesMin.z);
     let mapScale = 100*figureScale;
-    mapScale = Math.floor(maxWidth/12.5)*25+25;
+    mapScale = Math.floor(maxWidth/5)*10+10;
     return mapScale;
 }
 
@@ -866,7 +881,7 @@ function findOptimalScale(frames, width, height, numFrames) {
         minY = Math.min(minY, minimums.y);
     }
     let scaleHeight = (height)/(maxHeight);
-    let scaleWidth = (width/(numFrames+1))/(maxWidth);
+    let scaleWidth = (width/numFrames)/(maxWidth);
     if (scaleHeight < 0 && scaleWidth < 0) {
         return 1;
     } else if (scaleHeight < 0) {
@@ -1059,4 +1074,5 @@ function drawRectangle(ctx, a, b, radius, xShift, yShift) {
     ctx.fill();
 }
 
-export {loadDataFromString, getSequenceLength, getSequenceCategory, visualizeToCanvas, createVisualizationElement, createZoomableVisualizationElement};
+export {loadDataFromString, getSequenceLength, getSequenceCategory, visualizeToCanvas, createVisualizationElement, createZoomableVisualizationElement, KeyframeSelectionAlgorithmEnum, createAnimationElement};
+export * from './model.js';

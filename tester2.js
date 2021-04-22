@@ -7,7 +7,7 @@ let selectedSequences = [];
 let currentVisualizationDivs = [];
 let currentCategory = 0;
 let submittedAnswers = false;
-let keyframeAlgorithm = KeyframeSelectionAlgorithmEnum.Decimation;
+let keyframeAlgorithm = Mocap.KeyframeSelectionAlgorithmEnum.Decimation;
 const dataFileInput = document.getElementById("dataFileInput");
 const loadButton = document.getElementById("dataInputLoadButton");
 const submitButton = document.getElementById("submitAnswersButton");
@@ -206,7 +206,7 @@ function createRandomTest() {
     shuffle(currentSequences);
     for (let i = 0; i < currentSequences.length; i++) {
         let sequence = sequences[currentSequences[i]];
-        let visualization = Mocap.createZoomableVisualizationElement(sequence, modelVicon, Math.ceil(10*(sequence.length/longestSequenceLength)), 10, 
+        let visualization = Mocap.createZoomableVisualizationElement(sequence, Mocap.modelVicon, Math.ceil(10*(sequence.length/longestSequenceLength)), 10, 
                                                        150, 150, 850*(sequence.length/longestSequenceLength), 150, false, false, keyframeAlgorithm);
         visualization.children[0].classList.add("drawBox");
         visualization.children[1].classList.add("drawBox");
@@ -227,13 +227,13 @@ function createRandomTest() {
         chosenCategories.push(category);
     }
     currentCategory = chosenCategories[getRandomInt(chosenCategories.length)];
-    resultText.innerHTML = "Select all sequences of category '" + motionCategoriesHuman[currentCategory] + "'";
+    resultText.innerHTML = "Select all sequences of category '" + Mocap.motionCategoriesHuman[currentCategory] + "'";
 } 
 
 function submitAnswers() {
     if (submittedAnswers) {
         window.scrollTo(0, 0);
-        keyframeAlgorithm = KeyframeSelectionAlgorithmEnum[keyframeAlgorithmSelection.value];
+        keyframeAlgorithm = Mocap.KeyframeSelectionAlgorithmEnum[keyframeAlgorithm];
         createRandomTest();
         submittedAnswers = false;
         return;
@@ -259,6 +259,6 @@ function submitAnswers() {
             selectedCorrect++;
         }
     }
-    resultText.innerHTML = "Selected " + selectedCorrect + "/" + correct.length + " of category " + motionCategoriesHuman[currentCategory] + ". " + mistakes + " mistakes. Press submit again to continue.";
+    resultText.innerHTML = "Selected " + selectedCorrect + "/" + correct.length + " of category " + Mocap.motionCategoriesHuman[currentCategory] + ". " + mistakes + " mistakes. Press submit again to continue.";
     window.scrollTo(0, 0);
 }

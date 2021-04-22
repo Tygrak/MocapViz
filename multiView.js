@@ -1,3 +1,4 @@
+import * as Mocap from "./mocap.js";
 
 let figureScale = 8;
 let defaultHeight = 150;
@@ -17,8 +18,6 @@ let longestSequence = 0;
 let headJointIndex = 16;
 let modelFps = 120;
 let model = modelVicon;
-let drawStyle = new MocapDrawStyle(bonesVicon, headJointIndex, 17, 13, boneRadius, jointRadius, headRadius, boneStyle, leftBoneStyle, rightBoneStyle, jointStyle, 8);
-let drawStyleBlur = new MocapDrawStyle(bonesVicon, headJointIndex, 17, 13, boneRadius, jointRadius, headRadius, blurStyle, blurStyle, blurStyle, blurStyle, 8);
 let timerKeyframeExtraction = 0;
 let timerVisualizationDrawing = 0;
 
@@ -107,7 +106,7 @@ function loadDataText() {
 }
 
 function calculateConversion() {
-    model.unitSize = findMeterConversion(sequences, parseFloat(actorHeightInput.value));
+    //model.unitSize = findMeterConversion(sequences, parseFloat(actorHeightInput.value));
 }
 
 function loadModel(model) {
@@ -136,54 +135,6 @@ function processSelectedSequence(selectedSequence, canvas, numKeyframes) {
         loadModel(modelKinect2d);
     } else if (bonesModelInput.value == "PointCloud") {
         loadModel(modelPointCloud);
-    }
-    let frames = processSequenceToFrames(sequences[selectedSequence], canvas.height, figureScale*defaultScale);
-    if (autoscaleInput.checked) {
-        if (figureScale < 0) {
-            figureScale = 1;
-        }
-        if (frames.length == 0) {
-            frames = processSequenceToFrames2d(sequences[selectedSequence], canvas.height, figureScale*defaultScale);
-            figureScale = figureScale*findOptimalScale(frames, canvas, numKeyframes);
-            frames = processSequenceToFrames2d(sequences[selectedSequence], canvas.height, figureScale*defaultScale);
-        } else {
-            figureScale = figureScale*findOptimalScale(frames, canvas, numKeyframes);
-            frames = processSequenceToFrames(sequences[selectedSequence], canvas.height, figureScale*defaultScale);
-        }
-        scaleInput.value = figureScale;
-    } else {
-        if (frames.length == 0) {
-            frames = processSequenceToFrames2d(sequences[selectedSequence], canvas.height, figureScale*defaultScale);
-        }
-    }
-    if (figureScale < 0) {
-        figureScale = 1;
-    }
-    drawStyle.figureScale = figureScale;
-    drawStyleBlur.figureScale = figureScale;
-    drawStyle.boneRadius = boneRadius*figureScale;
-    drawStyleBlur.boneRadius = boneRadius*figureScale;
-    drawStyle.jointRadius = jointRadius;
-    drawStyleBlur.jointRadius = jointRadius;
-    if (jointRadius < 0.1) {
-        if (figureScale < 0.5) {
-            drawStyle.headRadius = headRadius*figureScale*0.75;
-            drawStyleBlur.headRadius = headRadius*figureScale*0.75;
-        } else {
-            drawStyle.headRadius = headRadius*figureScale;
-            drawStyleBlur.headRadius = headRadius*figureScale;
-        }
-    } else {
-        drawStyle.headRadius = headRadius;
-        drawStyleBlur.headRadius = headRadius;
-    }
-    if (autorotateInput.checked) {
-        let bestRotation = findBestRotation(frames, numKeyframes);
-        yRotationInput.value = bestRotation*57.29578778556937;
-    }
-    let yRotation = parseFloat(yRotationInput.value)*0.01745329;
-    for (let i = 0; i < frames.length; i++) {
-        frames[i] = frameRotateY(frames[i], yRotation);
     }
     return frames;
 }

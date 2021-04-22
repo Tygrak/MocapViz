@@ -50,8 +50,6 @@ const modelKinect2d = {bonesModel: bonesKinect2d, fps: 30, headJointIndex: 9, le
 const modelPointCloud = {bonesModel: bonesPointCloud, fps: 30, headJointIndex: 0, leftArmIndex: 0, thoraxIndex: 0, 
     defaultScale: 1, unitSize: 1, boneRadius: 0, jointRadius: 3, headRadius: 3};
 
-const KeyframeSelectionAlgorithmEnum = {Equidistant: 1, Euclidean: 2, Temporal: 3, Lowe: 4, Decimation: 5};
-
 const jointStyleDefault = {r:0, g:0, b:0, a:1};
 const boneStyleDefault = {r:0, g:0, b:0, a:1};
 const leftBoneStyleDefault = {r:144, g:0, b:0, a:1};
@@ -391,3 +389,5 @@ const motionSuperCategories = {
     "staircase":["150", "151", "152"],
     "allCategories":[...Array(153).keys()].map((x) => x+"").slice(22),
 }
+
+export {BoneType, bonesVicon, bonesKinect, bonesKinect2d, bonesPointCloud, modelVicon, modelKinect, modelKinect2d, modelPointCloud, jointStyleDefault, boneStyleDefault, leftBoneStyleDefault, rightBoneStyleDefault, blurStyleDefault, motionCategories, motionCategoriesHuman, motionSuperCategories};

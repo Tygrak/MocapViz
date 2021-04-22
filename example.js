@@ -1,4 +1,7 @@
 import * as Mocap from './mocap.js';
+import * as THREE from './lib/three.module.js';
+
+import { OrbitControls } from './lib/OrbitControls.js';
 
 const data = `#objectKey messif.objects.keys.AbstractObjectKey 3215_114_2173_123
 123;mcdr.objects.ObjectMocapPose
@@ -133,5 +136,6 @@ let width = Math.floor(window.innerWidth);
 let height = Math.floor(window.innerHeight);
 
 let sequence = Mocap.loadDataFromString(data)[0];
-Mocap.visualizeToCanvas(canvas, sequence, modelVicon, 12, 10, width, height, true, KeyframeSelectionAlgorithmEnum.Decimation);
+Mocap.visualizeToCanvas(canvas, sequence, Mocap.modelVicon, 12, 10, width, height, true, true, Mocap.KeyframeSelectionAlgorithmEnum.Decimation);
+document.body.appendChild(Mocap.createAnimationElement(sequence, Mocap.modelVicon, width, height));
 
