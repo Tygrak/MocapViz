@@ -64,7 +64,7 @@ function moveBoxLine(box, pA, pB) {
 }
 
 function createSkeleton(drawStyle) {
-    let nose = createBoxLine(new THREE.Vector3(), new THREE.Vector3(), drawStyle.noseStyle, 0.5);
+    let nose = createBoxLine(new THREE.Vector3(), new THREE.Vector3(), rgbaToColorString(drawStyle.noseStyle), 0.5);
     let head = new THREE.Mesh(
         new THREE.SphereGeometry(1, 32, 32), 
         new THREE.MeshBasicMaterial({color: new THREE.Color(rgbaToColorString(drawStyle.jointStyle))}));
@@ -108,8 +108,10 @@ function modifySkeletonToFrame(skeleton, frame, drawStyle, xShift, yShift, figur
     moveBoxLine(skeleton.nose, nosePos, new THREE.Vector3(frame[drawStyle.headJointIndex].x+xShift, frame[drawStyle.headJointIndex].y+yShift, frame[drawStyle.headJointIndex].z));
     skeleton.nose.scale.x = drawStyle.noseRadius*figureScale;
     skeleton.nose.scale.y = drawStyle.noseRadius*figureScale;
+    skeleton.nose.material.color.setRGB(drawStyle.noseStyle.r/255, drawStyle.noseStyle.g/255, drawStyle.noseStyle.b/255);
     skeleton.head.position.set(frame[drawStyle.headJointIndex].x+xShift, frame[drawStyle.headJointIndex].y+yShift, frame[drawStyle.headJointIndex].z);
     skeleton.head.scale.set(figureScale*drawStyle.headRadius, figureScale*drawStyle.headRadius, figureScale*drawStyle.headRadius);
+    skeleton.head.material.color.setRGB(drawStyle.jointStyle.r/255, drawStyle.jointStyle.g/255, drawStyle.jointStyle.b/255);
     if (drawStyle.opacity < 1) {
         skeleton.nose.material.opacity = drawStyle.opacity;
         skeleton.nose.material.transparent = true;
@@ -133,6 +135,13 @@ function modifySkeletonToFrame(skeleton, frame, drawStyle, xShift, yShift, figur
         moveBoxLine(skeleton.bones[i], pA, pB);
         skeleton.bones[i].scale.x = drawStyle.boneRadius*figureScale;
         skeleton.bones[i].scale.y = drawStyle.boneRadius*figureScale;
+        if (bones[i].type == Model.BoneType.rightHand || bones[i].type == Model.BoneType.rightLeg) {
+            skeleton.bones[i].material.color.setRGB(drawStyle.rightBoneStyle.r/255, drawStyle.rightBoneStyle.g/255, drawStyle.rightBoneStyle.b/255);
+        } else if (bones[i].type == Model.BoneType.leftHand || bones[i].type == Model.BoneType.leftLeg) {
+            skeleton.bones[i].material.color.setRGB(drawStyle.leftBoneStyle.r/255, drawStyle.leftBoneStyle.g/255, drawStyle.leftBoneStyle.b/255);
+        } else {
+            skeleton.bones[i].material.color.setRGB(drawStyle.boneStyle.r/255, drawStyle.boneStyle.g/255, drawStyle.boneStyle.b/255);
+        }
         if (drawStyle.opacity < 1) {
             skeleton.bones[i].material.opacity = drawStyle.opacity;
             skeleton.bones[i].material.transparent = true;
@@ -198,7 +207,8 @@ function processSequence(sequence, numKeyframes, width, height) {
 }
 
 function initializeMocapRenderer(canvas, width, height, drawStyle) {
-    let renderer = new THREE.WebGLRenderer({canvas, preserveDrawingBuffer: true, alpha: true,});
+    let renderer = new THREE.WebGLRenderer({canvas, preserveDrawingBuffer: true, alpha: true, antialiasing: true});
+    renderer.setPixelRatio(window.devicePixelRatio*1.5);
     renderer.autoClearColor = false;
     renderer.setSize(width, height);
     let ratio = width/height;
@@ -276,10 +286,10 @@ function createZoomableVisualizationElement(sequence, model, numKeyframes, numBl
 }
 
 function visualizeToCanvas(canvas, sequence, model, numKeyframes, numBlurFrames, width, height, addTimeScale = false, addFillingKeyframes = true, keyframeSelectionAlgorithm = 4) {
-    let drawStyle = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.9, 0,
-        2.25, Model.boneStyleDefault, Model.leftBoneStyleDefault, Model.rightBoneStyleDefault, Model.jointStyleDefault, 1, "rgba(192, 16, 128, 1)", 0.9, 1);
-    let drawStyleBlur = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.9, 0,
-        2.25, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, 1, "rgba(192, 16, 128, 1)", 0.9, 0.125);
+    let drawStyle = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.725, 0,
+        1.5, Model.boneStyleDefault, Model.leftBoneStyleDefault, Model.rightBoneStyleDefault, Model.jointStyleDefault, 1, Model.noseStyleDefault, 0.9, 1);
+    let drawStyleBlur = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.725, 0,
+        1.5, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, 1, Model.blurStyleDefault, 0.9, 0.125);
     let mocapRenderer = initializeMocapRenderer(canvas, width, height, drawStyle);
     let processed = processSequence(sequence, numKeyframes, width, height);
     let figureScale = processed.figureScale;
@@ -309,10 +319,10 @@ function visualizeToCanvas(canvas, sequence, model, numKeyframes, numBlurFrames,
 }
 
 function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight, addTimeScale = false, addFillingKeyframes = true, keyframeSelectionAlgorithm = 4) {
-    let drawStyle = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.9, 0,
-        2.25, Model.boneStyleDefault, Model.leftBoneStyleDefault, Model.rightBoneStyleDefault, Model.jointStyleDefault, 1, "rgba(192, 16, 128, 1)", 0.9, 1);
-    let drawStyleBlur = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.9, 0,
-        2.25, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, 1, "rgba(192, 16, 128, 1)", 0.9, 0.125);
+    let drawStyle = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.725, 0,
+        1.5, Model.boneStyleDefault, Model.leftBoneStyleDefault, Model.rightBoneStyleDefault, Model.jointStyleDefault, 1, Model.noseStyleDefault, 0.9, 1);
+    let drawStyleBlur = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.725, 0,
+        1.5, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, 1, Model.blurStyleDefault, 0.9, 0.125);
     let div = document.createElement("div");
     div.className = "drawItem-"+Model.motionCategories[getSequenceCategory(sequence)];
     let map = document.createElement("canvas");

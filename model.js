@@ -54,6 +54,7 @@ const jointStyleDefault = {r:0, g:0, b:0, a:1};
 const boneStyleDefault = {r:0, g:0, b:0, a:1};
 const leftBoneStyleDefault = {r:144, g:0, b:0, a:1};
 const rightBoneStyleDefault = {r:0, g:0, b:144, a:1};
+const noseStyleDefault = {r: 192, g: 16, b: 128, a: 1};
 const blurStyleDefault = {r:0, g:0, b:0, a:0.1};
 
 const motionCategories = {
@@ -390,4 +391,4 @@ const motionSuperCategories = {
     "allCategories":[...Array(153).keys()].map((x) => x+"").slice(22),
 }
 
-export {BoneType, bonesVicon, bonesKinect, bonesKinect2d, bonesPointCloud, modelVicon, modelKinect, modelKinect2d, modelPointCloud, jointStyleDefault, boneStyleDefault, leftBoneStyleDefault, rightBoneStyleDefault, blurStyleDefault, motionCategories, motionCategoriesHuman, motionSuperCategories};
+export {BoneType, bonesVicon, bonesKinect, bonesKinect2d, bonesPointCloud, modelVicon, modelKinect, modelKinect2d, modelPointCloud, jointStyleDefault, boneStyleDefault, leftBoneStyleDefault, rightBoneStyleDefault, noseStyleDefault, blurStyleDefault, motionCategories, motionCategoriesHuman, motionSuperCategories};

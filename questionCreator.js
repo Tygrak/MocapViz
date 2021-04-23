@@ -20,6 +20,8 @@ const resultText = document.getElementById("resultText");
 const superCategorySelection = document.getElementById("superCategorySelection");
 const keyframeAlgorithmSelection = document.getElementById("keyframeAlgorithmSelection");
 const randomLengthInput = document.getElementById("randomLengthInput");
+const sameSupercategoryInput = document.getElementById("sameSupercategoryInput");
+const randomSupercategoryInput = document.getElementById("randomSupercategoryInput");
 loadButton.onclick = loadCategoryDataFile;
 submitButton.onclick = submitAnswers;
 saveQuestionFileButton.onclick = saveQuestion;
@@ -74,6 +76,9 @@ function loadCategoryDataFile() {
         sequences.push(...seqs);
         fileLocation += loadChunkMbSize*1024*1024;
         if (dataFileInput.files[0].size > fileLocation) {
+            if (sequences.length > 500) {
+                return;
+            }
             reader.readAsText(dataFileInput.files[0].slice(fileLocation, fileLocation+loadChunkMbSize*1024*1024), "UTF-8");
         } else if (last.trim() != "") {
             if (supercategory.indexOf(Mocap.getSequenceCategory(last.trim().split("\n")) != -1)) {
@@ -96,10 +101,6 @@ function getRandomInt(max) {
 
 function getRandomIntRange(min, max) {
     return Math.floor(Math.random()*Math.floor(max-min)+min);
-}
-
-function getSimilarCategory(category) {
-    return Math.min(152, Math.max(22, getRandomIntRange(category-4, category+5)));
 }
 
 function shuffle(a) {
@@ -170,19 +171,40 @@ function createRandomTest() {
     selectedSequences = [];
     currentVisualizationDivs = [];
     submittedAnswers = false;
+    currentCategory = -1;
     let longestSequenceLength = 0;
     let targetLength = getRandomIntRange(130, 480);
     let randomizations = 0;
     if (sequences.length > 25) {
         let randomNum = getRandomInt(sequences.length);
+        let category = Mocap.getSequenceCategory(sequences[randomNum]);
+        currentCategory = category;
+        let keys = Object.keys(Mocap.motionSuperCategories);
+        keys.splice(Object.keys(Mocap.motionSuperCategories).indexOf("allCategories"), 1);
+        let targetSuperCategory = keys.find((s) => Mocap.motionSuperCategories[s].indexOf(category) != -1);
         currentSequences.push(randomNum);
         longestSequenceLength = Mocap.getSequenceLength(sequences[randomNum]);
         targetLength = longestSequenceLength;
-        console.log("Target length: " + targetLength);
-        for (let i = 0; i < 9; i++) {
+        console.log("Target length: " + targetLength + ", target supercategory: " + targetSuperCategory);
+        for (let i = 0; i < parseInt(sameSupercategoryInput.value)-1; i++) {
             randomNum = getRandomInt(sequences.length);
-            while (randomizations < 10000 && (currentSequences.indexOf(randomNum) != -1 
-                    || Mocap.getSequenceLength(sequences[randomNum]) > targetLength*1.25+10 || Mocap.getSequenceLength(sequences[randomNum]) < targetLength*0.75-10)) {
+            while (randomizations < 40000 && (currentSequences.indexOf(randomNum) != -1
+                   || Mocap.motionSuperCategories[targetSuperCategory].indexOf(Mocap.getSequenceCategory(sequences[randomNum])) == -1
+                   || Mocap.getSequenceLength(sequences[randomNum]) > targetLength*1.25+10 || Mocap.getSequenceLength(sequences[randomNum]) < targetLength*0.75-10)) {
+                randomNum = getRandomInt(sequences.length);
+                randomizations++;
+            }
+            currentSequences.push(randomNum);
+            if (Mocap.getSequenceLength(sequences[randomNum]) > longestSequenceLength) {
+                longestSequenceLength = Mocap.getSequenceLength(sequences[randomNum]);
+            }
+        }
+        for (let i = 0; i < parseInt(randomSupercategoryInput.value); i++) {
+            randomNum = getRandomInt(sequences.length);
+            //while (randomizations < 10000 && (currentSequences.indexOf(randomNum) != -1 || getSequenceCategory(sequences[randomNum]) > multTargetCategory+4 || getSequenceCategory(sequences[randomNum]) < multTargetCategory-4 
+            //|| getSequenceLength(sequences[randomNum]) > targetLength*1.25+10 || getSequenceLength(sequences[randomNum]) < targetLength*0.75-10)) {
+            while (randomizations < 40000 && (currentSequences.indexOf(randomNum) != -1
+                   || Mocap.getSequenceLength(sequences[randomNum]) > targetLength*1.25+10 || Mocap.getSequenceLength(sequences[randomNum]) < targetLength*0.75-10)) {
                 randomNum = getRandomInt(sequences.length);
                 randomizations++;
             }
@@ -226,7 +248,9 @@ function createRandomTest() {
         let category = Mocap.getSequenceCategory(sequence);
         chosenCategories.push(category);
     }
-    currentCategory = chosenCategories[getRandomInt(chosenCategories.length)];
+    if (currentCategory == -1) {
+        currentCategory = chosenCategories[getRandomInt(chosenCategories.length)];
+    }
     resultText.innerHTML = "Select all sequences of category '" + Mocap.motionCategoriesHuman[currentCategory] + "'";
 } 
 
