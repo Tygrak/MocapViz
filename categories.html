@@ -2,7 +2,7 @@
     <head>
         <meta charset="utf-8" />
         <title>
-            Mocap Vizualization Test
+            Mocap Vizualization
         </title>     
         <link rel="stylesheet" href="tester.css">
     </head>
@@ -10,34 +10,39 @@
     <body>
         <div id="content">
             <div class="horizontallyCentered">
-                <div class="sideMenuItemLabel">Select data file:</div>
+                <span class="optionLabel">Select data file:</span>
                 <input type="file" id="dataFileInput" name="dataFileInput" accept=".data,.txt">
                 <button id="dataInputLoadButton">Load Data</button>
-                <button id="loadQuestionFileButton">Load Question File</button>
-                <button id="saveQuestionFileButton">Save Question File</button>
+                <br>
+                <span class="optionLabel">Keyframe algorithm:</span>
+                <select id="keyframeAlgorithmSelection" name="keyframeAlgorithmSelection">
+                    <option value="Equidistant">Equidistant</option>
+                    <option value="Euclidean">Euclidean</option>
+                    <option value="Temporal">Temporal</option>
+                    <option value="Decimation" selected>Decimation</option>
+                    <option value="Lowe">Lowe</option>
+                </select>
+                <span class="optionLabel">Category:</span>          
+                <select id="categorySelection" name="categorySelection">
+                </select>
+                <span class="optionLabel">Keyframes:</span>  
+                <input type="number" id="keyframesNumInput" style="width:5em;" name="keyframesNumInput" value="10">
+                </select>
+                <span class="optionLabel">Add filling keyframes:</span>
+                <input type="checkbox" id="addFillingKeyframesInput" name="addFillingKeyframesInput" checked>
+                </select>
             </div>
-            <div class="horizontallyCentered" id="resultText">
-            </div>
+            <!--<div class="horizontallyCentered" id="resultText">
+            </div>-->
             <div class="horizontallyCentered" id="drawRegion">
-            </div>
-            <div class="horizontallyCentered" id="answerButtons">
-                <button class="answerButton" id="submitAnswersButton">Submit Answers</button>
             </div>
         </div>
         <div id="sidemenubuttondiv">
             <button id="sidemenubutton" class="" onclick="toggleButton(this)"></button>
         </div>
-        <nav class="sidemenu sidemenu-vertical sidemenu-right sidemenu-open" id="sidemenu">
+        <nav class="sidemenu sidemenu-vertical sidemenu-right" id="sidemenu">
             <h3>User Guide</h3>
             <div class="sidemenuitem" class="">
-                <h4>Task</h4>
-                <ul>
-                    <li>You will be given a motion category, your task is to select all sequences that match the category.</li>
-                    <li>Use the checkboxes on the right of the sequences to select them.</li>
-                    <li>Each question has one or more sequences matching the category.</li>
-                    <li>After submitting your answer you will get a chance to review the correct answers.</li>
-                </ul>
-                <hr>
                 <h4>General Tool Hints</h4>
                 <ul>
                     <li>Motion blur shows fast movement.</li>
@@ -67,6 +72,6 @@
                 document.getElementById("sidemenu").classList.toggle('sidemenu-open');
             };
         </script>
-        <script type="module" src="tester2.js"></script>  
+        <script type="module" src="categories.js"></script>  
     </body>
 </html>

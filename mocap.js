@@ -2,6 +2,9 @@ import * as THREE from './lib/three.module.js';
 import * as Model from './model.js';
 import {OrbitControls} from './lib/OrbitControls.js';
 
+let mainRenderer = null;
+const sceneWidth = 100;
+
 function MocapDrawStyle(bonesModel, headJointIndex, leftArmIndex, thoraxIndex, boneRadius, jointRadius, headRadius, boneStyle, leftBoneStyle, rightBoneStyle, jointStyle, figureScale, noseStyle = "rgba(192, 16, 128, 1)", noseRadius = 0.85, opacity = 1) {
     this.bonesModel = bonesModel;
     this.headJointIndex = headJointIndex;
@@ -23,11 +26,12 @@ function MocapDrawStyle(bonesModel, headJointIndex, leftArmIndex, thoraxIndex, b
 const KeyframeSelectionAlgorithmEnum = {Equidistant: 1, Euclidean: 2, Temporal: 3, Lowe: 4, Decimation: 5};
 
 class Skeleton {
-    constructor (head, nose, bones) {
+    constructor (head, nose, bones, model) {
         this.group = new THREE.Group();
         this.head = head;
         this.nose = nose;
         this.bones = bones;
+        this.model = model;
         this.group.add(head);
         this.group.add(nose);
         for (let i = 0; i < bones.length; i++) {
@@ -92,18 +96,23 @@ function createSkeleton(drawStyle) {
             new THREE.MeshBasicMaterial({color: new THREE.Color(rgbaToColorString(drawStyle.jointStyle))}));
         joint.scale.set(drawStyle.jointRadius, drawStyle.jointRadius, drawStyle.jointRadius);
     }*/
-    return new Skeleton(head, nose, bones);
+    return new Skeleton(head, nose, bones, drawStyle.bonesModel);
 }
 
-function modifySkeletonToFrame(skeleton, frame, drawStyle, xShift, yShift, figureScale) {
-    let vecNose = new THREE.Vector3(frame[drawStyle.headJointIndex].x-frame[drawStyle.thoraxIndex].x, 
-                                    frame[drawStyle.headJointIndex].y-frame[drawStyle.thoraxIndex].y, 
-                                    frame[drawStyle.headJointIndex].z-frame[drawStyle.thoraxIndex].z);
-    vecNose.cross(new THREE.Vector3(frame[drawStyle.leftArmIndex].x-frame[drawStyle.thoraxIndex].x, 
-                                    frame[drawStyle.leftArmIndex].y-frame[drawStyle.thoraxIndex].y, 
-                                    frame[drawStyle.leftArmIndex].z-frame[drawStyle.thoraxIndex].z));
+function calculateNoseVector(headJoint, thoraxJoint, leftArmJoint, multiplyScalar = 1) {
+    let vecNose = new THREE.Vector3(headJoint.x-thoraxJoint.x, 
+        headJoint.y-thoraxJoint.y, 
+        headJoint.z-thoraxJoint.z);
+    vecNose.cross(new THREE.Vector3(leftArmJoint.x-thoraxJoint.x, 
+        leftArmJoint.y-thoraxJoint.y, 
+        leftArmJoint.z-thoraxJoint.z));
     vecNose.normalize();
-    vecNose.multiplyScalar(-6*figureScale);
+    vecNose.multiplyScalar(-1*multiplyScalar);
+    return vecNose;
+} 
+
+function modifySkeletonToFrame(skeleton, frame, drawStyle, xShift, yShift, figureScale) {
+    let vecNose = calculateNoseVector(frame[drawStyle.headJointIndex], frame[drawStyle.thoraxIndex], frame[drawStyle.leftArmIndex], 6*figureScale);
     let nosePos = new THREE.Vector3(frame[drawStyle.headJointIndex].x+vecNose.x+xShift, frame[drawStyle.headJointIndex].y+vecNose.y+yShift, frame[drawStyle.headJointIndex].z+vecNose.z);
     moveBoxLine(skeleton.nose, nosePos, new THREE.Vector3(frame[drawStyle.headJointIndex].x+xShift, frame[drawStyle.headJointIndex].y+yShift, frame[drawStyle.headJointIndex].z));
     skeleton.nose.scale.x = drawStyle.noseRadius*figureScale;
@@ -194,18 +203,6 @@ function clearRenderer(mocapRenderer) {
     mocapRenderer.renderer.render(mocapRenderer.clearScene, mocapRenderer.camera);
 }
 
-function processSequence(sequence, numKeyframes, width, height) {
-    let ratio = width/height;
-    let processed = processSequenceToFramesAuto(sequence, numKeyframes, 100, 100/ratio, true);
-    let frames = processed.frames;
-    let figureScale = processed.figureScale;
-    let bestRotation = findBestRotation(frames, 12);
-    for (let i = 0; i < frames.length; i++) {
-        frames[i] = frameRotateY(frames[i], bestRotation);
-    }
-    return {frames: frames, figureScale: figureScale};
-}
-
 function initializeMocapRenderer(canvas, width, height, drawStyle) {
     let renderer = new THREE.WebGLRenderer({canvas, preserveDrawingBuffer: true, alpha: true, antialiasing: true});
     renderer.setPixelRatio(window.devicePixelRatio*1.5);
@@ -216,12 +213,21 @@ function initializeMocapRenderer(canvas, width, height, drawStyle) {
     let scene = new THREE.Scene();
     scene.background = new THREE.Color(0xffffff);
     
-    let camera = new THREE.OrthographicCamera(-50, 50, 50/ratio, -50/ratio, 0.1, 10000);
-    camera.position.set(50, 50/ratio, 100);
-    camera.lookAt(50, 50/ratio, 0);
+    let camera = new THREE.OrthographicCamera(-sceneWidth/2, sceneWidth/2, (sceneWidth/2)/ratio, -(sceneWidth/2)/ratio, 0.1, 10000);
+    camera.position.set(sceneWidth/2, (sceneWidth/2)/ratio, sceneWidth);
+    camera.lookAt(sceneWidth/2, (sceneWidth/2)/ratio, 0);
     let skeleton = createSkeleton(drawStyle);
     scene.add(skeleton.group);
     return new MocapRenderer(canvas, renderer, camera, skeleton, scene);
+}
+
+function resizeMocapRenderer(mocapRenderer, width, height) {
+    mainRenderer.renderer.setSize(width, height);
+    let ratio = width/height;
+    let camera = new THREE.OrthographicCamera(-sceneWidth/2, sceneWidth/2, (sceneWidth/2)/ratio, -(sceneWidth/2)/ratio, 0.1, 10000);
+    camera.position.set(sceneWidth/2, (sceneWidth/2)/ratio, sceneWidth);
+    camera.lookAt(sceneWidth/2, (sceneWidth/2)/ratio, 0);
+    mainRenderer.camera = camera;
 }
 
 function loadDataFromString(dataString) {
@@ -261,12 +267,12 @@ function createAnimationElement(sequence, model, visualizationWidth, visualizati
     return div;
 }
 
-function createZoomableVisualizationElement(sequence, model, numKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight, addTimeScale = false, addFillingKeyframes = true, keyframeSelectionAlgorithm = 4) {
+function createZoomableVisualizationElement(sequence, model, numKeyframes, zoomedNumKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight, addTimeScale = false, addFillingKeyframes = true, keyframeSelectionAlgorithm = 4) {
     let main = createVisualizationElement(sequence, model, numKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight, addTimeScale, addFillingKeyframes, keyframeSelectionAlgorithm);
     let zoomWidth = Math.floor(document.body.clientWidth-document.body.clientWidth/24);
     let zoomHeight = Math.floor(document.body.clientHeight*0.6-document.body.clientWidth/16);
     let bg = document.createElement("div");
-    let zoomed = createVisualizationElement(sequence, model, 12, numBlurFrames, 0, 0, zoomWidth, zoomHeight, addTimeScale, addFillingKeyframes, keyframeSelectionAlgorithm);
+    let zoomed = createVisualizationElement(sequence, model, zoomedNumKeyframes, numBlurFrames, 0, 0, zoomWidth, zoomHeight, addTimeScale, addFillingKeyframes, keyframeSelectionAlgorithm);
     zoomed.style = "z-index: 9999; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; border: 2px solid black; display: block;";
     bg.style = "display: none;";
     let fun = () => {
@@ -291,7 +297,7 @@ function visualizeToCanvas(canvas, sequence, model, numKeyframes, numBlurFrames,
     let drawStyleBlur = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.725, 0,
         1.5, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, 1, Model.blurStyleDefault, 0.9, 0.125);
     let mocapRenderer = initializeMocapRenderer(canvas, width, height, drawStyle);
-    let processed = processSequence(sequence, numKeyframes, width, height);
+    let processed = processSequence(sequence, numKeyframes, width, height, drawStyle);
     let figureScale = processed.figureScale;
     let frames = processed.frames;
     let keyframes;
@@ -323,6 +329,12 @@ function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames
         1.5, Model.boneStyleDefault, Model.leftBoneStyleDefault, Model.rightBoneStyleDefault, Model.jointStyleDefault, 1, Model.noseStyleDefault, 0.9, 1);
     let drawStyleBlur = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.725, 0,
         1.5, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, 1, Model.blurStyleDefault, 0.9, 0.125);
+    if (mainRenderer == null || mainRenderer.skeleton.model != model.bonesModel) {
+        let canvas = document.createElement("canvas");
+        mainRenderer = initializeMocapRenderer(canvas, visualizationWidth, visualizationHeight, drawStyle);
+    } else {
+        resizeMocapRenderer(mainRenderer, visualizationWidth, visualizationHeight);
+    }
     let div = document.createElement("div");
     div.className = "drawItem-"+Model.motionCategories[getSequenceCategory(sequence)];
     let map = document.createElement("canvas");
@@ -331,11 +343,10 @@ function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames
     map.height = mapHeight;
     map.style = "width: "+mapWidth+"px; height: "+mapHeight+"px;";
     div.appendChild(map);
-    let canvas = document.createElement("canvas");
-    canvas.className = "drawItemVisualization";
-    div.appendChild(canvas);
-    let mocapRenderer = initializeMocapRenderer(canvas, visualizationWidth, visualizationHeight, drawStyle);
-    let processed = processSequence(sequence, numKeyframes, visualizationWidth, visualizationHeight);
+    let image = document.createElement("img");
+    image.className = "drawItemVisualization";
+    div.appendChild(image);
+    let processed = processSequence(sequence, numKeyframes, visualizationWidth, visualizationHeight, drawStyle);
     let figureScale = processed.figureScale;
     let frames = processed.frames;
     let keyframes;
@@ -355,27 +366,47 @@ function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames
     ctx.beginPath();
     ctx.rect(0, 0, map.width, map.height);
     ctx.fill();
-    clearRenderer(mocapRenderer);
+    clearRenderer(mainRenderer);
     if (addFillingKeyframes) {
         let fillKeyframes = getFillKeyframes(frames, keyframes);
         let fillStyle = Object.assign({}, drawStyle);
         fillStyle.opacity = 0.4;
-        drawSequence(mocapRenderer, frames, fillKeyframes, 0, fillStyle, drawStyleBlur, figureScale, 0, false);
+        drawSequence(mainRenderer, frames, fillKeyframes, 0, fillStyle, drawStyleBlur, figureScale, 0, false);
     }
-    drawSequence(mocapRenderer, frames, keyframes, numBlurFrames, drawStyle, drawStyleBlur, figureScale, 0, false);
+    drawSequence(mainRenderer, frames, keyframes, numBlurFrames, drawStyle, drawStyleBlur, figureScale, 0, false);
     let mapScale = findMapScale(frames, numKeyframes, figureScale, map.width);
-    let mSize = 100/(model.unitSize/figureScale);
+    let mSize = sceneWidth/(model.unitSize/figureScale);
     if (mapScale < mSize*2.5) {
         mapScale = mSize*2.5;
     }
     if (addTimeScale) {
-        drawTimeScale(mocapRenderer, mocapRenderer.camera.right-mocapRenderer.camera.left, mocapRenderer.camera.top-mocapRenderer.camera.bottom, model.fps, frames.length, keyframes);
+        drawTimeScale(mainRenderer, mainRenderer.camera.right-mainRenderer.camera.left, mainRenderer.camera.top-mainRenderer.camera.bottom, model.fps, frames.length, keyframes);
     }
     drawTopDownMap(map, frames, keyframes, 
         {x:-1, y:-1, z:0}, 
         {x:-1, y:map.height+1, z:0}, 
-        {x:map.width+1, y:map.height+1, z:0}, frames.length, mapScale, 100/(model.unitSize/figureScale), false, true, model.fps);
+        {x:map.width+1, y:map.height+1, z:0}, frames.length, mapScale, sceneWidth/(model.unitSize/figureScale), false, true, model.fps);
+    image.src = mainRenderer.canvas.toDataURL("image/png");
+    image.height = visualizationHeight;
+    image.width = visualizationWidth;
     return div;
+}
+
+function processSequence(sequence, numKeyframes, width, height, drawStyle) {
+    let ratio = width/height;
+    let processed = processSequenceToFramesAuto(sequence, numKeyframes, sceneWidth, sceneWidth/ratio, true);
+    let frames = processed.frames;
+    let figureScale = processed.figureScale;
+    let bestRotation = findOptimalRotation(frames, 12);
+    for (let i = 0; i < frames.length; i++) {
+        frames[i] = frameRotateY(frames[i], bestRotation);
+    }
+    if (checkSequenceNeedsFlip(frames, drawStyle)) {
+        for (let i = 0; i < frames.length; i++) {
+            frames[i] = frameRotateY(frames[i], Math.PI);
+        }
+    }
+    return {frames: frames, figureScale: figureScale};
 }
 
 function processSequenceToFramesAuto(sequence, numKeyframes, width, height, switchY = false) {
@@ -748,7 +779,11 @@ function getFillKeyframes(frames, keyframes) {
     let result = [];
     let helpKeyframes = keyframes.slice();
     for (let i = 1; i < helpKeyframes.length; i++) {
-        if (helpKeyframes[i]-helpKeyframes[i-1] > frames.length/numKeyframes) {
+        let aWidth = findMaximumsFromFrame(frames[helpKeyframes[i]]).x-findMinimumsFromFrame(frames[helpKeyframes[i]]).x;
+        let bWidth = findMaximumsFromFrame(frames[helpKeyframes[i-1]]).x-findMinimumsFromFrame(frames[helpKeyframes[i-1]]).x;
+        let width = Math.max(aWidth, bWidth);
+        let space = ((helpKeyframes[i]-helpKeyframes[i-1])/frames.length)*sceneWidth-width-2;
+        if (space > width) {
             let element = Math.round((helpKeyframes[i]+helpKeyframes[i-1])/2);
             helpKeyframes.splice(i, 0, element);
             result.push(element);
@@ -782,7 +817,7 @@ function findMapScale(frames, numKeyframes, figureScale, mapWidth) {
     return mapScale;
 }
 
-function findBestRotation(frames, numSamples) {
+function findOptimalRotation(frames, numSamples) {
     numSamples = numSamples-1;
     let framesMin = findMinimumsFromFrame(frames[0]);
     let framesMax = findMaximumsFromFrame(frames[0]);
@@ -828,6 +863,13 @@ function findBestRotation(frames, numSamples) {
     } else {
         return Math.asin(b/c);
     }
+}
+
+function checkSequenceNeedsFlip(frames, drawStyle) {
+    let nose = calculateNoseVector(frames[0][drawStyle.headJointIndex], frames[0][drawStyle.thoraxIndex], frames[0][drawStyle.leftArmIndex]);
+    nose.y = 0;
+    nose.normalize();
+    return nose.dot(new THREE.Vector3(Math.sqrt(2)/2, 0, Math.sqrt(2)/2)) < 0;
 }
 
 function findSequenceMinimums(frames, numSamples) {
@@ -876,22 +918,17 @@ function findOptimalScale(frames, width, height, numFrames) {
     let maximums = findMaximumsFromFrame(frames[0]);
     let minimums = findMinimumsFromFrame(frames[0]);
     let maxWidth = maximums.x-minimums.x;
-    let maxHeight = maximums.y-minimums.y;
-    let maxY = maximums.y;
-    let minY = minimums.y;
     for (let i = 0; i < numFrames; i++) {
         let index = Math.floor((i/numFrames)*frames.length);
-        maximums = findMaximumsFromFrame(frames[index]);
-        minimums = findMinimumsFromFrame(frames[index]);
-        let width = maximums.x-minimums.x;
-        let height = maximums.y-minimums.y;
-        maxWidth = Math.max(maxWidth, width);
-        maxHeight = Math.max(maxHeight, height);
-        maxY = Math.max(maxY, maximums.y);
-        minY = Math.min(minY, minimums.y);
+        let max = findMaximumsFromFrame(frames[index]);
+        let min = findMinimumsFromFrame(frames[index]);
+        maximums.y = Math.max(maximums.y, max.y);
+        minimums.y = Math.min(minimums.y, min.y);
+        maxWidth = Math.max(maximums.x-minimums.x, maxWidth);
     }
+    let maxHeight = maximums.y-minimums.y;
     let scaleHeight = (height)/(maxHeight);
-    let scaleWidth = (width/numFrames)/(maxWidth);
+    let scaleWidth = (width/(numFrames))/(maxWidth);
     if (scaleHeight < 0 && scaleWidth < 0) {
         return 1;
     } else if (scaleHeight < 0) {

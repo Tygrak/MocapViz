@@ -29,6 +29,10 @@ body {
     margin: 1em;
 }
 
+.optionLabel {
+    font-size: 0.9em;
+}
+
 .answerButton {
     margin: 0.1em 1em 0.1em 0.1em;
     min-width: 21em;
