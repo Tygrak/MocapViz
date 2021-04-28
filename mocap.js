@@ -3,6 +3,7 @@ import * as Model from './model.js';
 import {OrbitControls} from './lib/OrbitControls.js';
 
 let mainRenderer = null;
+let textCanvas = null;
 const sceneWidth = 100;
 
 function MocapDrawStyle(bonesModel, headJointIndex, leftArmIndex, thoraxIndex, boneRadius, jointRadius, headRadius, boneStyle, leftBoneStyle, rightBoneStyle, jointStyle, figureScale, noseStyle = "rgba(192, 16, 128, 1)", noseRadius = 0.85, opacity = 1) {
@@ -161,7 +162,7 @@ function modifySkeletonToFrame(skeleton, frame, drawStyle, xShift, yShift, figur
     }
 }
 
-function drawSequence(mocapRenderer, frames, indexes, numBlurPositions, drawStyle, drawStyleBlur, figureScale, yShift = 0, clear = true) {
+function drawSequence(mocapRenderer, frames, indexes, numBlurPositions, drawStyle, drawStyleBlur, figureScale, yShift = 0, clear = true, labelFrames = true) {
     if (clear) {
         clearRenderer(mocapRenderer);
     }
@@ -173,6 +174,7 @@ function drawSequence(mocapRenderer, frames, indexes, numBlurPositions, drawStyl
     let maximumsLast = findMaximumsFromFrame(lastFrame);
     let sequenceMaximums = findSequenceMaximums(frames, indexes.length);
     sequenceMaximums.y = sequenceMaximums.y-3;
+    let xPositions = [];
     for (let i = 0; i < indexes.length; i++) {
         let coreX = frames[indexes[i]][0].x;
         let xShift = (indexes[i]/frames.length)*(96-(maximumsLast.x-minimumsLast.x))+(maximumsFirst.x-minimumsFirst.x)/2+2;
@@ -183,13 +185,17 @@ function drawSequence(mocapRenderer, frames, indexes, numBlurPositions, drawStyl
             drawFrame(mocapRenderer, moveOriginXBy(frames[indexes[i]-j], coreX), figureScale, xShift, yShift, drawStyleBlur, false);
         }
         drawFrame(mocapRenderer, moveOriginXBy(frames[indexes[i]], coreX), figureScale, xShift, yShift, drawStyle, false);
+        xPositions.push(xShift);
         //todo: add labels
-        /*if (labelFrames) {
+        /*
+        if (labelFrames) {
             ctx.font = '12px serif';
             ctx.fillStyle = 'black';
             ctx.fillText(indexes[i], xShift, sequenceMaximums.y+yShift+14);
-        }*/
+        }
+        */
     }
+    return xPositions;
 }
 
 function drawFrame(mocapRenderer, frame, figureScale, xShift, yShift, drawStyle, clear = false) {
@@ -222,12 +228,12 @@ function initializeMocapRenderer(canvas, width, height, drawStyle) {
 }
 
 function resizeMocapRenderer(mocapRenderer, width, height) {
-    mainRenderer.renderer.setSize(width, height);
+    mocapRenderer.renderer.setSize(width, height);
     let ratio = width/height;
     let camera = new THREE.OrthographicCamera(-sceneWidth/2, sceneWidth/2, (sceneWidth/2)/ratio, -(sceneWidth/2)/ratio, 0.1, 10000);
     camera.position.set(sceneWidth/2, (sceneWidth/2)/ratio, sceneWidth);
     camera.lookAt(sceneWidth/2, (sceneWidth/2)/ratio, 0);
-    mainRenderer.camera = camera;
+    mocapRenderer.camera = camera;
 }
 
 function loadDataFromString(dataString) {
@@ -324,7 +330,7 @@ function visualizeToCanvas(canvas, sequence, model, numKeyframes, numBlurFrames,
     }
 }
 
-function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight, addTimeScale = false, addFillingKeyframes = true, keyframeSelectionAlgorithm = 4) {
+function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight, addTimeScale = false, addFillingKeyframes = true, keyframeSelectionAlgorithm = 4, labelFrames = true) {
     let drawStyle = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.725, 0,
         1.5, Model.boneStyleDefault, Model.leftBoneStyleDefault, Model.rightBoneStyleDefault, Model.jointStyleDefault, 1, Model.noseStyleDefault, 0.9, 1);
     let drawStyleBlur = new MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.725, 0,
@@ -373,7 +379,7 @@ function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames
         fillStyle.opacity = 0.4;
         drawSequence(mainRenderer, frames, fillKeyframes, 0, fillStyle, drawStyleBlur, figureScale, 0, false);
     }
-    drawSequence(mainRenderer, frames, keyframes, numBlurFrames, drawStyle, drawStyleBlur, figureScale, 0, false);
+    let positions = drawSequence(mainRenderer, frames, keyframes, numBlurFrames, drawStyle, drawStyleBlur, figureScale, 0, false);
     let mapScale = findMapScale(frames, numKeyframes, figureScale, map.width);
     let mSize = sceneWidth/(model.unitSize/figureScale);
     if (mapScale < mSize*2.5) {
@@ -389,7 +395,28 @@ function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames
     image.src = mainRenderer.canvas.toDataURL("image/png");
     image.height = visualizationHeight;
     image.width = visualizationWidth;
+    div.style.position = "relative";
+    if (labelFrames) {
+        createTextElements(positions, keyframes, image, mapWidth, div);
+    }
     return div;
+}
+
+function createTextElements(positions, keyframes, image, mapWidth, mainDiv) {
+    for (let i = 0; i < positions.length; i++) {
+        let element = document.createElement('div');
+        element.style.position = 'absolute';
+        element.style.zIndex = 1;
+        element.style.width = 40;
+        element.style.height = 25;
+        element.innerHTML = keyframes[i];
+        element.style.top = (2) + 'px';;//(image.height-18) + 'px';
+        element.style.left = ((positions[i]/100)*image.width+mapWidth-3) + 'px';
+        element.style.fontSize = "0.75em";
+        element.style.color = "rgb(5, 10, 5)";
+        element.style.textAlign = "left";
+        mainDiv.appendChild(element);
+    }
 }
 
 function processSequence(sequence, numKeyframes, width, height, drawStyle) {
