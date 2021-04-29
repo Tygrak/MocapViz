@@ -3,7 +3,6 @@ import * as Model from './model.js';
 import {OrbitControls} from './lib/OrbitControls.js';
 
 let mainRenderer = null;
-let textCanvas = null;
 const sceneWidth = 100;
 
 function MocapDrawStyle(bonesModel, headJointIndex, leftArmIndex, thoraxIndex, boneRadius, jointRadius, headRadius, boneStyle, leftBoneStyle, rightBoneStyle, jointStyle, figureScale, noseStyle = "rgba(192, 16, 128, 1)", noseRadius = 0.85, opacity = 1) {
@@ -273,12 +272,12 @@ function createAnimationElement(sequence, model, visualizationWidth, visualizati
     return div;
 }
 
-function createZoomableVisualizationElement(sequence, model, numKeyframes, zoomedNumKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight, addTimeScale = false, addFillingKeyframes = true, keyframeSelectionAlgorithm = 4) {
-    let main = createVisualizationElement(sequence, model, numKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight, addTimeScale, addFillingKeyframes, keyframeSelectionAlgorithm);
+function createZoomableVisualizationElement(sequence, model, numKeyframes, zoomedNumKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight, addTimeScale = false, addFillingKeyframes = true, keyframeSelectionAlgorithm = 4, labelFrames = true) {
+    let main = createVisualizationElement(sequence, model, numKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight, addTimeScale, addFillingKeyframes, keyframeSelectionAlgorithm, labelFrames);
     let zoomWidth = Math.floor(document.body.clientWidth-document.body.clientWidth/24);
     let zoomHeight = Math.floor(document.body.clientHeight*0.6-document.body.clientWidth/16);
     let bg = document.createElement("div");
-    let zoomed = createVisualizationElement(sequence, model, zoomedNumKeyframes, numBlurFrames, 0, 0, zoomWidth, zoomHeight, addTimeScale, addFillingKeyframes, keyframeSelectionAlgorithm);
+    let zoomed = createVisualizationElement(sequence, model, zoomedNumKeyframes, numBlurFrames, 0, 0, zoomWidth, zoomHeight, addTimeScale, addFillingKeyframes, keyframeSelectionAlgorithm, labelFrames);
     zoomed.style = "z-index: 9999; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; border: 2px solid black; display: block;";
     bg.style = "display: none;";
     let fun = () => {
@@ -404,6 +403,9 @@ function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames
 
 function createTextElements(positions, keyframes, image, mapWidth, mainDiv) {
     for (let i = 0; i < positions.length; i++) {
+        if ((positions[i]/100)*image.width+mapWidth+20 > mapWidth+image.width) {
+            continue;
+        }
         let element = document.createElement('div');
         element.style.position = 'absolute';
         element.style.zIndex = 1;
