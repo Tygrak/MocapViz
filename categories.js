@@ -14,8 +14,10 @@ loadButton.onclick = loadCategoryDataFile;
 addCategorySelectionOptions();
 
 function addCategorySelectionOptions() {
-    for (let i = 0; i < Mocap.motionSuperCategories.allCategories.length; i++) {
-        const category = Mocap.motionSuperCategories.allCategories[i];
+    let allCategories = Mocap.motionSuperCategories.allCategories;
+    allCategories.splice(allCategories.indexOf("140"), 1);
+    for (let i = 0; i < allCategories.length; i++) {
+        const category = allCategories[i];
         let option = document.createElement("option");
         option.value = category;
         option.innerHTML = category+": "+Mocap.motionCategoriesHuman[category];

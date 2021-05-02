@@ -141,7 +141,7 @@ function saveQuestion() {
 }
 
 function loadQuestion() {
-    if (dataFileInput.files.length == 0 || !loaded) {
+    if (dataFileInput.files.length == 0 || !loaded || dataFileInput.files[0].size > 50 * 1024 * 1024) {
         return;
     }
     loaded = false;
@@ -164,6 +164,7 @@ function loadQuestion() {
 }
 
 function createRandomTest() {
+    let time = performance.now();
     let targetElement = document.getElementById("drawRegion");
     targetElement.innerHTML = "";
     let chosenCategories = [];
@@ -252,6 +253,7 @@ function createRandomTest() {
         currentCategory = chosenCategories[getRandomInt(chosenCategories.length)];
     }
     resultText.innerHTML = "Select all sequences of category '" + Mocap.motionCategoriesHuman[currentCategory] + "'";
+    console.log("Visualization done in " + (performance.now()-time) + "ms.");
 } 
 
 function remakeTest() {

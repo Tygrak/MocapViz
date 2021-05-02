@@ -161,7 +161,7 @@ function modifySkeletonToFrame(skeleton, frame, drawStyle, xShift, yShift, figur
     }
 }
 
-function drawSequence(mocapRenderer, frames, indexes, numBlurPositions, drawStyle, drawStyleBlur, figureScale, yShift = 0, clear = true, labelFrames = true) {
+function drawSequence(mocapRenderer, frames, indexes, numBlurPositions, drawStyle, drawStyleBlur, figureScale, yShift = 0, clear = true) {
     if (clear) {
         clearRenderer(mocapRenderer);
     }
