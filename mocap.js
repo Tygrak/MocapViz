@@ -172,11 +172,13 @@ function drawSequence(mocapRenderer, frames, indexes, numBlurPositions, drawStyl
     let minimumsLast = findMinimumsFromFrame(lastFrame);
     let maximumsLast = findMaximumsFromFrame(lastFrame);
     let sequenceMaximums = findSequenceMaximums(frames, indexes.length);
+    let widthFirst = maximumsFirst.x-minimumsFirst.x;
+    let widthLast = maximumsLast.x-minimumsLast.x;
     sequenceMaximums.y = sequenceMaximums.y-3;
     let xPositions = [];
     for (let i = 0; i < indexes.length; i++) {
         let coreX = frames[indexes[i]][0].x;
-        let xShift = (indexes[i]/frames.length)*(96-(maximumsLast.x-minimumsLast.x))+(maximumsFirst.x-minimumsFirst.x)/2+2;
+        let xShift = (indexes[i]/frames.length)*(99-widthFirst/2-widthLast/2)+widthFirst/2+0.5;
         for (let j = 1; j < numBlurPositions+1; j++) {
             if (indexes[i]-j < 0) {
                 continue;
@@ -948,7 +950,7 @@ function findOptimalScale(frames, width, height, numFrames) {
     let minimums = findMinimumsFromFrame(frames[0]);
     let maxWidth = maximums.x-minimums.x;
     for (let i = 0; i < numFrames; i++) {
-        let index = Math.floor((i/numFrames)*frames.length);
+        let index = Math.floor(((i+1)/numFrames)*frames.length-1);
         let max = findMaximumsFromFrame(frames[index]);
         let min = findMinimumsFromFrame(frames[index]);
         maximums.y = Math.max(maximums.y, max.y);
