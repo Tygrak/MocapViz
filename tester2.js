@@ -146,6 +146,7 @@ function loadQuestion() {
 }
 
 function createRandomTest() {
+    let time = performance.now();
     let targetElement = document.getElementById("drawRegion");
     targetElement.innerHTML = "";
     let chosenCategories = [];
@@ -204,30 +205,57 @@ function createRandomTest() {
         }
     }
     shuffle(currentSequences);
-    for (let i = 0; i < currentSequences.length; i++) {
-        let sequence = sequences[currentSequences[i]];
-        let visualization = Mocap.createZoomableVisualizationElement(sequence, Mocap.modelVicon, Math.ceil(10*(sequence.length/longestSequenceLength)), 12, 10, 
-                                                       150, 150, 850*(sequence.length/longestSequenceLength), 150, false, true, keyframeAlgorithm);
-        visualization.children[0].classList.add("drawBox");
-        visualization.children[1].classList.add("drawBox");
-        let checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.classList.add("sequenceCheckbox");
-        checkbox.onclick = function () {
-            if (selectedSequences.indexOf(i) == -1) {
-                selectedSequences.push(i);
-            } else {
-                selectedSequences.splice(selectedSequences.indexOf(i), 1);
-            }
-        };
-        currentVisualizationDivs.push(visualization);
-        visualization.appendChild(checkbox);
-        targetElement.appendChild(visualization);
-        let category = Mocap.getSequenceCategory(sequence);
-        chosenCategories.push(category);
+    function* elementGen() {
+        for (let i = 0; i < currentSequences.length; i++) {
+            let sequence = sequences[currentSequences[i]];
+            let visualization = Mocap.createZoomableVisualizationElement(sequence, Mocap.modelVicon, Math.ceil(10*(sequence.length/longestSequenceLength)), 12, 10, 
+                                                           150, 150, 850*(sequence.length/longestSequenceLength), 150, false, true, keyframeAlgorithm);
+            visualization.children[0].classList.add("drawBox");
+            visualization.children[1].classList.add("drawBox");
+            let checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.classList.add("sequenceCheckbox");
+            checkbox.onclick = function () {
+                if (selectedSequences.indexOf(i) == -1) {
+                    selectedSequences.push(i);
+                } else {
+                    selectedSequences.splice(selectedSequences.indexOf(i), 1);
+                }
+            };
+            currentVisualizationDivs.push(visualization);
+            visualization.appendChild(checkbox);
+            targetElement.appendChild(visualization);
+            let category = Mocap.getSequenceCategory(sequence);
+            chosenCategories.push(category);
+            yield i;
+        }
+        return -1;
     }
-    currentCategory = chosenCategories[getRandomInt(chosenCategories.length)];
-    resultText.innerHTML = "Select all sequences of category '" + Mocap.motionCategoriesHuman[currentCategory] + "'";
+    let gen = elementGen();
+    function rAFLoop(calculate){
+        return new Promise(resolve => {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                calculate();
+                resolve();
+            })
+          })
+        })
+    }
+    async function loop(){
+        let done = false;
+        while (!done) {
+            await rAFLoop(() => {
+                if (gen.next().done) {
+                    done = true;
+                }
+            });
+        }
+        console.log("Visualization done in " + (performance.now()-time) + "ms.");
+        currentCategory = chosenCategories[getRandomInt(chosenCategories.length)];
+        resultText.innerHTML = "Select all sequences of category '" + Mocap.motionCategoriesHuman[currentCategory] + "'";
+    }
+    loop();
 } 
 
 function submitAnswers() {

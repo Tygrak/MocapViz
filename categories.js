@@ -1,4 +1,5 @@
 import * as Mocap from './mocap.js';
+import * as Mocap2d from './mocapCanvas2d.js';
 
 let maxCategoriesLoad = 500;
 let loaded = true;
@@ -78,14 +79,52 @@ function createVisualizations() {
         const sequence = sequences[i];
         longestSequenceLength = Math.max(Mocap.getSequenceLength(sequence), longestSequenceLength);
     }
-    for (let i = 0; i < sequences.length; i++) {
+    /*for (let i = 0; i < sequences.length; i++) {
         const sequence = sequences[i];
         let numKeyframes = Math.max(2, Math.round(keyframesNum*(sequence.length/longestSequenceLength)));
+        console.log("i:"+i);
         let visualization = Mocap.createZoomableVisualizationElement(sequence, Mocap.modelVicon, numKeyframes, keyframesNum+2, 10, 
-            150, 150, (width-160)*(sequence.length/longestSequenceLength), 150, false, addFilling, keyframeAlgorithm);
+        150, 150, (width-160)*(sequence.length/longestSequenceLength), 150, false, addFilling, keyframeAlgorithm);
         visualization.children[0].classList.add("drawBox");
         visualization.children[1].classList.add("drawBox");
         targetElement.appendChild(visualization);
     }
-    console.log("Visualization done in " + (performance.now()-time) + "ms.");
+    console.log("Visualization done in " + (performance.now()-time) + "ms.");*/
+    function* elementGen() {
+        for (let i = 0; i < sequences.length; i++) {
+            const sequence = sequences[i];
+            let numKeyframes = Math.max(2, Math.round(keyframesNum*(sequence.length/longestSequenceLength)));
+            console.log("i:"+i);
+            let visualization = Mocap.createZoomableVisualizationElement(sequence, Mocap.modelVicon, numKeyframes, keyframesNum+2, 10, 
+            150, 150, (width-160)*(sequence.length/longestSequenceLength), 150, false, addFilling, keyframeAlgorithm);
+            visualization.children[0].classList.add("drawBox");
+            visualization.children[1].classList.add("drawBox");
+            targetElement.appendChild(visualization);
+            yield i;
+        }
+        return -1;
+    }
+    let gen = elementGen();
+    function rAFLoop(calculate){
+        return new Promise(resolve => {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                calculate();
+                resolve();
+            })
+          })
+        })
+    }
+    async function loop(){
+        let done = false;
+        while (!done) {
+            await rAFLoop(() => {
+                if (gen.next().done) {
+                    done = true;
+                }
+            });
+        }
+        console.log("Visualization done in " + (performance.now()-time) + "ms.");
+    }
+    loop();
 } 
