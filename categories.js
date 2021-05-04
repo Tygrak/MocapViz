@@ -71,7 +71,7 @@ function createVisualizations() {
     let targetElement = document.getElementById("drawRegion");
     let keyframesNum = parseInt(keyframesNumInput.value);
     let addFilling = addFillingKeyframesInput.checked;
-    let width = window.innerWidth*0.95;
+    let width = window.innerWidth*0.92;
     let keyframeAlgorithm = Mocap.KeyframeSelectionAlgorithmEnum[keyframeAlgorithmSelection.value];
     targetElement.innerHTML = "";
     let longestSequenceLength = 0;
@@ -96,7 +96,7 @@ function createVisualizations() {
             let numKeyframes = Math.max(2, Math.round(keyframesNum*(sequence.length/longestSequenceLength)));
             console.log("i:"+i);
             let visualization = Mocap.createZoomableVisualizationElement(sequence, Mocap.modelVicon, numKeyframes, keyframesNum+2, 10, 
-            150, 150, (width-160)*(sequence.length/longestSequenceLength), 150, false, addFilling, keyframeAlgorithm);
+            150, 150, (width-170)*(sequence.length/longestSequenceLength), 150, false, addFilling, keyframeAlgorithm);
             visualization.children[0].classList.add("drawBox");
             visualization.children[1].classList.add("drawBox");
             targetElement.appendChild(visualization);
