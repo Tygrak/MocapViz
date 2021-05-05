@@ -73,7 +73,7 @@ function createSkeleton(drawStyle) {
             
         }
         let joint = new THREE.Mesh(
-            new THREE.SphereGeometry(1, 32, 32), 
+            new THREE.SphereBufferGeometry(1, 32, 32), 
             new THREE.MeshBasicMaterial({color: new THREE.Color(Core.rgbaToColorString(drawStyle.jointStyle))}));
         joint.scale.set(drawStyle.jointRadius, drawStyle.jointRadius, drawStyle.jointRadius);
     }*/
@@ -90,17 +90,25 @@ function calculateNoseVector(headJoint, thoraxJoint, leftArmJoint, multiplyScala
     vecNose.normalize();
     vecNose.multiplyScalar(-1*multiplyScalar);
     return vecNose;
-} 
+}
+
+function resizeSkeleton(skeleton, drawStyle, figureScale) {
+    skeleton.nose.scale.x = drawStyle.noseRadius*figureScale;
+    skeleton.nose.scale.y = drawStyle.noseRadius*figureScale;
+    skeleton.head.scale.set(figureScale*drawStyle.headRadius, figureScale*drawStyle.headRadius, figureScale*drawStyle.headRadius);
+    let bones = drawStyle.bonesModel;
+    for (let i = 0; i < bones.length; i++) {
+        skeleton.bones[i].scale.x = drawStyle.boneRadius*figureScale;
+        skeleton.bones[i].scale.y = drawStyle.boneRadius*figureScale;
+    }
+}
 
 function modifySkeletonToFrame(skeleton, frame, drawStyle, xShift, yShift, figureScale) {
     let vecNose = calculateNoseVector(frame[drawStyle.headJointIndex], frame[drawStyle.thoraxIndex], frame[drawStyle.leftArmIndex], 6*figureScale);
     let nosePos = new THREE.Vector3(frame[drawStyle.headJointIndex].x+vecNose.x+xShift, frame[drawStyle.headJointIndex].y+vecNose.y+yShift, frame[drawStyle.headJointIndex].z+vecNose.z);
     moveBoxLine(skeleton.nose, nosePos, new THREE.Vector3(frame[drawStyle.headJointIndex].x+xShift, frame[drawStyle.headJointIndex].y+yShift, frame[drawStyle.headJointIndex].z));
-    skeleton.nose.scale.x = drawStyle.noseRadius*figureScale;
-    skeleton.nose.scale.y = drawStyle.noseRadius*figureScale;
     skeleton.nose.material.color.setRGB(drawStyle.noseStyle.r/255, drawStyle.noseStyle.g/255, drawStyle.noseStyle.b/255);
     skeleton.head.position.set(frame[drawStyle.headJointIndex].x+xShift, frame[drawStyle.headJointIndex].y+yShift, frame[drawStyle.headJointIndex].z);
-    skeleton.head.scale.set(figureScale*drawStyle.headRadius, figureScale*drawStyle.headRadius, figureScale*drawStyle.headRadius);
     skeleton.head.material.color.setRGB(drawStyle.jointStyle.r/255, drawStyle.jointStyle.g/255, drawStyle.jointStyle.b/255);
     if (drawStyle.opacity < 1) {
         skeleton.nose.material.opacity = drawStyle.opacity;
@@ -123,8 +131,6 @@ function modifySkeletonToFrame(skeleton, frame, drawStyle, xShift, yShift, figur
         let pA = new THREE.Vector3(a.x+xShift, a.y+yShift, a.z);
         let pB = new THREE.Vector3(b.x+xShift, b.y+yShift, b.z);
         moveBoxLine(skeleton.bones[i], pA, pB);
-        skeleton.bones[i].scale.x = drawStyle.boneRadius*figureScale;
-        skeleton.bones[i].scale.y = drawStyle.boneRadius*figureScale;
         if (bones[i].type == Model.BoneType.rightHand || bones[i].type == Model.BoneType.rightLeg) {
             skeleton.bones[i].material.color.setRGB(drawStyle.rightBoneStyle.r/255, drawStyle.rightBoneStyle.g/255, drawStyle.rightBoneStyle.b/255);
         } else if (bones[i].type == Model.BoneType.leftHand || bones[i].type == Model.BoneType.leftLeg) {
@@ -159,7 +165,7 @@ function drawSequence(mocapRenderer, frames, indexes, numBlurPositions, drawStyl
     let xPositions = [];
     for (let i = 0; i < indexes.length; i++) {
         let coreX = frames[indexes[i]][0].x;
-        let xShift = (indexes[i]/frames.length)*(99-widthFirst/2-widthLast/2)+widthFirst/2+0.5;
+        let xShift = (indexes[i]/frames.length)*(98-widthFirst/2-widthLast/2)+widthFirst/2+0.5;
         for (let j = 1; j < numBlurPositions+1; j++) {
             if (indexes[i]-j < 0) {
                 continue;
@@ -168,14 +174,6 @@ function drawSequence(mocapRenderer, frames, indexes, numBlurPositions, drawStyl
         }
         drawFrame(mocapRenderer, Core.moveOriginXBy(frames[indexes[i]], coreX), figureScale, xShift, yShift, drawStyle, false);
         xPositions.push(xShift);
-        //todo: add labels
-        /*
-        if (labelFrames) {
-            ctx.font = '12px serif';
-            ctx.fillStyle = 'black';
-            ctx.fillText(indexes[i], xShift, sequenceMaximums.y+yShift+14);
-        }
-        */
     }
     return xPositions;
 }
@@ -201,7 +199,7 @@ function initializeMocapRenderer(canvas, width, height, drawStyle) {
     let scene = new THREE.Scene();
     scene.background = new THREE.Color(0xffffff);
     
-    let camera = new THREE.OrthographicCamera(-sceneWidth/2, sceneWidth/2, (sceneWidth/2)/ratio, -(sceneWidth/2)/ratio, 0.1, 10000);
+    let camera = new THREE.OrthographicCamera(-sceneWidth/2, sceneWidth/2, (sceneWidth/2)/ratio, -(sceneWidth/2)/ratio, 0.1, 1000);
     camera.position.set(sceneWidth/2, (sceneWidth/2)/ratio, sceneWidth);
     camera.lookAt(sceneWidth/2, (sceneWidth/2)/ratio, 0);
     let skeleton = createSkeleton(drawStyle);
@@ -212,7 +210,7 @@ function initializeMocapRenderer(canvas, width, height, drawStyle) {
 function resizeMocapRenderer(mocapRenderer, width, height) {
     mocapRenderer.renderer.setSize(width, height);
     let ratio = width/height;
-    let camera = new THREE.OrthographicCamera(-sceneWidth/2, sceneWidth/2, (sceneWidth/2)/ratio, -(sceneWidth/2)/ratio, 0.1, 10000);
+    let camera = new THREE.OrthographicCamera(-sceneWidth/2, sceneWidth/2, (sceneWidth/2)/ratio, -(sceneWidth/2)/ratio, 0.1, 1000);
     camera.position.set(sceneWidth/2, (sceneWidth/2)/ratio, sceneWidth);
     camera.lookAt(sceneWidth/2, (sceneWidth/2)/ratio, 0);
     mocapRenderer.camera = camera;
@@ -334,6 +332,7 @@ function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames
     let processed = Core.processSequence(sequence, numKeyframes, sceneWidth, visualizationWidth, visualizationHeight, drawStyle);
     let figureScale = processed.figureScale;
     let frames = processed.frames;
+    resizeSkeleton(mainRenderer.skeleton, drawStyle, figureScale);
     let keyframes;
     if (keyframeSelectionAlgorithm == Core.KeyframeSelectionAlgorithmEnum.Decimation) {
         keyframes = Core.findKeyframesDecimation(frames, numKeyframes);
