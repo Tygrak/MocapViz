@@ -118,9 +118,9 @@ function shuffle(a) {
 
 function download(data, filename) {
     let file = new Blob([data], {type: "text/plain"});
-    if (window.navigator.msSaveOrOpenBlob) // IE10+
+    if (window.navigator.msSaveOrOpenBlob) { // IE10+
         window.navigator.msSaveOrOpenBlob(file, filename);
-    else { // Others
+    } else { // Others
         let a = document.createElement("a");
         let url = URL.createObjectURL(file);
         a.href = url;
