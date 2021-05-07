@@ -63,10 +63,10 @@ function createZoomableVisualizationElement(sequence, model, numKeyframes, zoome
 }
 
 function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight, addTimeScale = false, addFillingKeyframes = true, keyframeSelectionAlgorithm = 4) {
-    let drawStyle = new Core.MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, model.boneRadius, model.jointRadius,
-        model.headRadius, Model.boneStyleDefault, Model.leftBoneStyleDefault, Model.rightBoneStyleDefault, Model.jointStyleDefault, Model.figureScale);
-    let drawStyleBlur = new Core.MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, model.boneRadius, model.jointRadius,
-        model.headRadius, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, Model.figureScale);
+    let drawStyle = new Core.MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 2, 0,
+        10, Model.boneStyleDefault, Model.leftBoneStyleDefault, Model.rightBoneStyleDefault, Model.jointStyleDefault, Model.figureScale);
+    let drawStyleBlur = new Core.MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 2, 0,
+        10, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, Model.figureScale);
     let div = document.createElement("div");
     div.className = "drawItem-"+Model.motionCategories[Core.getSequenceCategory(sequence)];
     let map = document.createElement("canvas");
@@ -84,21 +84,19 @@ function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames
     let figureScale = processResult.figureScale/model.defaultScale;
     drawStyle.figureScale = figureScale;
     drawStyleBlur.figureScale = figureScale;
-    drawStyle.boneRadius = model.boneRadius*figureScale;
-    drawStyleBlur.boneRadius = model.boneRadius*figureScale;
-    drawStyle.jointRadius = model.jointRadius;
-    drawStyleBlur.jointRadius = model.jointRadius;
-    if (model.jointRadius < 0.1) {
+    drawStyle.boneRadius = drawStyle.boneRadius*figureScale;
+    drawStyleBlur.boneRadius = drawStyleBlur.boneRadius*figureScale;
+    if (drawStyle.jointRadius < 0.1) {
         if (figureScale < 0.5) {
-            drawStyle.headRadius = model.headRadius*figureScale*0.75;
-            drawStyleBlur.headRadius = model.headRadius*figureScale*0.75;
+            drawStyle.headRadius = drawStyle.headRadius*figureScale*0.75;
+            drawStyleBlur.headRadius = drawStyle.headRadius*figureScale*0.75;
         } else {
-            drawStyle.headRadius = model.headRadius*figureScale;
-            drawStyleBlur.headRadius = model.headRadius*figureScale;
+            drawStyle.headRadius = drawStyle.headRadius*figureScale;
+            drawStyleBlur.headRadius = drawStyle.headRadius*figureScale;
         }
     } else {
-        drawStyle.headRadius = model.headRadius;
-        drawStyleBlur.headRadius = model.headRadius;
+        drawStyle.headRadius = drawStyle.headRadius;
+        drawStyleBlur.headRadius = drawStyle.headRadius;
     }
     let keyframes;
     if (keyframeSelectionAlgorithm == Core.KeyframeSelectionAlgorithmEnum.Decimation) {

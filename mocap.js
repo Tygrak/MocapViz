@@ -148,7 +148,7 @@ function modifySkeletonToFrame(skeleton, frame, drawStyle, xShift, yShift, figur
     }
 }
 
-function drawSequence(mocapRenderer, frames, indexes, numBlurPositions, drawStyle, drawStyleBlur, figureScale, yShift = 0, clear = true) {
+function drawSequence(mocapRenderer, frames, indexes, numBlurPositions, drawStyle, drawStyleBlur, figureScale, yShift = 0, clear = true, useTrueTime = true) {
     if (clear) {
         clearRenderer(mocapRenderer);
     }
@@ -166,6 +166,9 @@ function drawSequence(mocapRenderer, frames, indexes, numBlurPositions, drawStyl
     for (let i = 0; i < indexes.length; i++) {
         let coreX = frames[indexes[i]][0].x;
         let xShift = (indexes[i]/frames.length)*(98-widthFirst/2-widthLast/2)+widthFirst/2+0.5;
+        if (!useTrueTime) {
+            xShift = (i/indexes.length)*(98-widthFirst/2-widthLast/2)+widthFirst/2+0.5;
+        }
         for (let j = 1; j < numBlurPositions+1; j++) {
             if (indexes[i]-j < 0) {
                 continue;
@@ -216,40 +219,6 @@ function resizeMocapRenderer(mocapRenderer, width, height) {
     mocapRenderer.camera = camera;
 }
 
-
-function createAnimationElement(sequence, model, visualizationWidth, visualizationHeight) {
-    let drawStyle = new Core.MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.9, 0,
-        2.25, Model.boneStyleDefault, Model.leftBoneStyleDefault, Model.rightBoneStyleDefault, Model.jointStyleDefault, 1, "rgba(192, 16, 128, 1)", 0.9, 1);
-    let div = document.createElement("div");
-    div.className = "drawItem-"+Model.motionCategories[Core.getSequenceCategory(sequence)];
-    let canvas = document.createElement("canvas");
-    canvas.className = "drawItemVisualization";
-    div.appendChild(canvas);
-    let mocapRenderer = initializeMocapRenderer(canvas, visualizationWidth, visualizationHeight, drawStyle);
-    let processed = Core.processSequence(sequence, 12, sceneWidth, visualizationWidth, visualizationHeight, drawStyle);
-    let figureScale = processed.figureScale;
-    let frames = processed.frames;
-    let controls = new OrbitControls(mocapRenderer.camera, mocapRenderer.renderer.domElement);
-    controls.listenToKeyEvents(window);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.screenSpacePanning = false;
-    controls.maxPolarAngle = Math.PI / 2;
-    controls.maxZoom = 1.5;
-    controls.minZoom = 0.8;
-    let frame = 0;
-    let animate = () => {
-        if (div.classList.contains("hidden") || !document.body.contains(canvas)) {
-            return;
-        }
-        drawFrame(mocapRenderer, frames[frame], figureScale, 0, 0, drawStyle, true);
-        frame = (frame+1)%frames.length;
-        requestAnimationFrame(animate);
-    }
-    requestAnimationFrame(animate);
-    return div;
-}
-
 function createZoomableVisualizationElement(sequence, model, numKeyframes, zoomedNumKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight, addTimeScale = false, addFillingKeyframes = true, keyframeSelectionAlgorithm = 4, labelFrames = true) {
     let main = createVisualizationElement(sequence, model, numKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight, addTimeScale, addFillingKeyframes, keyframeSelectionAlgorithm, labelFrames);
     let zoomWidth = Math.floor(document.body.clientWidth-document.body.clientWidth/24);
@@ -283,18 +252,7 @@ function visualizeToCanvas(canvas, sequence, model, numKeyframes, numBlurFrames,
     let processed = Core.processSequence(sequence, numKeyframes, sceneWidth, width, height, drawStyle);
     let figureScale = processed.figureScale;
     let frames = processed.frames;
-    let keyframes;
-    if (keyframeSelectionAlgorithm == Core.KeyframeSelectionAlgorithmEnum.Decimation) {
-        keyframes = Core.findKeyframesDecimation(frames, numKeyframes);
-    } else if (keyframeSelectionAlgorithm == Core.KeyframeSelectionAlgorithmEnum.Lowe) {
-        keyframes = Core.findKeyframesLowe(frames, numKeyframes);
-    } else if (keyframeSelectionAlgorithm == Core.KeyframeSelectionAlgorithmEnum.Euclidean) {
-        keyframes = Core.findKeyframesEuclidean(frames, numKeyframes);
-    } else if (keyframeSelectionAlgorithm == Core.KeyframeSelectionAlgorithmEnum.Equidistant) {
-        keyframes = Core.findKeyframesEquidistant(frames, numKeyframes);
-    } else {
-        keyframes = Core.findKeyframesTemporal(frames, numKeyframes);
-    }
+    let keyframes = findKeyframes(frames, numKeyframes, keyframeSelectionAlgorithm);
     if (addFillingKeyframes) {
         let fillKeyframes = Core.getFillKeyframes(frames, keyframes, sceneWidth);
         let fillStyle = Object.assign({}, drawStyle);
@@ -320,37 +278,17 @@ function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames
     }
     let div = document.createElement("div");
     div.className = "drawItem-"+Model.motionCategories[Core.getSequenceCategory(sequence)];
-    let map = document.createElement("canvas");
-    map.className = "drawItemMap";
-    map.width = mapWidth;
-    map.height = mapHeight;
-    map.style = "width: "+mapWidth+"px; height: "+mapHeight+"px;";
-    div.appendChild(map);
     let image = document.createElement("img");
     image.className = "drawItemVisualization";
-    div.appendChild(image);
     let processed = Core.processSequence(sequence, numKeyframes, sceneWidth, visualizationWidth, visualizationHeight, drawStyle);
     let figureScale = processed.figureScale;
     let frames = processed.frames;
     resizeSkeleton(mainRenderer.skeleton, drawStyle, figureScale);
-    let keyframes;
-    if (keyframeSelectionAlgorithm == Core.KeyframeSelectionAlgorithmEnum.Decimation) {
-        keyframes = Core.findKeyframesDecimation(frames, numKeyframes);
-    } else if (keyframeSelectionAlgorithm == Core.KeyframeSelectionAlgorithmEnum.Lowe) {
-        keyframes = Core.findKeyframesLowe(frames, numKeyframes);
-    } else if (keyframeSelectionAlgorithm == Core.KeyframeSelectionAlgorithmEnum.Euclidean) {
-        keyframes = Core.findKeyframesEuclidean(frames, numKeyframes);
-    } else if (keyframeSelectionAlgorithm == Core.KeyframeSelectionAlgorithmEnum.Equidistant) {
-        keyframes = Core.findKeyframesEquidistant(frames, numKeyframes);
-    } else {
-        keyframes = Core.findKeyframesTemporal(frames, numKeyframes);
-    }
-    let ctx = map.getContext("2d");
-    ctx.fillStyle = "white";
-    ctx.beginPath();
-    ctx.rect(0, 0, map.width, map.height);
-    ctx.fill();
+    let keyframes = findKeyframes(frames, numKeyframes, keyframeSelectionAlgorithm);
     clearRenderer(mainRenderer);
+    if (addTimeScale) {
+        drawTimeScale(mainRenderer, mainRenderer.camera.right-mainRenderer.camera.left, mainRenderer.camera.top-mainRenderer.camera.bottom, model.fps, frames.length, keyframes);
+    }
     if (addFillingKeyframes) {
         let fillKeyframes = Core.getFillKeyframes(frames, keyframes, sceneWidth);
         let fillStyle = Object.assign({}, drawStyle);
@@ -358,18 +296,9 @@ function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames
         drawSequence(mainRenderer, frames, fillKeyframes, 0, fillStyle, drawStyleBlur, figureScale, 0, false);
     }
     let positions = drawSequence(mainRenderer, frames, keyframes, numBlurFrames, drawStyle, drawStyleBlur, figureScale, 0, false);
-    let mapScale = Core.findMapScale(frames, numKeyframes, figureScale, map.width);
-    let mSize = sceneWidth/(model.unitSize/figureScale);
-    if (mapScale < mSize*2.5) {
-        mapScale = mSize*2.5;
-    }
-    if (addTimeScale) {
-        drawTimeScale(mainRenderer, mainRenderer.camera.right-mainRenderer.camera.left, mainRenderer.camera.top-mainRenderer.camera.bottom, model.fps, frames.length, keyframes);
-    }
-    Core.drawTopDownMap(map, frames, keyframes, 
-        {x:-1, y:-1, z:0}, 
-        {x:-1, y:map.height+1, z:0}, 
-        {x:map.width+1, y:map.height+1, z:0}, frames.length, mapScale, sceneWidth/(model.unitSize/figureScale), false, true, model.fps);
+    let map = addMapToVisualization(frames, keyframes, figureScale, model, mapWidth, mapHeight);
+    div.appendChild(map);
+    div.appendChild(image);
     image.src = mainRenderer.canvas.toDataURL("image/png");
     image.height = visualizationHeight;
     image.width = visualizationWidth;
@@ -378,6 +307,29 @@ function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames
         createTextElements(positions, keyframes, image, mapWidth, div);
     }
     return div;
+}
+
+function addMapToVisualization(frames, keyframes, figureScale, model, mapWidth, mapHeight) {
+    let map = document.createElement("canvas");
+    map.className = "drawItemMap";
+    map.width = mapWidth;
+    map.height = mapHeight;
+    map.style = "width: "+mapWidth+"px; height: "+mapHeight+"px;";
+    let ctx = map.getContext("2d");
+    ctx.fillStyle = "white";
+    ctx.beginPath();
+    ctx.rect(0, 0, map.width, map.height);
+    ctx.fill();
+    let mapScale = Core.findMapScale(frames, keyframes.length, figureScale, map.width);
+    let mSize = sceneWidth/(model.unitSize/figureScale);
+    if (mapScale < mSize*2.5) {
+        mapScale = mSize*2.5;
+    }
+    Core.drawTopDownMap(map, frames, keyframes, 
+        {x:-1, y:-1, z:0}, 
+        {x:-1, y:map.height+1, z:0}, 
+        {x:map.width+1, y:map.height+1, z:0}, frames.length, mapScale, sceneWidth/(model.unitSize/figureScale), false, true, model.fps);
+    return map;
 }
 
 function createTextElements(positions, keyframes, image, mapWidth, mainDiv) {
@@ -413,6 +365,55 @@ function drawTimeScale(mocapRenderer, width, height, fps, length, keyframes) {
         scene.add(line);
     }
     mocapRenderer.renderer.render(scene, mocapRenderer.camera);
+}
+
+function findKeyframes(frames, numKeyframes, keyframeSelectionAlgorithm) {
+    let keyframes;
+    if (keyframeSelectionAlgorithm == Core.KeyframeSelectionAlgorithmEnum.Decimation) {
+        keyframes = Core.findKeyframesDecimation(frames, numKeyframes);
+    } else if (keyframeSelectionAlgorithm == Core.KeyframeSelectionAlgorithmEnum.Lowe) {
+        keyframes = Core.findKeyframesLowe(frames, numKeyframes);
+    } else if (keyframeSelectionAlgorithm == Core.KeyframeSelectionAlgorithmEnum.Euclidean) {
+        keyframes = Core.findKeyframesEuclidean(frames, numKeyframes);
+    } else if (keyframeSelectionAlgorithm == Core.KeyframeSelectionAlgorithmEnum.Equidistant) {
+        keyframes = Core.findKeyframesEquidistant(frames, numKeyframes);
+    } else {
+        keyframes = Core.findKeyframesTemporal(frames, numKeyframes);
+    }
+    return keyframes;
+}
+
+function createAnimationElement(sequence, model, visualizationWidth, visualizationHeight) {
+    let drawStyle = new Core.MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.9, 0,
+        2.25, Model.boneStyleDefault, Model.leftBoneStyleDefault, Model.rightBoneStyleDefault, Model.jointStyleDefault, 1, "rgba(192, 16, 128, 1)", 0.9, 1);
+    let div = document.createElement("div");
+    div.className = "drawItem-"+Model.motionCategories[Core.getSequenceCategory(sequence)];
+    let canvas = document.createElement("canvas");
+    canvas.className = "drawItemVisualization";
+    div.appendChild(canvas);
+    let mocapRenderer = initializeMocapRenderer(canvas, visualizationWidth, visualizationHeight, drawStyle);
+    let processed = Core.processSequence(sequence, 12, sceneWidth, visualizationWidth, visualizationHeight, drawStyle);
+    let figureScale = processed.figureScale;
+    let frames = processed.frames;
+    let controls = new OrbitControls(mocapRenderer.camera, mocapRenderer.renderer.domElement);
+    controls.listenToKeyEvents(window);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.screenSpacePanning = false;
+    controls.maxPolarAngle = Math.PI / 2;
+    controls.maxZoom = 1.5;
+    controls.minZoom = 0.8;
+    let frame = 0;
+    let animate = () => {
+        if (div.classList.contains("hidden") || !document.body.contains(canvas)) {
+            return;
+        }
+        drawFrame(mocapRenderer, frames[frame], figureScale, 0, 0, drawStyle, true);
+        frame = (frame+1)%frames.length;
+        requestAnimationFrame(animate);
+    }
+    requestAnimationFrame(animate);
+    return div;
 }
 
 export {visualizeToCanvas, createVisualizationElement, createZoomableVisualizationElement, createAnimationElement};
