@@ -49,37 +49,13 @@ function loadDataFile() {
     }
     loaded = false;
     let time = performance.now();
-    sequences = [];
-    let fileLocation = 0;
-    let reader = new FileReader();
-    let last = "";
-    let loadChunkMbSize = 20;
-    reader.onload = function (textResult) {
-        let text = textResult.target.result;
-        let split = text.split("#objectKey");
-        split[0] = last+split[0];
-        last = split[split.length-1];
-        split.pop();
-        let seqs = split.filter((s) => {return s != "";}).map((s) => s.split("\n"));
-        sequences.push(...seqs);
-        fileLocation += loadChunkMbSize*1024*1024;
-        if (dataFileInput.files[0].size > fileLocation) {
-            if (sequences.length > maxCategoriesLoad) {
-                console.log("Too many categories loaded. Increase variable 'maxCategoriesLoad' to bypass this check.");
-                return;
-            }
-            reader.readAsText(dataFileInput.files[0].slice(fileLocation, fileLocation+loadChunkMbSize*1024*1024), "UTF-8");
-        } else if (last.trim() != "") {
-            loaded = true;
-            console.log("Loaded " + sequences.length + " sequences in " + (performance.now()-time) + "ms.");
-            createVisualizations();
-            availableSequencesText.innerText = sequences.length;
-        }
-    }
-    reader.onerror = function (e) {
-        console.log("Loading the data file failed, most likely because of how big the file is.");
-    }
-    reader.readAsText(dataFileInput.files[0].slice(0, loadChunkMbSize*1024*1024), "UTF-8");
+    Mocap.loadDataFromFile(dataFileInput.files[0], (fileSequences) => {
+        sequences = fileSequences;
+        loaded = true;
+        console.log("Loaded " + sequences.length + " sequences in " + (performance.now()-time) + "ms.");
+        createVisualizations();
+        availableSequencesText.innerText = sequences.length;
+    });
 }
 
 function createVisualizations() {

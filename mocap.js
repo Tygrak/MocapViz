@@ -38,6 +38,7 @@ class VisualizationFactory {
         this.boneStyle = Model.boneStyleDefault;
         this.leftBoneStyle = Model.leftBoneStyleDefault;
         this.rightBoneStyle = Model.rightBoneStyleDefault;
+        this.noseStyle = Model.noseStyleDefault;
         this.jointRadius = 0;
         this.boneRadius = 0.725;
         this.headRadius = 1.5;
@@ -55,7 +56,7 @@ class VisualizationFactory {
         let drawStyleBlur = new Core.MocapDrawStyle(this.model, this.boneRadius, this.jointRadius, this.headRadius, this.boneStyle,
             this.boneStyle, this.boneStyle, this.jointStyle, 1, this.boneStyle, this.noseRadius, this.blurFrameOpacity);
         let visualization;
-        if (this.createZoomable) {
+        if (this.createZoomable && this.numZoomedKeyframes > 1) {
             visualization = createZoomableVisualizationElementCustom(sequence, this.model, this.numKeyframes, 
                 this.numZoomedKeyframes, this.numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight,
                 drawStyle, drawStyleBlur, this.addTimeScale, this.addFillingKeyframes, this.keyframeSelectionAlgorithm, 
@@ -486,6 +487,6 @@ function createAnimationElement(sequence, model, visualizationWidth, visualizati
 }
 
 export {VisualizationFactory, visualizeToCanvas, createVisualizationElement, createZoomableVisualizationElement, createAnimationElement};
-export {loadDataFromString, getSequenceLength, getSequenceCategory, KeyframeSelectionAlgorithmEnum} from './mocapCore.js';
+export {loadDataFromString, loadDataFromFile, getSequenceLength, getSequenceCategory, KeyframeSelectionAlgorithmEnum} from './mocapCore.js';
 export * from './model.js';
 //export * from './mocapCanvas2d.js';

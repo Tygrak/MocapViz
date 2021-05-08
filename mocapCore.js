@@ -44,6 +44,37 @@ function loadDataFromString(dataString) {
     return dataString.split("#objectKey").filter((s) => {return s != "";}).map((s) => s.split("\n"));
 }
 
+function loadDataFromFile(dataFile, callback, filterPredicate = null, loadChunkMbSize = 20, maxSequencesLoad = 500) {
+    let sequences = [];
+    let fileLocation = 0;
+    let reader = new FileReader();
+    let last = "";
+    reader.onload = function (textResult) {
+        let text = textResult.target.result;
+        let split = text.split("#objectKey");
+        split[0] = last+split[0];
+        last = split[split.length-1];
+        split.pop();
+        let seqs = split.filter((s) => {return s != "";}).map((s) => s.split("\n"));
+        if (filterPredicate != null) {
+            seqs = seqs.filter(filterPredicate);
+        }
+        sequences.push(...seqs);
+        fileLocation += loadChunkMbSize*1024*1024;
+        if (dataFile.size > fileLocation) {
+            if (sequences.length > maxSequencesLoad) {
+                throw ("Too many sequences loaded. (" + sequences.length + "+)");
+            }
+            reader.readAsText(dataFile.slice(fileLocation, fileLocation+loadChunkMbSize*1024*1024), "UTF-8");
+        } else {
+            callback(sequences);
+        }
+    }
+    reader.onerror = function (e) {
+        throw ("Loading the data file failed, most likely because of how big the file is.");
+    }
+    reader.readAsText(dataFile.slice(0, loadChunkMbSize*1024*1024), "UTF-8");
+}
 
 function processSequence(sequence, numKeyframes, sceneWidth, width, height, drawStyle, switchY = true) {
     let ratio = width/height;
@@ -147,8 +178,8 @@ function processSequenceToFrames2d(rawData, canvasHeight, figureScale, switchY =
     return frames;
 }
 
-function getSequenceCategory(rawData) {
-    let lines = rawData;
+function getSequenceCategory(sequence) {
+    let lines = sequence;
     let description = lines[0].match(/messif.objects.keys.AbstractObjectKey (.+)/);
     if (description == null) {
         return "null";
@@ -157,8 +188,8 @@ function getSequenceCategory(rawData) {
     return category;
 }
 
-function getSequenceLength(rawData) {
-    let lines = rawData;
+function getSequenceLength(sequence) {
+    let lines = sequence;
     let description = lines[1].match(/\d+(?=;)/);
     if (description == null) {
         return -1;
@@ -803,4 +834,4 @@ function drawRectangle(ctx, a, b, radius, xShift, yShift) {
     ctx.fill();
 }
 
-export {loadDataFromString, getSequenceLength, getSequenceCategory, MocapDrawStyle, KeyframeSelectionAlgorithmEnum, processSequence, processSequenceToFramesAuto, processSequenceToFrames, processSequenceToFrames2d, drawTopDownMap, findMinimumsFromFrame, findMaximumsFromFrame, findKeyframesEquidistant, findKeyframesEuclidean, findKeyframesDot, findKeyframesTemporal, findKeyframesDecimation, findKeyframesLowe, getFillKeyframes, findMapScale, findOptimalRotation, checkSequenceNeedsFlip, findSequenceMinimums, findSequenceMaximums, findOptimalScale, findMeterConversion, frameSubtract, frameLength, frameDot, frameDistance, frameDistanceTemporal, frameCosineSimilarity, vecXZDistance, frameRotateY, moveOriginXBy, clearCanvas, clamp, lerpFrame, lerp, inverseLerp, hue2rgb, hslToRgb, scaleRgbaColor, rgbaToColorString, drawRectangle, calculateNoseVec3, Vec3};
+export {loadDataFromString, loadDataFromFile, getSequenceLength, getSequenceCategory, MocapDrawStyle, KeyframeSelectionAlgorithmEnum, processSequence, processSequenceToFramesAuto, processSequenceToFrames, processSequenceToFrames2d, drawTopDownMap, findMinimumsFromFrame, findMaximumsFromFrame, findKeyframesEquidistant, findKeyframesEuclidean, findKeyframesDot, findKeyframesTemporal, findKeyframesDecimation, findKeyframesLowe, getFillKeyframes, findMapScale, findOptimalRotation, checkSequenceNeedsFlip, findSequenceMinimums, findSequenceMaximums, findOptimalScale, findMeterConversion, frameSubtract, frameLength, frameDot, frameDistance, frameDistanceTemporal, frameCosineSimilarity, vecXZDistance, frameRotateY, moveOriginXBy, clearCanvas, clamp, lerpFrame, lerp, inverseLerp, hue2rgb, hslToRgb, scaleRgbaColor, rgbaToColorString, drawRectangle, calculateNoseVec3, Vec3};

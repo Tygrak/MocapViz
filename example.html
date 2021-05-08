@@ -4,13 +4,34 @@
         <title>
             Mocap Vizualization Test
         </title>     
-        <link rel="stylesheet" href="index.css">
     </head>
     
     <body>
-        <canvas class="drawBox" style="margin: auto;">
-    
-        </canvas>
-        <script type="module" src="example.js"></script>  
+        <button id="dataLoadButton">Load Data</button>
+        <input type="file" id="dataFileInput" name="dataFileInput" accept=".data,.txt">
+        <div class="drawBox" style="margin: auto;">
+            
+        </div>
+        <script type="module">
+            import * as Mocap from './mocap.js';
+
+            const dataFileInput = document.getElementById("dataFileInput");
+            const loadButton = document.getElementById("dataLoadButton");
+            loadButton.onclick = load;
+            const drawBox = document.getElementsByClassName("drawBox")[0];
+            let width = drawBox.offsetWidth;
+
+            function load() {
+                if (dataFileInput.files.length == 0) {
+                    console.log("No file selected!");
+                    return;
+                }
+                Mocap.loadDataFromFile(dataFileInput.files[0], (sequences) => {
+                    let factory = new Mocap.VisualizationFactory();
+                    let visualizationElement = factory.createVisualization(sequences[0], 850, 250, 250, 250);
+                    document.body.appendChild(visualizationElement);
+                });
+            }
+        </script>  
     </body>
 </html>
