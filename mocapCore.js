@@ -1,20 +1,36 @@
-function MocapDrawStyle(bonesModel, headJointIndex, leftArmIndex, thoraxIndex, boneRadius, jointRadius, headRadius, boneStyle, leftBoneStyle, rightBoneStyle, jointStyle, figureScale, noseStyle = "rgba(192, 16, 128, 1)", noseRadius = 0.85, opacity = 1) {
-    this.bonesModel = bonesModel;
-    this.headJointIndex = headJointIndex;
-    this.leftArmIndex = leftArmIndex;
-    this.thoraxIndex = thoraxIndex;
-    this.boneRadius = boneRadius;
-    this.jointRadius = jointRadius;
-    this.headRadius = headRadius;
-    this.boneStyle = boneStyle;
-    this.leftBoneStyle = leftBoneStyle;
-    this.rightBoneStyle = rightBoneStyle;
-    this.jointStyle = jointStyle;
-    this.figureScale = figureScale;
-    this.noseStyle = noseStyle;
-    this.noseRadius = noseRadius;
-    this.opacity = opacity;
+class MocapDrawStyle {
+    constructor (skeletonModel, boneRadius, jointRadius, headRadius, boneStyle, leftBoneStyle, rightBoneStyle, jointStyle, figureScale, noseStyle = "rgba(192, 16, 128, 1)", noseRadius = 0.85, opacity = 1) {
+        this.skeletonModel = skeletonModel;
+        this.boneRadius = boneRadius;
+        this.jointRadius = jointRadius;
+        this.headRadius = headRadius;
+        this.boneStyle = boneStyle;
+        this.leftBoneStyle = leftBoneStyle;
+        this.rightBoneStyle = rightBoneStyle;
+        this.jointStyle = jointStyle;
+        this.figureScale = figureScale;
+        this.noseStyle = noseStyle;
+        this.noseRadius = noseRadius;
+        this.opacity = opacity;
+    }
+
+    get bonesModel() {
+        return this.skeletonModel.bonesModel;
+    }
+
+    get headIndex() {
+        return this.skeletonModel.headJointIndex;
+    }
+
+    get thoraxIndex() {
+        return this.skeletonModel.thoraxIndex;
+    }
+
+    get leftArmIndex() {
+        return this.skeletonModel.leftArmIndex;
+    }
 }
+
 
 function Vec3(x, y, z) {
     this.x = x;
@@ -506,7 +522,7 @@ function findOptimalRotation(frames, numSamples) {
 }
 
 function checkSequenceNeedsFlip(frames, drawStyle) {
-    let nose = calculateNoseVec3(frames[0][drawStyle.headJointIndex], frames[0][drawStyle.thoraxIndex], frames[0][drawStyle.leftArmIndex]);
+    let nose = calculateNoseVec3(frames[0][drawStyle.headIndex], frames[0][drawStyle.thoraxIndex], frames[0][drawStyle.leftArmIndex]);
     nose.y = 0;
     nose = normalize(nose);
     return dotProduct(nose, new Vec3(Math.sqrt(2)/2, 0, Math.sqrt(2)/2)) < 0;

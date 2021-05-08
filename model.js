@@ -41,14 +41,22 @@ const bonesKinect2d = [
 
 const bonesPointCloud = [];
 
-const modelVicon = {bonesModel: bonesVicon, fps: 120, headJointIndex: 16, leftArmIndex: 17, thoraxIndex: 13, 
-    defaultScale: 8, unitSize: 6.207};
-const modelKinect = {bonesModel: bonesKinect, fps: 30, headJointIndex: 3, leftArmIndex: 4, thoraxIndex: 20, 
-    defaultScale: 180, unitSize: 139.6575};
-const modelKinect2d = {bonesModel: bonesKinect2d, fps: 30, headJointIndex: 9, leftArmIndex: 12, thoraxIndex: 7, 
-    defaultScale: 0.6, unitSize: 0.4655};
-const modelPointCloud = {bonesModel: bonesPointCloud, fps: 30, headJointIndex: 0, leftArmIndex: 0, thoraxIndex: 0, 
-    defaultScale: 1, unitSize: 1};
+class SkeletonModel {
+    constructor (bonesModel, fps, headJointIndex, leftArmIndex, thoraxIndex, defaultScale, unitSize) {
+        this.bonesModel = bonesModel;
+        this.fps = fps;
+        this.headJointIndex = headJointIndex;
+        this.leftArmIndex = leftArmIndex;
+        this.thoraxIndex = thoraxIndex;
+        this.defaultScale = defaultScale;
+        this.unitSize = unitSize;
+    }
+}
+
+const modelVicon = new SkeletonModel(bonesVicon, 120, 16, 17, 13, 8, 6.207);
+const modelKinect = new SkeletonModel(bonesKinect, 30, 3, 4, 20, 180, 139.6575);
+const modelKinect2d = new SkeletonModel(bonesKinect2d, 30, 9, 12, 7, 0.6, 0.4655);
+const modelPointCloud = new SkeletonModel(bonesPointCloud, 30, 0, 0, 0, 1, 1);
 
 const jointStyleDefault = {r:0, g:0, b:0, a:1};
 const boneStyleDefault = {r:0, g:0, b:0, a:1};

@@ -63,10 +63,10 @@ function createZoomableVisualizationElement(sequence, model, numKeyframes, zoome
 }
 
 function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight, addTimeScale = false, addFillingKeyframes = true, keyframeSelectionAlgorithm = 4) {
-    let drawStyle = new Core.MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 2, 0,
+    let drawStyle = new Core.MocapDrawStyle(model, 2, 0,
         10, Model.boneStyleDefault, Model.leftBoneStyleDefault, Model.rightBoneStyleDefault, Model.jointStyleDefault, Model.figureScale);
-    let drawStyleBlur = new Core.MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 2, 0,
-        10, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, Model.figureScale);
+    let drawStyleBlur = new Core.MocapDrawStyle(model, 2, 0,
+        10, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, Model.figureScale,);
     let div = document.createElement("div");
     div.className = "drawItem-"+Model.motionCategories[Core.getSequenceCategory(sequence)];
     let map = document.createElement("canvas");
@@ -122,7 +122,9 @@ function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames
     ctx.fill();
     if (addFillingKeyframes) {
         let fillKeyframes = Core.getFillKeyframes(frames, keyframes, canvas.width);
-        let fillStyle = Object.assign({}, drawStyle);
+        let fillStyle = new Core.MocapDrawStyle(drawStyle.skeletonModel,  drawStyle.boneRadius, drawStyle.jointRadius,
+            drawStyle.headRadius, drawStyle.boneStyle, drawStyle.leftBoneStyle, drawStyle.rightBoneStyle, 
+            drawStyle.jointStyle, drawStyle.figureScale, drawStyle.noseStyle, drawStyle.noseRadius, 0.4);
         fillStyle.boneStyle = {r: fillStyle.boneStyle.r, g: fillStyle.boneStyle.g, b: fillStyle.boneStyle.b, a: fillStyle.boneStyle.a*0.55};
         fillStyle.leftBoneStyle = {r: fillStyle.leftBoneStyle.r, g: fillStyle.leftBoneStyle.g, b: fillStyle.leftBoneStyle.b, a: fillStyle.leftBoneStyle.a*0.55};
         fillStyle.rightBoneStyle = {r: fillStyle.rightBoneStyle.r, g: fillStyle.rightBoneStyle.g, b: fillStyle.rightBoneStyle.b, a: fillStyle.rightBoneStyle.a*0.55};
@@ -169,17 +171,17 @@ function drawFrame(canvas, frame, xShift, yShift, drawStyle) {
     let bones = drawStyle.bonesModel.slice();
     bones.sort((a, b) => (frame[a.a].z+frame[a.b].z)/2-(frame[b.a].z+frame[b.b].z)/2);
     //ctx.fillStyle = rgbaToColorString(drawStyle.leftBoneStyle);
-    let vecNose = Core.calculateNoseVec3(frame[drawStyle.headJointIndex], frame[drawStyle.thoraxIndex], frame[drawStyle.leftArmIndex], -15);
-    let nosePos = new Core.Vec3(frame[drawStyle.headJointIndex].x+vecNose.x, frame[drawStyle.headJointIndex].y+vecNose.y, frame[drawStyle.headJointIndex].z+vecNose.z);
-    if (nosePos.z < frame[drawStyle.headJointIndex].z) {
+    let vecNose = Core.calculateNoseVec3(frame[drawStyle.headIndex], frame[drawStyle.thoraxIndex], frame[drawStyle.leftArmIndex], -15);
+    let nosePos = new Core.Vec3(frame[drawStyle.headIndex].x+vecNose.x, frame[drawStyle.headIndex].y+vecNose.y, frame[drawStyle.headIndex].z+vecNose.z);
+    if (nosePos.z < frame[drawStyle.headIndex].z) {
         ctx.fillStyle = Core.rgbaToColorString({r: 192, g: 16, b:128, a: drawStyle.boneStyle.a});
-        Core.drawRectangle(ctx, nosePos, frame[drawStyle.headJointIndex], drawStyle.boneRadius, xShift, yShift);
+        Core.drawRectangle(ctx, nosePos, frame[drawStyle.headIndex], drawStyle.boneRadius, xShift, yShift);
     }
     for (let i = 0; i < frame.length; i++) {
         ctx.beginPath();
         ctx.fillStyle = Core.rgbaToColorString(drawStyle.jointStyle);
         let radius = drawStyle.jointRadius;
-        if (i == drawStyle.headJointIndex) {
+        if (i == drawStyle.headIndex) {
             radius = drawStyle.headRadius;
         }
         ctx.arc(frame[i].x+xShift, frame[i].y+yShift, radius, 0, 2 * Math.PI);
@@ -200,9 +202,9 @@ function drawFrame(canvas, frame, xShift, yShift, drawStyle) {
         }
         Core.drawRectangle(ctx, a, b, drawStyle.boneRadius+1*(i/bones.length), xShift, yShift);
     }
-    if (nosePos.z >= frame[drawStyle.headJointIndex].z) {
+    if (nosePos.z >= frame[drawStyle.headIndex].z) {
         ctx.fillStyle = Core.rgbaToColorString({r: 192, g: 16, b:128, a: drawStyle.boneStyle.a});
-        Core.drawRectangle(ctx, nosePos, frame[drawStyle.headJointIndex], drawStyle.boneRadius, xShift, yShift);
+        Core.drawRectangle(ctx, nosePos, frame[drawStyle.headIndex], drawStyle.boneRadius, xShift, yShift);
     }
 }
 

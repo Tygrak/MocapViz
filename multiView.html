@@ -48,22 +48,6 @@
                     <input type="number" id="numFramesInput" name="numFramesInput" value="12">
                 </div>
                 <div class="sideMenuItem">
-                    <div class="sideMenuItemLabel">Scale:</div>
-                    <input type="number" step="any" id="scaleInput" name="scaleInput" value="1">
-                </div>
-                <div class="sideMenuItem">
-                    <div class="sideMenuItemLabel">Rotate Y:</div>
-                    <input type="number" step="any" id="yRotationInput" name="yRotationInput" value="0">
-                </div>
-                <div class="sideMenuItem">
-                    <div>
-                        <input type="checkbox" id="autorotateInput" name="autorotateInput" checked>
-                        <label for="autorotateInput">Automatically set rotation</label>
-                    </div>
-                    <div>
-                        <input type="checkbox" id="autoscaleInput" name="autoscaleInput" checked>
-                        <label for="autoscaleInput">Automatically scale</label>
-                    </div>
                     <div>
                         <input type="checkbox" id="mapsPerSequenceInput" name="mapsPerSequenceInput" checked>
                         <label for="mapsPerSequenceInput">Create map for each sequence</label>
@@ -77,39 +61,33 @@
                         <label for="timeImageScaleInput">Scale images with time</label>
                     </div>
                     <div>
-                        <input type="checkbox" id="mapScaleInput" name="mapScaleInput" checked>
-                        <label for="mapScaleInput">Automatic map scale</label>
-                    </div>
-                    <div>
                         <input type="checkbox" id="xAxisTimeInput" name="xAxisTimeInput" checked>
                         <label for="xAxisTimeInput">Use X axis as time</label>
-                    </div>
-                    <div>
-                        <input type="checkbox" id="mapUnitGridInput" name="mapUnitGridInput" checked>
-                        <label for="mapUnitGridInput">Use dm grid for map</label>
-                    </div>
-                    <div>
-                        <input type="checkbox" id="mapsParallelogramInput" name="mapsParallelogramInput">
-                        <label for="mapsParallelogramInput">Create parallelogram maps</label>
                     </div>
                     <div>
                         <input type="checkbox" id="addFillKeyframesInput" name="addFillKeyframesInput">
                         <label for="addFillKeyframesInput">Add filling keyframes</label>
                     </div>
+                    <div>
+                        <input type="checkbox" id="zoomableVisualizationsInput" name="zoomableVisualizationsInput" checked>
+                        <label for="zoomableVisualizationsInput">Zoomable visualizations</label>
+                    </div>
+                    <div>
+                        <input type="checkbox" id="labelFramesInput" name="labelFramesInput" checked>
+                        <label for="labelFramesInput">Label frames</label>
+                    </div>
+                    <div>
+                        <input type="checkbox" id="oldRenderingInput" name="oldRenderingInput">
+                        <label for="oldRenderingInput">Old rendering</label>
+                    </div>
                     <div class="sideMenuItemLabel">Keyframe selection algorithm:</div>
                     <select id="keyframeSelectionInput" name="keyframeSelectionInput">
                         <option value="Equidistant">Equidistant</option>
-                        <option value="CurveEuclidean" selected>Simplification Distance</option>
-                        <option value="CurveDot">Simplification Line</option>
-                        <option value="CurveTemporal">Simplification Temporal</option>
-                        <option value="CurveDecimation">Simplification Decimation</option>
-                        <option value="CurveLowe">Simplification Lowe</option>
+                        <option value="Euclidean">Euclidean</option>
+                        <option value="Temporal">Temporal</option>
+                        <option value="Decimation" selected>Decimation</option>
+                        <option value="Lowe">Lowe</option>
                     </select>
-                </div>
-                <div class="sideMenuItem">
-                    <div class="sideMenuItemLabel">Actor Height:</div>
-                    <input type="number" id="actorHeightInput" name="actorHeightInput" value="180" min=0>
-                    <button id="calculateConversionButton">Calculate Dataset Dm Conversion</button>
                 </div>
             </div>
             <div id="content">

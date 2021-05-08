@@ -79,17 +79,6 @@ function createVisualizations() {
         const sequence = sequences[i];
         longestSequenceLength = Math.max(Mocap.getSequenceLength(sequence), longestSequenceLength);
     }
-    /*for (let i = 0; i < sequences.length; i++) {
-        const sequence = sequences[i];
-        let numKeyframes = Math.max(2, Math.round(keyframesNum*(sequence.length/longestSequenceLength)));
-        console.log("i:"+i);
-        let visualization = Mocap.createZoomableVisualizationElement(sequence, Mocap.modelVicon, numKeyframes, keyframesNum+2, 10, 
-        150, 150, (width-160)*(sequence.length/longestSequenceLength), 150, false, addFilling, keyframeAlgorithm);
-        visualization.children[0].classList.add("drawBox");
-        visualization.children[1].classList.add("drawBox");
-        targetElement.appendChild(visualization);
-    }
-    console.log("Visualization done in " + (performance.now()-time) + "ms.");*/
     function* elementGen() {
         for (let i = 0; i < sequences.length; i++) {
             const sequence = sequences[i];

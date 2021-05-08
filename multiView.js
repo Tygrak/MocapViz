@@ -1,25 +1,10 @@
 import * as Mocap from "./mocap.js";
+import * as Mocap2d from "./mocapCanvas2d.js";
+import * as Model from "./model.js";
 
-let figureScale = 8;
-let defaultHeight = 150;
-let defaultWidth = 1000;
-let headRadius = 10;
-let jointRadius = 0;
-let boneRadius = 2;
-let numPositions = 8;
-let numBlurPositions = 10;
-let jointStyle = {r:0, g:0, b:0, a:1};
-let boneStyle = {r:0, g:0, b:0, a:1};
-let leftBoneStyle = {r:144, g:0, b:0, a:1};
-let rightBoneStyle = {r:0, g:0, b:144, a:1};
-let blurStyle = {r:0, g:0, b:0, a:0.1};
 let sequences = [];
-let longestSequence = 0;
-let headJointIndex = 16;
-let modelFps = 120;
-let model = modelVicon;
-let timerKeyframeExtraction = 0;
-let timerVisualizationDrawing = 0;
+let maxCategoriesLoad = 600;
+let loaded = true;
 
 
 const availableSequencesText = document.getElementById("availableSequencesText");
@@ -49,46 +34,46 @@ const keyframeSelectionInput = document.getElementById("keyframeSelectionInput")
 const actorHeightInput = document.getElementById("actorHeightInput");
 const calculateConversionButton = document.getElementById("calculateConversionButton");
 const contentDiv = document.getElementById("content");
+const zoomableVisualizationsInput = document.getElementById("zoomableVisualizationsInput");
+const labelFramesInput = document.getElementById("labelFramesInput");
+const oldRenderingInput = document.getElementById("oldRenderingInput");
 loadButton.onclick = loadDataFile;
-loadTextButton.onclick = loadDataText;
-sequenceInputLoadButton.onclick = drawSequenceMain;
-calculateConversionButton.onclick = calculateConversion;
+sequenceInputLoadButton.onclick = createVisualizations;
+//calculateConversionButton.onclick = calculateConversion;
 const drawContainer = document.getElementById("drawContainer");
-let defaultScale = 1;
-let loadingFile = false;
 
-//const queryString = window.location.search;
-//console.log(queryString);
-//const urlParams = new URLSearchParams(queryString);
-
-loadDataFile();
 
 function loadDataFile() {
-    if (dataFileInput.files.length == 0 || loadingFile) {
+    if (dataFileInput.files.length == 0 || !loaded) {
         return;
     }
-    loadingFile = true;
-    availableSequencesText.innerText = 0;
+    loaded = false;
+    let time = performance.now();
     sequences = [];
     let fileLocation = 0;
     let reader = new FileReader();
     let last = "";
-    let loadChunkMbSize = 10;
+    let loadChunkMbSize = 20;
     reader.onload = function (textResult) {
         let text = textResult.target.result;
         let split = text.split("#objectKey");
         split[0] = last+split[0];
         last = split[split.length-1];
         split.pop();
-        sequences.push(...split.filter((s) => {return s != "";}).map((s) => s.split("\n")));
-        availableSequencesText.innerText = sequences.length;
+        let seqs = split.filter((s) => {return s != "";}).map((s) => s.split("\n"));
+        sequences.push(...seqs);
         fileLocation += loadChunkMbSize*1024*1024;
         if (dataFileInput.files[0].size > fileLocation) {
+            if (sequences.length > maxCategoriesLoad) {
+                console.log("Too many categories loaded. Increase variable 'maxCategoriesLoad' to bypass this check.");
+                return;
+            }
             reader.readAsText(dataFileInput.files[0].slice(fileLocation, fileLocation+loadChunkMbSize*1024*1024), "UTF-8");
         } else if (last.trim() != "") {
-            sequences.push(last.split("\n"));
+            loaded = true;
+            console.log("Loaded " + sequences.length + " sequences in " + (performance.now()-time) + "ms.");
+            createVisualizations();
             availableSequencesText.innerText = sequences.length;
-            loadingFile = false;
         }
     }
     reader.onerror = function (e) {
@@ -97,176 +82,86 @@ function loadDataFile() {
     reader.readAsText(dataFileInput.files[0].slice(0, loadChunkMbSize*1024*1024), "UTF-8");
 }
 
-function loadDataText() {
-    if (dataTextInput.value.length == 0) {
-        return;
-    } 
-    sequences = loadDataFromString(dataTextInput.value);
-    availableSequencesText.innerText = sequences.length;
-}
-
-function calculateConversion() {
-    //model.unitSize = findMeterConversion(sequences, parseFloat(actorHeightInput.value));
-}
-
-function loadModel(model) {
-    this.model = model;
-    defaultScale = model.defaultScale;
-    modelFps = model.fps;
-    boneRadius = model.boneRadius;
-    jointRadius = model.jointRadius;
-    headRadius = model.headRadius;
-    drawStyle.bonesModel = model.bonesModel;
-    drawStyle.headJointIndex = model.headJointIndex;
-    drawStyle.leftArmIndex = model.leftArmIndex;
-    drawStyle.thoraxIndex = model.thoraxIndex;
-    drawStyleBlur.bonesModel = model.bonesModel;
-    drawStyleBlur.headJointIndex = model.headJointIndex;
-    drawStyleBlur.leftArmIndex = model.leftArmIndex;
-}
-
-function processSelectedSequence(selectedSequence, canvas, numKeyframes) {
-    figureScale = parseFloat(scaleInput.value);
-    if (bonesModelInput.value == "Vicon") {
-        loadModel(modelVicon);
-    } else if (bonesModelInput.value == "Kinect") {
-        loadModel(modelKinect);
+function createVisualizations() {
+    let time = performance.now();
+    let targetElement = document.getElementById("drawContainer");
+    let keyframesNum = parseInt(numFramesInput.value);
+    let addFilling = addFillKeyframesInput.checked;
+    let width = targetElement.clientWidth*0.95;
+    let height = window.innerHeight*0.98*(1/parseInt(numSequencesPageInput.value));
+    let useTrueTime = xAxisTimeInput.checked;
+    let labelFrames = labelFramesInput.checked;
+    let timeScale = timeScaleInput.checked;
+    let mapWidth = mapPerSequenceInput.checked ? 150 : 0;
+    let keyframeAlgorithm = Mocap.KeyframeSelectionAlgorithmEnum[keyframeSelectionInput.value];
+    targetElement.innerHTML = "";
+    let toDrawSequences = [];
+    for (let i = parseInt(sequenceNumberInput.value); i < parseInt(sequenceNumberInput.value)+parseInt(numSequencesInput.value); i++) {
+        toDrawSequences.push(i);
+    }
+    let longestSequenceLength = 0;
+    for (let i = 0; i < toDrawSequences.length; i++) {
+        const sequence = sequences[toDrawSequences[i]];
+        longestSequenceLength = Math.max(Mocap.getSequenceLength(sequence), longestSequenceLength);
+    }
+    let factory = new Mocap.VisualizationFactory();
+    factory.addFillingKeyframes = addFilling;
+    factory.useTrueTime = useTrueTime;
+    factory.labelFrames = labelFrames;
+    factory.addTimeScale = timeScale;
+    factory.createZoomable = zoomableVisualizationsInput.checked;
+    if (bonesModelInput.value == "Kinect") {
+        factory.model = Model.modelKinect;
     } else if (bonesModelInput.value == "Kinect2d") {
-        loadModel(modelKinect2d);
-    } else if (bonesModelInput.value == "PointCloud") {
-        loadModel(modelPointCloud);
+        factory.model = Model.modelKinect2d;
     }
-    return frames;
-}
-
-function drawSequenceMain() {
-    timerKeyframeExtraction = 0;
-    timerVisualizationDrawing = 0;
-    let a = performance.now();
-    drawContainer.innerHTML = "";
-    let numSequences = parseInt(numSequencesInput.value);
-    let numSequencesPerPage = parseInt(numSequencesPageInput.value);
-    let startSequence = parseInt(sequenceNumberInput.value);
-    numSequences = Math.min(numSequences, sequences.length-startSequence);
-    numPositions = parseInt(numFramesInput.value);
-    let maxSequenceLength = sequences[startSequence].length-1;
-    if (timeImageScaleInput.checked) {
-        for (let sequence = 1; sequence < numSequences; sequence++) {
-            let lines = sequences[startSequence+sequence];
-            if (lines.length-3 > maxSequenceLength) {
-                maxSequenceLength = lines.length-3;
+    function* elementGen() {
+        for (let i = 0; i < toDrawSequences.length; i++) {
+            const sequence = sequences[toDrawSequences[i]];
+            let numKeyframes = Math.max(2, Math.round(keyframesNum*(sequence.length/longestSequenceLength)));
+            console.log("i:"+i);
+            let visWidth = (width-170)*(sequence.length/longestSequenceLength);
+            if (!timeImageScaleInput.checked) {
+                visWidth=width-170;
+                numKeyframes=keyframesNum;
             }
-        }
-    }
-    for (let sequence = 0; sequence < numSequences; sequence++) {
-        let div = document.createElement("div");
-        div.className = "drawItem";
-        div.id = "drawItem-"+(startSequence+sequence)+"-"+motionCategories[getSequenceCategory(sequences[startSequence+sequence])];
-        if (mapPerSequenceInput.checked) {
-            let divMap = document.createElement("canvas");
-            divMap.className = "mapDrawBox";
-            divMap.width = 150;
-            divMap.height = Math.floor((window.innerHeight-60)/numSequencesPerPage);
-            div.appendChild(divMap);
-        }
-        let divCanvas = document.createElement("canvas");
-        divCanvas.className = "drawBox";
-        div.appendChild(divCanvas);
-        drawContainer.appendChild(div);
-    }
-    let canvases = document.getElementsByClassName("drawBox");
-    let maps = document.getElementsByClassName("mapDrawBox");
-    let canvasWidth = mapPerSequenceInput.checked 
-        ? Math.floor(canvases[0].parentElement.getBoundingClientRect().width-180)
-        : Math.floor(canvases[0].parentElement.getBoundingClientRect().width-30);
-    for (let sequence = 0; sequence < canvases.length; sequence++) {
-        let selectedSequence = startSequence+sequence;
-        let canvas = canvases[sequence];
-        let numKeyframes = timeImageScaleInput.checked ? Math.ceil(numPositions*((sequences[selectedSequence].length-3)/maxSequenceLength)) : numPositions;
-        numKeyframes = numKeyframes > 1 ? numKeyframes : 2;
-        //canvas.height = defaultHeight;
-        canvas.width = timeImageScaleInput.checked ? canvasWidth*((sequences[selectedSequence].length-3)/maxSequenceLength) : canvasWidth;
-        canvas.height = Math.floor((window.innerHeight-60)/numSequencesPerPage);
-        let frames = processSelectedSequence(selectedSequence, canvas, numKeyframes);
-        drawSequence(canvas, maps.length > 0 ? maps[sequence] : null, frames, numKeyframes);
-    }
-    let b = performance.now();
-    console.log("Result time ("+numSequences+" sequences):");
-    console.log((b-a)+" ms");
-    console.log("Keyframe extraction time: " + timerKeyframeExtraction + " ms.");
-    console.log("Visualization drawing time: " + timerVisualizationDrawing + " ms.");
-}
-
-function drawSequence(canvas, map, frames, numKeyframes) {
-    let a = performance.now();
-    let keyframes;
-    if (keyframeSelectionInput.value == "Equidistant") {
-        keyframes = findKeyframesEquidistant(frames, numKeyframes);
-    } else if (keyframeSelectionInput.value == "CurveEuclidean") {
-        keyframes = findKeyframesEuclidean(frames, numKeyframes);
-    } else if (keyframeSelectionInput.value == "CurveDot") {
-        keyframes = findKeyframesDot(frames, numKeyframes);
-    } else if (keyframeSelectionInput.value == "CurveTemporal") {
-        keyframes = findKeyframesTemporal(frames, numKeyframes);
-    } else if (keyframeSelectionInput.value == "CurveDecimation") {
-        keyframes = findKeyframesDecimation(frames, numKeyframes);
-    } else if (keyframeSelectionInput.value == "CurveLowe") {
-        keyframes = findKeyframesLowe(frames, numKeyframes);
-    }
-    timerKeyframeExtraction += performance.now()-a;
-    a = performance.now();
-    if (addFillKeyframesInput.checked) {
-        let fillKeyframes = getFillKeyframes(frames, keyframes);
-        let fillStyle = Object.assign({}, drawStyle);
-        fillStyle.boneStyle = {r: boneStyle.r, g: boneStyle.g, b: boneStyle.b, a: boneStyle.a*0.55};
-        fillStyle.leftBoneStyle = {r: leftBoneStyle.r, g: leftBoneStyle.g, b: leftBoneStyle.b, a: leftBoneStyle.a*0.55};
-        fillStyle.rightBoneStyle = {r: rightBoneStyle.r, g: rightBoneStyle.g, b: rightBoneStyle.b, a: rightBoneStyle.a*0.55};
-        drawSequenceKeyframesBlur(canvas, frames, fillKeyframes, 0, fillStyle, drawStyleBlur, 0, true, xAxisTimeInput.checked);
-        drawSequenceKeyframesBlur(canvas, frames, keyframes, numBlurPositions, drawStyle, drawStyleBlur, 0, false, xAxisTimeInput.checked);
-    } else {
-        drawSequenceKeyframesBlur(canvas, frames, keyframes, numBlurPositions, drawStyle, drawStyleBlur, 0, true, xAxisTimeInput.checked);
-    }
-    if (map != null) {
-        let framesMin = findSequenceMinimums(frames, numKeyframes);
-        let framesMax = findSequenceMaximums(frames, numKeyframes);
-        let maxWidth = Math.max(framesMax.x-framesMin.x, framesMax.z-framesMin.z);
-        let mapScale = 100*figureScale*defaultScale;
-        if (mapScalingEnabledInput.checked) {
-            if (maxWidth > canvas.width) {
-                mapScale = canvas.width*1.5;
+            let visualization;
+            if (!oldRenderingInput.checked) {
+                visualization = factory.createVisualization(sequence, visWidth, height, mapWidth, height);
             } else {
-                mapScale = Math.floor(maxWidth/12.5)*25+25;
+                visualization = Mocap2d.createZoomableVisualizationElement(sequence, Mocap.modelVicon, numKeyframes, keyframesNum+2, 10, 
+                    mapWidth, height, visWidth, height, timeScale, addFilling, keyframeAlgorithm, labelFrames, useTrueTime);
             }
+            visualization.children[0].classList.add("drawBox");
+            if (mapPerSequenceInput.checked) {
+                visualization.children[1].classList.add("drawBox");
+            }
+            targetElement.appendChild(visualization);
+            yield i;
         }
-        if (!mapUnitGridInput.checked) {
-            drawMapMeterScale(map, (model.unitSize*figureScale)*100, mapScale);
-            if (mapsParallelogramInput.checked) {
-                drawTopDownMapParallelogram(map, frames, keyframes, 
-                    {x:map.width/5, y:0, z:0}, 
-                    {x:0, y:map.height-0, z:0}, 
-                    {x:map.width-map.width/5, y:map.height-0, z:0}, frames.length, mapScale, false);
-            } else {
-                drawTopDownMapParallelogram(map, frames, keyframes, 
-                    {x:-1, y:-1, z:0}, 
-                    {x:-1, y:map.height+1, z:0}, 
-                    {x:map.width+1, y:map.height+1, z:0}, frames.length, mapScale, false);
-            }
-        } else {
-            if (mapsParallelogramInput.checked) {
-                drawTopDownMapParallelogramUnitGrid(map, frames, keyframes, 
-                    {x:map.width/5, y:0, z:0}, 
-                    {x:0, y:map.height-0, z:0}, 
-                    {x:map.width-map.width/5, y:map.height-0, z:0}, frames.length, mapScale, (model.unitSize*figureScale)*10, false);
-            } else {
-                drawTopDownMapParallelogramUnitGrid(map, frames, keyframes, 
-                    {x:-1, y:-1, z:0}, 
-                    {x:-1, y:map.height+1, z:0}, 
-                    {x:map.width+1, y:map.height+1, z:0}, frames.length, mapScale, (model.unitSize*figureScale)*10, false);
-            }
+        return -1;
+    }
+    let gen = elementGen();
+    function rAFLoop(calculate){
+        return new Promise(resolve => {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                calculate();
+                resolve();
+            })
+          })
+        })
+    }
+    async function loop(){
+        let done = false;
+        while (!done) {
+            await rAFLoop(() => {
+                if (gen.next().done) {
+                    done = true;
+                }
+            });
         }
+        console.log("Visualization done in " + (performance.now()-time) + "ms.");
     }
-    if (timeScaleInput.checked) {
-        drawTimeScale(canvas, modelFps, frames.length, keyframes);
-    }
-    timerVisualizationDrawing += performance.now()-a;
-}
+    loop();
+} 

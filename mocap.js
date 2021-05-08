@@ -21,6 +21,55 @@ class Skeleton {
     }
 }
 
+//(sequence, model, numKeyframes, numBlurFrames, 
+//mapWidth, mapHeight, visualizationWidth, visualizationHeight, 
+//addTimeScale = false, addFillingKeyframes = true, keyframeSelectionAlgorithm = 4, labelFrames = true, useTrueTime = true
+
+class VisualizationFactory {
+    constructor () {
+        this.addFillingKeyframes = true;
+        this.addTimeScale = false;
+        this.keyframeSelectionAlgorithm = Core.KeyframeSelectionAlgorithmEnum.Decimation;
+        this.labelFrames = true;
+        this.useTrueTime = true;
+        this.createZoomable = true;
+        this.model = Model.modelVicon;
+        this.jointStyle = Model.jointStyleDefault;
+        this.boneStyle = Model.boneStyleDefault;
+        this.leftBoneStyle = Model.leftBoneStyleDefault;
+        this.rightBoneStyle = Model.rightBoneStyleDefault;
+        this.jointRadius = 0;
+        this.boneRadius = 0.725;
+        this.headRadius = 1.5;
+        this.noseRadius = 0.9;
+        this.opacity = 1;
+        this.blurFrameOpacity = 0.125;
+        this.numKeyframes = 10;
+        this.numBlurFrames = 10;
+        this.numZoomedKeyframes = 12;
+    }
+
+    createVisualization(sequence, visualizationWidth = 850, visualizationHeight = 150, mapWidth = 150, mapHeight = 150) {
+        let drawStyle = new Core.MocapDrawStyle(this.model, this.boneRadius, this.jointRadius, this.headRadius, this.boneStyle,
+            this.leftBoneStyle, this.rightBoneStyle, this.jointStyle, 1, this.noseStyle, this.noseRadius, this.opacity);
+        let drawStyleBlur = new Core.MocapDrawStyle(this.model, this.boneRadius, this.jointRadius, this.headRadius, this.boneStyle,
+            this.boneStyle, this.boneStyle, this.jointStyle, 1, this.boneStyle, this.noseRadius, this.blurFrameOpacity);
+        let visualization;
+        if (this.createZoomable) {
+            visualization = createZoomableVisualizationElementCustom(sequence, this.model, this.numKeyframes, 
+                this.numZoomedKeyframes, this.numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight,
+                drawStyle, drawStyleBlur, this.addTimeScale, this.addFillingKeyframes, this.keyframeSelectionAlgorithm, 
+                this.labelFrames, this.useTrueTime);
+        } else {
+            visualization = createVisualizationElementCustom(sequence, this.model, this.numKeyframes, 
+                this.numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight,
+                drawStyle, drawStyleBlur, this.addTimeScale, this.addFillingKeyframes, this.keyframeSelectionAlgorithm, 
+                this.labelFrames, this.useTrueTime);
+        }
+        return visualization;
+    }
+}
+
 class MocapRenderer {
     constructor (canvas, renderer, camera, skeleton, scene) {
         this.canvas = canvas;
@@ -104,11 +153,11 @@ function resizeSkeleton(skeleton, drawStyle, figureScale) {
 }
 
 function modifySkeletonToFrame(skeleton, frame, drawStyle, xShift, yShift, figureScale) {
-    let vecNose = calculateNoseVector(frame[drawStyle.headJointIndex], frame[drawStyle.thoraxIndex], frame[drawStyle.leftArmIndex], 6*figureScale);
-    let nosePos = new THREE.Vector3(frame[drawStyle.headJointIndex].x+vecNose.x+xShift, frame[drawStyle.headJointIndex].y+vecNose.y+yShift, frame[drawStyle.headJointIndex].z+vecNose.z);
-    moveBoxLine(skeleton.nose, nosePos, new THREE.Vector3(frame[drawStyle.headJointIndex].x+xShift, frame[drawStyle.headJointIndex].y+yShift, frame[drawStyle.headJointIndex].z));
+    let vecNose = calculateNoseVector(frame[drawStyle.headIndex], frame[drawStyle.thoraxIndex], frame[drawStyle.leftArmIndex], 6*figureScale);
+    let nosePos = new THREE.Vector3(frame[drawStyle.headIndex].x+vecNose.x+xShift, frame[drawStyle.headIndex].y+vecNose.y+yShift, frame[drawStyle.headIndex].z+vecNose.z);
+    moveBoxLine(skeleton.nose, nosePos, new THREE.Vector3(frame[drawStyle.headIndex].x+xShift, frame[drawStyle.headIndex].y+yShift, frame[drawStyle.headIndex].z));
     skeleton.nose.material.color.setRGB(drawStyle.noseStyle.r/255, drawStyle.noseStyle.g/255, drawStyle.noseStyle.b/255);
-    skeleton.head.position.set(frame[drawStyle.headJointIndex].x+xShift, frame[drawStyle.headJointIndex].y+yShift, frame[drawStyle.headJointIndex].z);
+    skeleton.head.position.set(frame[drawStyle.headIndex].x+xShift, frame[drawStyle.headIndex].y+yShift, frame[drawStyle.headIndex].z);
     skeleton.head.material.color.setRGB(drawStyle.jointStyle.r/255, drawStyle.jointStyle.g/255, drawStyle.jointStyle.b/255);
     if (drawStyle.opacity < 1) {
         skeleton.nose.material.opacity = drawStyle.opacity;
@@ -167,7 +216,7 @@ function drawSequence(mocapRenderer, frames, indexes, numBlurPositions, drawStyl
         let coreX = frames[indexes[i]][0].x;
         let xShift = (indexes[i]/frames.length)*(98-widthFirst/2-widthLast/2)+widthFirst/2+0.5;
         if (!useTrueTime) {
-            xShift = (i/indexes.length)*(98-widthFirst/2-widthLast/2)+widthFirst/2+0.5;
+            xShift = (i/(indexes.length-1))*(98-widthFirst/2-widthLast/2)+widthFirst/2+0.5;
         }
         for (let j = 1; j < numBlurPositions+1; j++) {
             if (indexes[i]-j < 0) {
@@ -219,13 +268,23 @@ function resizeMocapRenderer(mocapRenderer, width, height) {
     mocapRenderer.camera = camera;
 }
 
-function createZoomableVisualizationElement(sequence, model, numKeyframes, zoomedNumKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight, addTimeScale = false, addFillingKeyframes = true, keyframeSelectionAlgorithm = 4, labelFrames = true) {
-    let main = createVisualizationElement(sequence, model, numKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight, addTimeScale, addFillingKeyframes, keyframeSelectionAlgorithm, labelFrames);
+function createZoomableVisualizationElement(sequence, model, numKeyframes, zoomedNumKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight, addTimeScale = false, addFillingKeyframes = true, keyframeSelectionAlgorithm = 4, labelFrames = true, useTrueTime = true) {
+    let drawStyle = new Core.MocapDrawStyle(model, 0.725, 0,
+        1.5, Model.boneStyleDefault, Model.leftBoneStyleDefault, Model.rightBoneStyleDefault, Model.jointStyleDefault, 1, Model.noseStyleDefault, 0.9, 1);
+    let drawStyleBlur = new Core.MocapDrawStyle(model, 0.725, 0,
+        1.5, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, 1, Model.blurStyleDefault, 0.9, 0.125);
+    return createZoomableVisualizationElementCustom(sequence, model, numKeyframes, zoomedNumKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, 
+        visualizationHeight, drawStyle, drawStyleBlur, addTimeScale, addFillingKeyframes, keyframeSelectionAlgorithm, labelFrames, useTrueTime);
+}
+
+function createZoomableVisualizationElementCustom(sequence, model, numKeyframes, zoomedNumKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight, drawStyle, drawStyleBlur, addTimeScale = false, addFillingKeyframes = true, keyframeSelectionAlgorithm = 4, labelFrames = true, useTrueTime = true) {
+    let main = createVisualizationElementCustom(sequence, model, numKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight, drawStyle, drawStyleBlur, addTimeScale, addFillingKeyframes, keyframeSelectionAlgorithm, labelFrames, useTrueTime);
     let zoomWidth = Math.floor(document.body.clientWidth-document.body.clientWidth/24);
     let zoomHeight = Math.floor(document.body.clientHeight*0.6-document.body.clientWidth/16);
     let bg = document.createElement("div");
-    let zoomed = createVisualizationElement(sequence, model, zoomedNumKeyframes, numBlurFrames, 0, 0, zoomWidth, zoomHeight, addTimeScale, addFillingKeyframes, keyframeSelectionAlgorithm, labelFrames);
+    let zoomed = createVisualizationElementCustom(sequence, model, zoomedNumKeyframes, numBlurFrames, 0, 0, zoomWidth, zoomHeight, drawStyle, drawStyleBlur, addTimeScale, addFillingKeyframes, keyframeSelectionAlgorithm, labelFrames, useTrueTime);
     zoomed.style = "z-index: 9999; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; border: 2px solid black; display: block;";
+    zoomed.style.backgroundColor = "white";
     bg.style = "display: none;";
     let fun = () => {
         let hide = main.classList.toggle("hidden");
@@ -237,16 +296,18 @@ function createZoomableVisualizationElement(sequence, model, numKeyframes, zoome
     };
     bg.onclick = fun;
     main.children[0].onclick = fun;
-    main.children[1].onclick = fun;
+    if (mapWidth > 0 && mapHeight > 0) {
+        main.children[1].onclick = fun;
+    }
     bg.appendChild(zoomed);
     main.appendChild(bg);
     return main;
 }
 
 function visualizeToCanvas(canvas, sequence, model, numKeyframes, numBlurFrames, width, height, addTimeScale = false, addFillingKeyframes = true, keyframeSelectionAlgorithm = 4) {
-    let drawStyle = new Core.MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.725, 0,
+    let drawStyle = new Core.MocapDrawStyle(model, 0.725, 0,
         1.5, Model.boneStyleDefault, Model.leftBoneStyleDefault, Model.rightBoneStyleDefault, Model.jointStyleDefault, 1, Model.noseStyleDefault, 0.9, 1);
-    let drawStyleBlur = new Core.MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.725, 0,
+    let drawStyleBlur = new Core.MocapDrawStyle(model, 0.725, 0,
         1.5, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, 1, Model.blurStyleDefault, 0.9, 0.125);
     let mocapRenderer = initializeMocapRenderer(canvas, width, height, drawStyle);
     let processed = Core.processSequence(sequence, numKeyframes, sceneWidth, width, height, drawStyle);
@@ -255,8 +316,8 @@ function visualizeToCanvas(canvas, sequence, model, numKeyframes, numBlurFrames,
     let keyframes = findKeyframes(frames, numKeyframes, keyframeSelectionAlgorithm);
     if (addFillingKeyframes) {
         let fillKeyframes = Core.getFillKeyframes(frames, keyframes, sceneWidth);
-        let fillStyle = Object.assign({}, drawStyle);
-        fillStyle.opacity = 0.4;
+        let fillStyle = new Core.MocapDrawStyle(model, 0.725, 0,
+            1.5, Model.boneStyleDefault, Model.leftBoneStyleDefault, Model.rightBoneStyleDefault, Model.jointStyleDefault, 1, Model.noseStyleDefault, 0.9, 0.4);
         drawSequence(mocapRenderer, frames, fillKeyframes, 0, fillStyle, drawStyleBlur, figureScale, 0, true);
     }
     drawSequence(mocapRenderer, frames, keyframes, numBlurFrames, drawStyle, drawStyleBlur, figureScale, 0, false);
@@ -265,11 +326,16 @@ function visualizeToCanvas(canvas, sequence, model, numKeyframes, numBlurFrames,
     }
 }
 
-function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight, addTimeScale = false, addFillingKeyframes = true, keyframeSelectionAlgorithm = 4, labelFrames = true) {
-    let drawStyle = new Core.MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.725, 0,
+function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight, addTimeScale = false, addFillingKeyframes = true, keyframeSelectionAlgorithm = 4, labelFrames = true, useTrueTime = true) {
+    let drawStyle = new Core.MocapDrawStyle(model, 0.725, 0,
         1.5, Model.boneStyleDefault, Model.leftBoneStyleDefault, Model.rightBoneStyleDefault, Model.jointStyleDefault, 1, Model.noseStyleDefault, 0.9, 1);
-    let drawStyleBlur = new Core.MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.725, 0,
+    let drawStyleBlur = new Core.MocapDrawStyle(model, 0.725, 0,
         1.5, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, 1, Model.blurStyleDefault, 0.9, 0.125);
+    return createVisualizationElementCustom(sequence, model, numKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, 
+        visualizationHeight, drawStyle, drawStyleBlur, addTimeScale, addFillingKeyframes, keyframeSelectionAlgorithm, labelFrames, useTrueTime);
+}
+
+function createVisualizationElementCustom(sequence, model, numKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight, drawStyle, drawStyleBlur, addTimeScale = false, addFillingKeyframes = true, keyframeSelectionAlgorithm = 4, labelFrames = true, useTrueTime = true) {
     if (mainRenderer == null || mainRenderer.skeleton.model != model.bonesModel) {
         let canvas = document.createElement("canvas");
         mainRenderer = initializeMocapRenderer(canvas, visualizationWidth, visualizationHeight, drawStyle);
@@ -291,13 +357,16 @@ function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames
     }
     if (addFillingKeyframes) {
         let fillKeyframes = Core.getFillKeyframes(frames, keyframes, sceneWidth);
-        let fillStyle = Object.assign({}, drawStyle);
-        fillStyle.opacity = 0.4;
-        drawSequence(mainRenderer, frames, fillKeyframes, 0, fillStyle, drawStyleBlur, figureScale, 0, false);
+        let fillStyle = new Core.MocapDrawStyle(drawStyle.skeletonModel,  drawStyle.boneRadius, drawStyle.jointRadius,
+            drawStyle.headRadius, drawStyle.boneStyle, drawStyle.leftBoneStyle, drawStyle.rightBoneStyle, 
+            drawStyle.jointStyle, drawStyle.figureScale, drawStyle.noseStyle, drawStyle.noseRadius, 0.4);
+        drawSequence(mainRenderer, frames, fillKeyframes, 0, fillStyle, drawStyleBlur, figureScale, 0, false, useTrueTime);
     }
-    let positions = drawSequence(mainRenderer, frames, keyframes, numBlurFrames, drawStyle, drawStyleBlur, figureScale, 0, false);
-    let map = addMapToVisualization(frames, keyframes, figureScale, model, mapWidth, mapHeight);
-    div.appendChild(map);
+    let positions = drawSequence(mainRenderer, frames, keyframes, numBlurFrames, drawStyle, drawStyleBlur, figureScale, 0, false, useTrueTime);
+    if (mapWidth > 0 && mapHeight > 0) {
+        let map = addMapToVisualization(frames, keyframes, figureScale, model, mapWidth, mapHeight);
+        div.appendChild(map);
+    }
     div.appendChild(image);
     image.src = mainRenderer.canvas.toDataURL("image/png");
     image.height = visualizationHeight;
@@ -384,7 +453,7 @@ function findKeyframes(frames, numKeyframes, keyframeSelectionAlgorithm) {
 }
 
 function createAnimationElement(sequence, model, visualizationWidth, visualizationHeight) {
-    let drawStyle = new Core.MocapDrawStyle(model.bonesModel, model.headJointIndex, model.leftArmIndex, model.thoraxIndex, 0.9, 0,
+    let drawStyle = new Core.MocapDrawStyle(model, 0.9, 0,
         2.25, Model.boneStyleDefault, Model.leftBoneStyleDefault, Model.rightBoneStyleDefault, Model.jointStyleDefault, 1, "rgba(192, 16, 128, 1)", 0.9, 1);
     let div = document.createElement("div");
     div.className = "drawItem-"+Model.motionCategories[Core.getSequenceCategory(sequence)];
@@ -416,7 +485,7 @@ function createAnimationElement(sequence, model, visualizationWidth, visualizati
     return div;
 }
 
-export {visualizeToCanvas, createVisualizationElement, createZoomableVisualizationElement, createAnimationElement};
+export {VisualizationFactory, visualizeToCanvas, createVisualizationElement, createZoomableVisualizationElement, createAnimationElement};
 export {loadDataFromString, getSequenceLength, getSequenceCategory, KeyframeSelectionAlgorithmEnum} from './mocapCore.js';
 export * from './model.js';
 //export * from './mocapCanvas2d.js';
