@@ -10,7 +10,7 @@ Download the minimised module file from releases. Copy the module file into your
 
 ### Option 2
 
-Clone the repository, copy the `lib` folder along with `mocap.js`, `mocapCore.js` and `model.js` into your project folder.
+Clone the repository, copy the contents of `src` into your project folder.
 
 ## Usage Example
 
@@ -27,3 +27,14 @@ Clone the repository, copy the `lib` folder along with `mocap.js`, `mocapCore.js
 ## Full Scripting Documentation
 
 [Documentation](docs/DOCUMENTATION.md)
+
+## Examples
+
+Some examples using this library are available in the `examples` folder. To start off, see the file `example.html`.
+
+### Live Sites of Examples
+
+[example.html - most basic example, showing loading a data file and creating a visualization](https://tygrak.github.io/MocapViz/examples/example.html)
+[multiView.html - shows off most features of mocapViz](https://tygrak.github.io/MocapViz/examples/multiView.html)
+[categories.html - loads and visualizes all sequences of a selected category from a data file](https://tygrak.github.io/MocapViz/examples/categories.html)
+[tester.html - used for our user testing](https://tygrak.github.io/MocapViz/examples/tester2.html)

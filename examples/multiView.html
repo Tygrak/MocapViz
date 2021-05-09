@@ -15,7 +15,7 @@
                     <input type="file" id="dataFileInput" name="dataFileInput" accept=".data,.txt">
                     <button id="dataInputLoadButton">Load Data</button>
                 </div>
-                <div class="sideMenuItem">
+                <div class="sideMenuItem" style="display: none;">
                     <div class="sideMenuItemLabel">Enter data as text:</div>
                     <textarea id="dataTextInput" name="dataTextInput" value="" rows="1" wrap="soft"></textarea>
                     <button id="dataTextLoadButton">Load Data</button>
@@ -27,6 +27,12 @@
                         <option value="Kinect">Kinect</option>
                         <option value="Kinect2d">Kinect2d</option>
                         <option value="PointCloud">Points Only</option>
+                    </select>
+                </div>
+                <div class="sideMenuItem">
+                    <span class="optionLabel">Load sequences of category:</span>          
+                    <select id="categorySelection" name="categorySelection" style="width: 11em;">
+                        <option value="allCategories">All Categories</option>
                     </select>
                 </div>
                 <div class="sideMenuItem">
@@ -46,6 +52,10 @@
                 <div class="sideMenuItem">
                     <div class="sideMenuItemLabel">Number of frames to draw:</div>
                     <input type="number" id="numFramesInput" name="numFramesInput" value="12">
+                </div>
+                <div class="sideMenuItem">
+                    <div class="sideMenuItemLabel">Number of blur frames to draw:</div>
+                    <input type="number" id="numBlurFramesInput" name="numBlurFramesInput" value="10">
                 </div>
                 <div class="sideMenuItem">
                     <div>

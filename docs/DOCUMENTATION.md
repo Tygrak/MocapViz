@@ -59,7 +59,7 @@ Name | Type | Description | Default Value
 Enumerates the available keyframe selection algorithms.
 
 Available values: `Equidistant`, `Euclidean`, `Temporal`, `Lowe`, `Decimation`
-The recommended options are `Decimation`, `Lowe` and `Equidistant`.
+The recommended options are `Decimation`, `Temporal`, `Lowe` and `Equidistant`.
 
 ### SkeletonModel
 

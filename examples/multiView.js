@@ -1,9 +1,9 @@
-import * as Mocap from "./mocap.js";
-import * as Mocap2d from "./mocapCanvas2d.js";
-import * as Model from "./model.js";
+import * as Mocap from '../src/mocap.js';
+import * as Mocap2d from '../src/mocapCanvas2d.js';
+import * as Model from "../src/model.js";
 
 let sequences = [];
-let maxCategoriesLoad = 600;
+let maxSequencesLoad = 600;
 let loaded = true;
 
 
@@ -15,7 +15,7 @@ const dataTextInput = document.getElementById("dataTextInput");
 const numSequencesInput = document.getElementById("numSequencesInput");
 const numSequencesPageInput = document.getElementById("numSequencesPageInput");
 const numFramesInput = document.getElementById("numFramesInput");
-const yRotationInput = document.getElementById("yRotationInput");
+const numBlurFramesInput = document.getElementById("numBlurFramesInput");
 const loadButton = document.getElementById("dataInputLoadButton");
 const loadTextButton = document.getElementById("dataTextLoadButton");
 const bonesModelInput = document.getElementById("bonesModelInput");
@@ -37,6 +37,7 @@ const contentDiv = document.getElementById("content");
 const zoomableVisualizationsInput = document.getElementById("zoomableVisualizationsInput");
 const labelFramesInput = document.getElementById("labelFramesInput");
 const oldRenderingInput = document.getElementById("oldRenderingInput");
+const categorySelection = document.getElementById("categorySelection");
 loadButton.onclick = loadDataFile;
 sequenceInputLoadButton.onclick = createVisualizations;
 //calculateConversionButton.onclick = calculateConversion;
@@ -48,6 +49,11 @@ function loadDataFile() {
         return;
     }
     loaded = false;
+    let predicate = null;
+    let category = categorySelection.value;
+    if (category != "allCategories") {
+        predicate = (s) => {return category == Mocap.getSequenceCategory(s);};
+    }
     let time = performance.now();
     Mocap.loadDataFromFile(dataFileInput.files[0], (fileSequences) => {
         sequences = fileSequences;
@@ -55,13 +61,14 @@ function loadDataFile() {
         console.log("Loaded " + sequences.length + " sequences in " + (performance.now()-time) + "ms.");
         createVisualizations();
         availableSequencesText.innerText = sequences.length;
-    });
+    }, predicate, 20, maxSequencesLoad);
 }
 
 function createVisualizations() {
     let time = performance.now();
     let targetElement = document.getElementById("drawContainer");
     let keyframesNum = parseInt(numFramesInput.value);
+    let numBlurFrames = parseInt(numBlurFramesInput.value);
     let addFilling = addFillKeyframesInput.checked;
     let width = targetElement.clientWidth*0.95;
     let height = window.innerHeight*0.98*(1/parseInt(numSequencesPageInput.value));
@@ -73,6 +80,9 @@ function createVisualizations() {
     targetElement.innerHTML = "";
     let toDrawSequences = [];
     for (let i = parseInt(sequenceNumberInput.value); i < parseInt(sequenceNumberInput.value)+parseInt(numSequencesInput.value); i++) {
+        if (i < 0 || i >= sequences.length) {
+            continue;
+        }
         toDrawSequences.push(i);
     }
     let longestSequenceLength = 0;
@@ -86,6 +96,8 @@ function createVisualizations() {
     factory.labelFrames = labelFrames;
     factory.addTimeScale = timeScale;
     factory.createZoomable = zoomableVisualizationsInput.checked;
+    factory.keyframeSelectionAlgorithm = keyframeAlgorithm;
+    factory.numBlurFrames = numBlurFrames;
     if (bonesModelInput.value == "Kinect") {
         factory.model = Model.modelKinect;
     } else if (bonesModelInput.value == "Kinect2d") {
@@ -103,9 +115,11 @@ function createVisualizations() {
             }
             let visualization;
             if (!oldRenderingInput.checked) {
+                factory.numKeyframes = numKeyframes;
+                factory.numZoomedKeyframes = keyframesNum+2;
                 visualization = factory.createVisualization(sequence, visWidth, height, mapWidth, height);
             } else {
-                visualization = Mocap2d.createZoomableVisualizationElement(sequence, Mocap.modelVicon, numKeyframes, keyframesNum+2, 10, 
+                visualization = Mocap2d.createZoomableVisualizationElement(sequence, Mocap.modelVicon, numKeyframes, keyframesNum+2, numBlurFrames, 
                     mapWidth, height, visWidth, height, timeScale, addFilling, keyframeAlgorithm, labelFrames, useTrueTime);
             }
             visualization.children[0].classList.add("drawBox");
@@ -141,3 +155,18 @@ function createVisualizations() {
     }
     loop();
 } 
+
+
+addCategorySelectionOptions();
+
+function addCategorySelectionOptions() {
+    let allCategories = Mocap.motionSuperCategories.allCategories;
+    allCategories.splice(allCategories.indexOf("140"), 1);
+    for (let i = 0; i < allCategories.length; i++) {
+        const category = allCategories[i];
+        let option = document.createElement("option");
+        option.value = category;
+        option.innerHTML = category+": "+Mocap.motionCategoriesHuman[category];
+        categorySelection.appendChild(option);
+    }
+}

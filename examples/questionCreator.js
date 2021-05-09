@@ -1,5 +1,5 @@
-import * as Mocap from './mocap.js';
-import * as Mocap2d from './mocapCanvas2d.js';
+import * as Mocap from '../src/mocap.js';
+import * as Mocap2d from '../src/mocapCanvas2d.js';
 
 let loaded = true;
 let sequences = [];

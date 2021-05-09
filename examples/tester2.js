@@ -1,4 +1,4 @@
-import * as Mocap from "./mocap.js";
+import * as Mocap from '../src/mocap.js';
 
 let loaded = true;
 let sequences = [];
@@ -31,7 +31,7 @@ loadData(function(response) {
 function loadData(callback) {   
     let xobj = new XMLHttpRequest();
     xobj.overrideMimeType("application/text");
-    xobj.open('GET', 'hdm05part.txt', true);
+    xobj.open('GET', 'data/hdm05part.txt', true);
     xobj.onreadystatechange = function () {
         if (xobj.readyState == 4 && xobj.status == "200") {
             callback(xobj.responseText);
