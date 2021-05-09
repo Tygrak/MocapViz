@@ -6,11 +6,11 @@ JavaScript library for visualizing motion capture data.
 
 ### Option 1 - Recommended
 
-Download the minimised module file from releases. Copy the module file into your project folder.
+Download the minified module file from releases. Copy the module file into your project folder.
 
 ### Option 2
 
-Clone the repository, use `npx webpack` to create a module file. Copy the module file into your project folder.
+Clone the repository, use `npm run build` to create a module file. Copy the module file into your project folder.
 
 ### Option 3
 
