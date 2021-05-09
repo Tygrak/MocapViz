@@ -1,4 +1,7 @@
 /data
+/node_modules
+/dist
+package-lock.json
 *.data
 !hdm05part.data
 server.py
