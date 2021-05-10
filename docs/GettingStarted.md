@@ -33,7 +33,7 @@ Opening the site shows us two buttons. One of the buttons allows us to select a 
 Let's start by importing the MocapViz library. Start our Javascript code with this line:
 
 ```javascript
-import * as Mocap from '../src/mocap.min.js';
+import * as Mocap from './mocap.min.js';
 ```
 
 This imports the library, and allows us to use it by calling functions from it with `Mocap.*nameOfFunction*`.
@@ -44,10 +44,10 @@ This imports the library, and allows us to use it by calling functions from it w
 
 To create a visualization, we first need to load the data from which we will create it. When loading data, we have two options. The first is useful if we have the data prepared in a string somewhere already, for example if the data is already ready on our server. We would use the function `loadDataFromString(dataString)`. The second option allows us to load data from a file, which is useful to let the user provide their own data files. This is the function `loadDataFromFile(dataFile, callback)`. Both functions return an array of sequences, ready to be further used. We will use the second option for our example, as we want the user to provide their own file.
 
-The `loadDataFromFile(dataFile, callback)` function takes two arguments. The first is the blob of the data file. We will get the blob using the file input we have previously defined in our HTML. Let us add some code so we can access the input. Also, while we are at it, let's add a function that will be called when we press the load button.
+The `loadDataFromFile(dataFile, callback)` function takes two arguments. The first is the blob of the data file. We will get the blob using the file input we have previously defined in our HTML. Let us add some code, so we can access the input. Also, while we are at it, let's add a function that will be called when we press the load button.
 
 ```javascript
-import * as Mocap from '../src/mocap.min.js';
+import * as Mocap from './mocap.min.js';
 
 const dataFileInput = document.getElementById("dataFileInput");
 const loadButton = document.getElementById("dataLoadButton");
@@ -73,7 +73,7 @@ function load() {
 
 ## Creating a Visualization
 
-We have loaded the data, now we just need to create a visualization using it. To do this we will use the helpful class `VisualizationFactory`. This class allows us to create visualizations using sensible default parameters. After we have created a `VisualizationFactory`, we can use its method `createVisualization` to create the visualization itself. The method createVisualization(sequence, visualizationWidth, visualizationHeight, mapWidth, mapHeight) takes four arguments, which should be self-explanatory. The first argument is the sequence we want the visualize. The next two arguments decide the size in pixels of our resulting visualization. The last two arguments decide the size of minimap that will be created as a part of the visualization. If we don't want the minimap, we can set its sizes to 0. The method returns an element that contains the resulting image. Let's modify the callback to create a visualization and add it to the document.
+We have loaded the data, now we just need to create a visualization using it. To do this we will use the helpful class `VisualizationFactory`. This class allows us to create visualizations using sensible default parameters. After we have created a `VisualizationFactory`, we can use its method `createVisualization` to create the visualization itself. The method createVisualization(sequence, visualizationWidth, visualizationHeight, mapWidth, mapHeight) takes four arguments, which should be self-explanatory. The first argument is the sequence we want to visualize. The next two arguments decide the size in pixels of our resulting visualization. The last two arguments decide the size of mini map that will be created as a part of the visualization. If we don't want the mini map, we can set its sizes to 0 and it won't be created. The method returns an element that contains the resulting image. Let's modify the callback to create a visualization and add it to the document.
 
 ```javascript
 function load() {
@@ -112,6 +112,50 @@ Mocap.loadDataFromFile(dataFileInput.files[0], (sequences) => {
 ```
 
 To see all the available parameters for `VisualizationFactory` see [this part](DOCUMENTATION.md#all-available-parameters) of the documentation.
+
+The full resulting code:
+
+```html
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>
+            MocapViz Test
+        </title>     
+    </head>
+    <body>
+        <button id="dataLoadButton">Load Data</button>
+        <input type="file" id="dataFileInput" name="dataFileInput" accept=".data,.txt">
+            
+        </div>
+        <script type="module">
+            import * as Mocap from './mocap.min.js';
+
+            const dataFileInput = document.getElementById("dataFileInput");
+            const loadButton = document.getElementById("dataLoadButton");
+            loadButton.onclick = load;
+
+            function load() {
+                if (dataFileInput.files.length == 0) {
+                    console.log("No file selected!");
+                    return;
+                }
+                Mocap.loadDataFromFile(dataFileInput.files[0], (sequences) => {
+                    let factory = new Mocap.VisualizationFactory();
+                    factory.numKeyframes = 8;
+                    factory.numZoomedKeyframes = 10;
+                    factory.keyframeSelectionAlgorithm = Mocap.KeyframeSelectionAlgorithmEnum.Equidistant;
+                    factory.leftBoneStyle = {r: 0, g: 180, b: 0, a: 1};
+                    factory.opacity = 0.6;
+                    factory.blurFrameOpacity = 0.17;
+                    let visualizationElement = factory.createVisualization(sequences[0], 850, 250, 250, 250);
+                    document.body.appendChild(visualizationElement);
+                });
+            }
+        </script>  
+    </body>
+</html>
+```
 
 ## Full Scripting Documentation
 
