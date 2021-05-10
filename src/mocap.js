@@ -21,10 +21,6 @@ class Skeleton {
     }
 }
 
-//(sequence, model, numKeyframes, numBlurFrames, 
-//mapWidth, mapHeight, visualizationWidth, visualizationHeight, 
-//addTimeScale = false, addFillingKeyframes = true, keyframeSelectionAlgorithm = 4, labelFrames = true, useTrueTime = true
-
 class VisualizationFactory {
     constructor () {
         this.addFillingKeyframes = true;

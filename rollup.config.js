@@ -4,7 +4,7 @@ export default [
 	{
 		input: 'src/mocap.js',
 		output: [
-			{ 
+			      { 
                 file: 'build/mocap.module.js', 
                 format: 'es' 
             },
@@ -12,6 +12,11 @@ export default [
               file: 'build/mocap.min.js',
               format: 'es',
               plugins: [terser()]
+            },
+            { 
+              file: 'build/mocap.js', 
+              format: 'iife',
+              name: 'Mocap'
             }
 		]
 	}

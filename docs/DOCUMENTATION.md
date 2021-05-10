@@ -67,7 +67,7 @@ Contains the needed information about a skeleton model. The available premade sk
 
 #### constructor(bonesModel, fps, headIndex, leftArmIndex, thoraxIndex, defaultScale, unitSize)
 
-`bonesModel` is an array of objects describing how to connect joints to create bones. `fps` contains the frame rate at which the sequences were recorded. `headIndex`, `leftArmIndex` and `thoraxIndex` are the indexes of the corresponding joints. `defaultScale` and `unitSize` can be set to 1, but might be used by the maps to select the grid size.
+`bonesModel` is an array of objects describing how to connect joints to create bones. `fps` contains the frame rate at which the sequences were recorded. `headIndex`, `leftArmIndex` and `thoraxIndex` are the indexes of the corresponding joints. `defaultScale` is used to scale the resulting skeleton when creating a visualization. `unitSize` is used by the maps to calculate the minimap grid size.
 
 Example of the `bonesModel` used for `modelVicon` follows:
 

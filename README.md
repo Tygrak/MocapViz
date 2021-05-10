@@ -2,11 +2,15 @@
 
 JavaScript library for visualizing motion capture data.
 
+## Getting Started
+
+See [Getting Started](docs/GettingStarted.md) for a quick start guide to using MocapViz.
+
 ## Installation
 
 ### Option 1 - Recommended
 
-Download the minified module file from releases. Copy the module file into your project folder.
+Download the minified module file from [releases](https://github.com/Tygrak/MocapViz/releases/). Copy the module file into your project folder.
 
 ### Option 2
 
