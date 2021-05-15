@@ -127,7 +127,6 @@ The full resulting code:
         <button id="dataLoadButton">Load Data</button>
         <input type="file" id="dataFileInput" name="dataFileInput" accept=".data,.txt">
             
-        </div>
         <script type="module">
             import * as Mocap from './mocap.min.js';
 

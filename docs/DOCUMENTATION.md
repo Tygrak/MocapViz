@@ -46,7 +46,7 @@ Name | Type | Description | Default Value
 `noseStyle` | Object {r, g, b, a} | The color used to draw the orientation arrow from the skeletons head. | {r: 192, g: 16, b: 128, a: 1}
 `jointRadius` | float | Currently unsupported. | 0
 `boneRadius` | float | Controls the width of the bones of the drawn skeletons. | 0.725
-`boneRadius` | float | Controls the width of the head joint of the drawn skeletons. | 1.5
+`headRadius` | float | Controls the width of the head joint of the drawn skeletons. | 1.5
 `noseRadius` | float | Controls the width of the orientation arrow of the drawn skeletons. | 0.9
 `opacity` | float <0, 1> | Controls the opacity of the drawn skeletons. | 1
 `blurFrameOpacity` | float <0, 1> | Controls the opacity of the drawn motion blur frame skeletons. | 0.125
