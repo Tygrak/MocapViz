@@ -399,4 +399,4 @@ const motionSuperCategories = {
     "allCategories":[...Array(153).keys()].map((x) => x+"").slice(22),
 }
 
-export {BoneType, bonesVicon, bonesKinect, bonesKinect2d, bonesPointCloud, modelVicon, modelKinect, modelKinect2d, modelPointCloud, jointStyleDefault, boneStyleDefault, leftBoneStyleDefault, rightBoneStyleDefault, noseStyleDefault, blurStyleDefault, motionCategories, motionCategoriesHuman, motionSuperCategories};
+export {BoneType, bonesVicon, bonesKinect, bonesKinect2d, bonesPointCloud, SkeletonModel, modelVicon, modelKinect, modelKinect2d, modelPointCloud, jointStyleDefault, boneStyleDefault, leftBoneStyleDefault, rightBoneStyleDefault, noseStyleDefault, blurStyleDefault, motionCategories, motionCategoriesHuman, motionSuperCategories};

@@ -341,7 +341,8 @@ function createVisualizationElementCustom(sequence, model, numKeyframes, numBlur
         resizeMocapRenderer(mainRenderer, visualizationWidth, visualizationHeight);
     }
     let div = document.createElement("div");
-    div.className = "drawItem-"+Model.motionCategories[Core.getSequenceCategory(sequence)];
+    let category = Core.getSequenceCategory(sequence);
+    div.className = "drawItem-"+Model.motionCategories[category == null ? "null" : category];
     let image = document.createElement("img");
     image.className = "drawItemVisualization";
     let processed = Core.processSequence(sequence, numKeyframes, sceneWidth, visualizationWidth, visualizationHeight, drawStyle);

@@ -1,4 +1,5 @@
 import * as Mocap from '../src/mocap.js';
+import * as Model from '../src/model.js';
 import * as THREE from '../src/lib/three.module.js';
 
 const asfFileInput = document.getElementById("asfFileInput");
@@ -7,15 +8,25 @@ const amcFileInput = document.getElementById("amcFileInput");
 const amcButton = document.getElementById("amcLoadButton");
 
 let asfStructure = null;
+let skeletonModel = null;
+
 asfButton.onclick = () => {loadFile(asfFileInput, 
     (textResult) => {
         asfStructure = loadAsfString(textResult);
-        console.log(asfStructure);
+        skeletonModel = createSkeletonModel(asfStructure);
     })
 };
 amcButton.onclick = () => {loadFile(amcFileInput, 
     (textResult) => {
-        loadAmcString(textResult, asfStructure);
+        let frames = loadAmcString(textResult, asfStructure);
+        let data = toInternalFormat(frames);
+        let seq = Mocap.loadDataFromString(data)[0];
+        let factory = new Mocap.VisualizationFactory();
+        console.log(asfStructure);
+        console.log(skeletonModel);
+        console.log(frames);
+        console.log(data);
+        document.body.appendChild(factory.createVisualization(seq));
     })
 };
 
@@ -110,13 +121,15 @@ function loadAsfBoneData(keyword, result) {
         bone.axis = new THREE.Vector3(parseFloat(match[1]), parseFloat(match[2]), parseFloat(match[3])); 
         match = bones[i].match(/dof (.+)/);
         if (match != null) {
-            bone.dof = match[1];
+            bone.dof = match[1].split(" ");
         } else {
-            bone.dof = null;
+            bone.dof = [];
         }
         result.bonedata[bone.name] = bone;
     }
 }
+
+//function travelByBones(segment,)
 
 function loadAsfHierarchy(keyword, result) {
     result.hierarchy = [];
@@ -156,7 +169,6 @@ function loadAmcString(amcString, asfStructure) {
     if (frame != null && frame.root !== undefined) {
         result.push(finishAmcFrame(frame, asfStructure));
     }
-    console.log(result);
     return result;
 }
 
@@ -175,19 +187,108 @@ function finishAmcFrame(frame, asfStructure) {
     //todo: use order to parse root
     let rootPosition = new THREE.Vector3(root[0], root[1], root[2]);
     let rootRotation = new THREE.Vector3(root[3], root[4], root[5]);
-    traverseSegment(rootPosition, "root", frame, asfStructure, result);
+    //todo: gl
+    let rotation = readEulerUsingOrder(frame[segment], bonedata.dof);
+    let axis = new THREE.Quaternion().setFromEuler(new THREE.Euler(bonedata.axis.x, bonedata.axis.y, bonedata.axis.z));
+    let matrix = matrixFromEulerVector(rootRotation, asfStructure);
+    traverseSegment(rootPosition, matrix, "root", frame, asfStructure, result);
     return result;
 }
 
-function traverseSegment(position, segment, frame, asfStructure, result) {
+function traverseSegment(parentPosition, parentQuaternion, segment, frame, asfStructure, result) {
+    let position;
+    let matrix;
+    if (segment == "root") {
+        position = parentPosition;
+        matrix = parentQuaternion;
+    } else {
+        let bonedata = asfStructure.bonedata[segment];
+        let rotation = readEulerUsingOrder(frame[segment], bonedata.dof);
+        let axis = new THREE.Quaternion().setFromEuler(new THREE.Euler(bonedata.axis.x, bonedata.axis.y, bonedata.axis.z));
+        let inverseAxis = axis.clone().conjugate();
+        let rotationQuaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(rotation.x, rotation.y, rotation.z));
+        let finalRotation = (new THREE.Quaternion()).multiply(parentQuaternion)
+                .multiply(axis)
+                .multiply(rotationQuaternion)
+                .multiply(inverseAxis);
+        let rotated = bonedata.direction.clone();
+        rotated.applyQuaternion(finalRotation);
+        rotated.multiplyScalar(bonedata.length);
+        position = new THREE.Vector3().addVectors(parentPosition, rotated);
+    }
     result.push({name: segment, pos: position});
     if (asfStructure.hierarchy[segment] === undefined) {
         return;
     }
     for (let i = 0; i < asfStructure.hierarchy[segment].length; i++) {
         let to = asfStructure.hierarchy[segment][i];
-        let bonedata = asfStructure.bonedata[to];
-        let toPosition = new THREE.Vector3().addVectors(position, bonedata.direction);
-        traverseSegment(toPosition, to, frame, asfStructure, result);
+        traverseSegment(position, matrix, to, frame, asfStructure, result);
     }
+}
+
+function matrixFromEulerVector(axis, asfStructure) {
+    let axisRad = asfStructure.angle == "deg" ? axis.clone().multiplyScalar(Math.PI/180) : axis.clone();
+    let euler = new THREE.Euler(axisRad.x, axisRad.y, axisRad.z);
+    let c = new THREE.Matrix4().makeRotationFromEuler(euler);
+    return c;
+}
+
+function rotationMatrixAxis(axis, asfStructure) {
+    let axisRad = asfStructure.angle == "deg" ? axis.clone().multiplyScalar(Math.PI/180) : axis.clone();
+    let euler = new THREE.Euler(axisRad.x, axisRad.y, axisRad.z);
+    let c = new THREE.Matrix3().setFromMatrix4(new THREE.Matrix4().makeRotationFromEuler(euler));
+    let inverse = c.clone().invert();
+    return {c: c, inv: inverse};
+}
+
+function readEulerUsingOrder(vector, order) {
+    let result = new THREE.Vector3();
+    for (let i = 0; i < order.length; i++) {
+        let value = vector[i];
+        if (order[i] == "rx") {
+            result.x = value;
+        } else if (order[i] == "ry") {
+            result.y = value;
+        } else if (order[i] == "rz") {
+            result.z = value;
+        }
+    }
+    return result;
+}
+
+function getJointPositions(segment, asfStructure, result, bonesModel, index) {
+    let fromIndex = index;
+    result[segment] = index;
+    if (asfStructure.hierarchy[segment] === undefined) {
+        return index;
+    }
+    for (let i = 0; i < asfStructure.hierarchy[segment].length; i++) {
+        let to = asfStructure.hierarchy[segment][i];
+        bonesModel.push({a: fromIndex, b: index+1, type: Model.BoneType.torso});
+        index = getJointPositions(to, asfStructure, result, bonesModel, index+1);
+    }
+    return index;
+}
+
+function createSkeletonModel(asfStructure) {
+    let positions = {};
+    let bonesModel = [];
+    getJointPositions("root", asfStructure, positions, bonesModel, 0);
+    return new Model.SkeletonModel(bonesModel, 120, 16, 17, 13, 8, 6.207);
+}
+
+function toInternalFormat(frames) {
+    let result = "#objectKey messif.objects.keys.AbstractObjectKey 1_1_1_1\n";
+    result += frames.length+";mcdr.objects.ObjectMocapPose\n";
+    for (let i = 0; i < frames.length; i++) {
+        for (let j = 0; j < frames[i].length; j++) {
+            let pos = frames[i][j].pos;
+            result += pos.x+","+pos.y+","+pos.z;
+            if (j != frames[i].length-1) {
+                result += ";";
+            }
+        }
+        result += "\n";
+    }
+    return result;
 }
