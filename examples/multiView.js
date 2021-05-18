@@ -3,6 +3,7 @@ import * as Mocap2d from '../src/mocapCanvas2d.js';
 import * as Model from "../src/model.js";
 
 let sequences = [];
+let skeletonModel 
 let maxSequencesLoad = 600;
 let loaded = true;
 
@@ -11,6 +12,7 @@ const availableSequencesText = document.getElementById("availableSequencesText")
 const sequenceNumberInput = document.getElementById("sequenceNumberInput");
 const sequenceInputLoadButton = document.getElementById("sequenceInputLoadButton");
 const dataFileInput = document.getElementById("dataFileInput");
+const asfFileInput = document.getElementById("asfFileInput");
 const dataTextInput = document.getElementById("dataTextInput");
 const numSequencesInput = document.getElementById("numSequencesInput");
 const numSequencesPageInput = document.getElementById("numSequencesPageInput");
@@ -49,22 +51,43 @@ function loadDataFile() {
         return;
     }
     loaded = false;
-    let predicate = null;
-    let category = categorySelection.value;
-    if (category != "allCategories") {
-        predicate = (s) => {return category == Mocap.getSequenceCategory(s);};
-    }
     let time = performance.now();
-    Mocap.loadDataFromFile(dataFileInput.files[0], (fileSequences) => {
-        sequences = fileSequences;
-        loaded = true;
-        console.log("Loaded " + sequences.length + " sequences in " + (performance.now()-time) + "ms.");
-        createVisualizations();
-        availableSequencesText.innerText = sequences.length;
-    }, predicate, 20, maxSequencesLoad);
+    let model;
+    if (bonesModelInput.value == "Kinect") {
+        model = Model.modelKinect;
+    } else if (bonesModelInput.value == "Kinect2d") {
+        model = Model.modelKinect2d;
+    } else {
+        model = Model.modelVicon;
+    }
+    if (dataFileInput.files[0].name.endsWith(".amc")) {
+        if (asfFileInput.files.length == 0) {
+            return;
+        }
+        Mocap.loadAsfAmcFile(asfFileInput.files[0], dataFileInput.files[0], (result) => {
+            sequences = [result.sequence];
+            loaded = true;
+            console.log("Loaded " + sequences.length + " sequences in " + (performance.now()-time) + "ms.");
+            createVisualizations(result.skeletonModel);
+            availableSequencesText.innerText = sequences.length;
+        });
+    } else {
+        let predicate = null;
+        let category = categorySelection.value;
+        if (category != "allCategories") {
+            predicate = (s) => {return category == Mocap.getSequenceCategory(s);};
+        }
+        Mocap.loadDataFromFile(dataFileInput.files[0], (fileSequences) => {
+            sequences = fileSequences;
+            loaded = true;
+            console.log("Loaded " + sequences.length + " sequences in " + (performance.now()-time) + "ms.");
+            createVisualizations(model);
+            availableSequencesText.innerText = sequences.length;
+        }, predicate, 20, maxSequencesLoad);
+    }
 }
 
-function createVisualizations() {
+function createVisualizations(model) {
     let time = performance.now();
     let targetElement = document.getElementById("drawContainer");
     let keyframesNum = parseInt(numFramesInput.value);
@@ -98,11 +121,7 @@ function createVisualizations() {
     factory.createZoomable = zoomableVisualizationsInput.checked;
     factory.keyframeSelectionAlgorithm = keyframeAlgorithm;
     factory.numBlurFrames = numBlurFrames;
-    if (bonesModelInput.value == "Kinect") {
-        factory.model = Model.modelKinect;
-    } else if (bonesModelInput.value == "Kinect2d") {
-        factory.model = Model.modelKinect2d;
-    }
+    factory.model = model;
     function* elementGen() {
         for (let i = 0; i < toDrawSequences.length; i++) {
             const sequence = sequences[toDrawSequences[i]];

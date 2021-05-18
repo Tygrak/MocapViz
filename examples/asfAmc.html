@@ -7,11 +7,12 @@
     </head>
     
     <body>
-        <button id="asfLoadButton">Load .asf</button>
         <input type="file" id="asfFileInput" name="dataFileInput" accept=".asf">
-        <button id="amcLoadButton">Load .amc</button>
         <input type="file" id="amcFileInput" name="dataFileInput" accept=".amc">
-        <script type="module" src="aParser.js">
+        <button id="visualizeButton">Create Visualization</button>
+        <button id="animateButton">Create Animation</button>
+        <div class="drawRegion" id="drawRegion"></div>
+        <script type="module" src="asfAmc.js">
         </script>  
     </body>
 </html>

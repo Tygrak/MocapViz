@@ -453,7 +453,7 @@ function findKeyframes(frames, numKeyframes, keyframeSelectionAlgorithm) {
 
 function createAnimationElement(sequence, model, visualizationWidth, visualizationHeight) {
     let drawStyle = new Core.MocapDrawStyle(model, 0.9, 0,
-        2.25, Model.boneStyleDefault, Model.leftBoneStyleDefault, Model.rightBoneStyleDefault, Model.jointStyleDefault, 1, "rgba(192, 16, 128, 1)", 0.9, 1);
+        2.25, Model.boneStyleDefault, Model.leftBoneStyleDefault, Model.rightBoneStyleDefault, Model.jointStyleDefault, 1, Model.noseStyleDefault, 0.9, 1);
     let div = document.createElement("div");
     div.className = "drawItem-"+Model.motionCategories[Core.getSequenceCategory(sequence)];
     let canvas = document.createElement("canvas");
@@ -463,6 +463,7 @@ function createAnimationElement(sequence, model, visualizationWidth, visualizati
     let processed = Core.processSequence(sequence, 12, sceneWidth, visualizationWidth, visualizationHeight, drawStyle);
     let figureScale = processed.figureScale;
     let frames = processed.frames;
+    let ratio = visualizationWidth/visualizationHeight;
     let controls = new OrbitControls(mocapRenderer.camera, mocapRenderer.renderer.domElement);
     controls.listenToKeyEvents(window);
     controls.enableDamping = true;
@@ -470,7 +471,9 @@ function createAnimationElement(sequence, model, visualizationWidth, visualizati
     controls.screenSpacePanning = false;
     controls.maxPolarAngle = Math.PI / 2;
     controls.maxZoom = 1.5;
-    controls.minZoom = 0.8;
+    controls.minZoom = 0.6;
+    controls.target = new THREE.Vector3(0, (sceneWidth/2)/ratio, 0);
+    controls.update();
     let frame = 0;
     let animate = () => {
         if (div.classList.contains("hidden") || !document.body.contains(canvas)) {
@@ -487,4 +490,5 @@ function createAnimationElement(sequence, model, visualizationWidth, visualizati
 export {VisualizationFactory, visualizeToCanvas, createVisualizationElement, createZoomableVisualizationElement, createAnimationElement};
 export {loadDataFromString, loadDataFromFile, getSequenceLength, getSequenceCategory, KeyframeSelectionAlgorithmEnum} from './mocapCore.js';
 export * from './model.js';
+export * from './asfAmcParser.js';
 //export * from './mocapCanvas2d.js';

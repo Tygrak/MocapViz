@@ -64,9 +64,9 @@ function createZoomableVisualizationElement(sequence, model, numKeyframes, zoome
 
 function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight, addTimeScale = false, addFillingKeyframes = true, keyframeSelectionAlgorithm = 4) {
     let drawStyle = new Core.MocapDrawStyle(model, 2, 0,
-        10, Model.boneStyleDefault, Model.leftBoneStyleDefault, Model.rightBoneStyleDefault, Model.jointStyleDefault, Model.figureScale);
+        10, Model.boneStyleDefault, Model.leftBoneStyleDefault, Model.rightBoneStyleDefault, Model.jointStyleDefault, 1);
     let drawStyleBlur = new Core.MocapDrawStyle(model, 2, 0,
-        10, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, Model.figureScale,);
+        10, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, 1);
     let div = document.createElement("div");
     div.className = "drawItem-"+Model.motionCategories[Core.getSequenceCategory(sequence)];
     let map = document.createElement("canvas");
@@ -211,3 +211,4 @@ function drawFrame(canvas, frame, xShift, yShift, drawStyle) {
 export {createVisualizationElement, createZoomableVisualizationElement};
 export {loadDataFromString, loadDataFromFile, getSequenceLength, getSequenceCategory, KeyframeSelectionAlgorithmEnum} from './mocapCore.js';
 export * from './model.js';
+export * from './asfAmcParser.js';
