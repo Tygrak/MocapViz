@@ -46,6 +46,8 @@ To create a visualization, we first need to load the data from which we will cre
 
 The `loadDataFromFile(dataFile, callback)` function takes two arguments. The first is the blob of the data file. We will get the blob using the file input we have previously defined in our HTML. Let us add some code, so we can access the input. Also, while we are at it, let's add a function that will be called when we press the load button.
 
+*MocapViz uses a custom internal data format by default that is easy to work with. If you have data in the .asf/.amc file format and not in the MocapViz internal file format, you can instead use the functions `loadAsfAmcFile` and `loadAsfAmcString`. These functions can parse data in .asf/.amc files and return the sequences saved in them. They can also be used to save data in these formats into the MocapViz internal file format. See the documentation for the specifics of these two functions.*
+
 ```javascript
 import * as Mocap from './mocap.min.js';
 

@@ -1,12 +1,27 @@
 # MocapViz Scripting Documentation
 
+### loadAsfAmcString(asfString, amcString)
+
+Loads a sequence from a pair of strings in the format of .asf and .amc files. Returns an object containing the information parsed from the two strings.
+The object contains the following information: 
+
+- `skeletonModel` | A `SkeletonModel` object that can be used with `VisualizationFactory`.
+- `sequence` | The sequence loaded from the two strings. Can be used to create a visualization with `VisualizationFactory`.
+- `data` | A string in the MocapViz internal file format usable with `loadDataFromString`. This data could be saved for further faster access to the data.
+- `asfStructure` | Contains data parsed from the .asf. (internal)
+- `amcFrames` | Contains skeleton data parsed from the .amc with the use of the .asf. (internal)
+
+### loadAsfAmcFile(asfFile, amcFile, callback)
+
+Loads a sequence from a pair of files in the format .asf and .amc. Invokes callback with an object containing the information parsed from the two files. See the `loadAsfAmcString` function above for specifics of the object passed to the callback function.
+
 ### loadDataFromString(dataString)
 
-Loads sequences contained in a string. Returns a list of sequences contained in the string.
+Loads sequences contained in a string in the iternal data format. Returns a list of sequences contained in the string.
 
 ### loadDataFromFile(dataFile, callback, [filterPredicate, loadChunkMbSize, maxSequencesLoad])
 
-Loads sequences contained in a data file. Invokes callback with the list of sequences contained in the file as a parameter.
+Loads sequences contained in a data file of the internal data format. Invokes callback with the list of sequences contained in the file as a parameter.
 
 If `filterPredicate` is provided, filters out sequences not matching the predicate when loading. The function loads data in chunks of size `loadChunkMbSize`, to allow loading large data files. By default the chunk size is 20 MB. The function throws an error when more than 500 sequences are loaded, to prevent slowing down the browser. To change this behaviour, increase `maxSequencesLoad`. 
 
@@ -54,6 +69,10 @@ Name | Type | Description | Default Value
 `numBlurFrames` | int | Determines how many motion blur frames will be drawn before each keyframe. | 10
 `numZoomedKeyframes` | int | Determines how many keyframes will be found and drawn for the zoomed visualization. | 12
 
+### createAnimationElement(sequence, model, visualizationWidth, visualizationHeight)
+
+Returns an element containing an animation of the given sequence with the given width and height. The animation starts playing automatically when it is created. The motion in the animation can be rotated using the mouse. Playback speed of the animation is most likely machine dependent. Can be quite useful when debugging. The returned element is a `<canvas>` element contained inside a `<div>` element.
+
 ### KeyframeSelectionAlgorithmEnum
 
 Enumerates the available keyframe selection algorithms.
@@ -95,3 +114,7 @@ Contains descriptions of motion categories from the HDM05 database. For example 
 ### motionCategoriesHuman
 
 Contains descriptions of motion categories from the HDM05 database, changed to be more human understandable. For example `motionCategoriesHuman["22"]` returns `"Turn Right"`.
+
+## 2d Context Canvas Rendering
+
+If the speed of the library is a major bottleneck, there is an older option that doesn't use Three.js rendering when creating visualizations, that can be a bit faster than the main version of the library. If you download the source code the library is contained in `src/mocapCanvas2d.js`. You can build it by uncommenting some highlighted code in the `rollup.config.js` file. Using this version of the library is not recommended and results in worse quality visualizations. Most of the functions described in the documentation also work using the 2d Canvas version, but some functionality is missing: notably the `VisualizationFactory` helper. Instead you'd have to use `createVisualizationElement` function which is normally not recommended.

@@ -13,7 +13,7 @@ function loadAsfAmcFile(asfFile, amcFile, callback) {
                     frames = loadAmcString(textResult, asfStructure);
                     data = toInternalFormat(frames);
                     seq = Core.loadDataFromString(data)[0];
-                    callback({asfStructure: asfStructure, skeletonModel: skeletonModel, frames: frames, data: data, sequence: seq});
+                    callback({asfStructure: asfStructure, skeletonModel: skeletonModel, amcFrames: frames, data: data, sequence: seq});
                 }
             );
         }
@@ -35,12 +35,12 @@ function loadFile(file, callback) {
 }
 
 function loadAsfAmcString(asfString, amcString) {
-    let asfStructure = loadAsfString(textResult);
+    let asfStructure = loadAsfString(asfString);
     let skeletonModel = createSkeletonModel(asfStructure);
-    let frames = loadAmcString(textResult, asfStructure);
+    let frames = loadAmcString(amcString, asfStructure);
     let data = toInternalFormat(frames);
     let seq = Core.loadDataFromString(data)[0];
-    return {asfStructure: asfStructure, skeletonModel: skeletonModel, frames: frames, data: data, seq: seq};
+    return {asfStructure: asfStructure, skeletonModel: skeletonModel, amcFrames: frames, data: data, sequence: seq};
 }
 
 function loadAsfString(asfString) {
