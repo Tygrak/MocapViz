@@ -3,7 +3,6 @@ import * as Mocap2d from '../src/mocapCanvas2d.js';
 import * as Model from "../src/model.js";
 
 let sequences = [];
-let skeletonModel 
 let maxSequencesLoad = 600;
 let loaded = true;
 
@@ -41,7 +40,7 @@ const labelFramesInput = document.getElementById("labelFramesInput");
 const oldRenderingInput = document.getElementById("oldRenderingInput");
 const categorySelection = document.getElementById("categorySelection");
 loadButton.onclick = loadDataFile;
-sequenceInputLoadButton.onclick = createVisualizations;
+sequenceInputLoadButton.onclick = drawSequences;
 //calculateConversionButton.onclick = calculateConversion;
 const drawContainer = document.getElementById("drawContainer");
 
@@ -84,6 +83,22 @@ function loadDataFile() {
             createVisualizations(model);
             availableSequencesText.innerText = sequences.length;
         }, predicate, 20, maxSequencesLoad);
+    }
+}
+
+function drawSequences() {
+    if (dataFileInput.files[0].name.endsWith(".amc")) {
+        loadDataFile();
+    } else {
+        let model;
+        if (bonesModelInput.value == "Kinect") {
+            model = Model.modelKinect;
+        } else if (bonesModelInput.value == "Kinect2d") {
+            model = Model.modelKinect2d;
+        } else {
+            model = Model.modelVicon;
+        }
+        createVisualizations(model);
     }
 }
 

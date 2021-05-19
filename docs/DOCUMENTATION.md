@@ -23,7 +23,7 @@ Loads sequences contained in a string in the iternal data format. Returns a list
 
 Loads sequences contained in a data file of the internal data format. Invokes callback with the list of sequences contained in the file as a parameter.
 
-If `filterPredicate` is provided, filters out sequences not matching the predicate when loading. The function loads data in chunks of size `loadChunkMbSize`, to allow loading large data files. By default the chunk size is 20 MB. The function throws an error when more than 500 sequences are loaded, to prevent slowing down the browser. To change this behaviour, increase `maxSequencesLoad`. 
+If `filterPredicate` is provided, filters out sequences not matching the predicate when loading. The function loads data in chunks of size `loadChunkMbSize`, to allow loading large data files. By default the chunk size is 20 MB. The function stops loading additional sequences when more than 500 sequences are loaded, to prevent slowing down the browser. To change this behaviour, increase `maxSequencesLoad`. 
 
 ### getSequenceCategory(sequence)
 

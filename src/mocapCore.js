@@ -63,7 +63,8 @@ function loadDataFromFile(dataFile, callback, filterPredicate = null, loadChunkM
         fileLocation += loadChunkMbSize*1024*1024;
         if (dataFile.size > fileLocation) {
             if (sequences.length > maxSequencesLoad) {
-                throw ("Too many sequences loaded. (" + sequences.length + "+)");
+                callback(sequences);
+                return;
             }
             reader.readAsText(dataFile.slice(fileLocation, fileLocation+loadChunkMbSize*1024*1024), "UTF-8");
         } else {
