@@ -50,6 +50,7 @@ function loadData(callback) {
     };
     xobj.send(null);  
 }
+
 function loadCategoryDataFile() {
     if (dataFileInput.files.length == 0 || !loaded) {
         return;
@@ -63,38 +64,19 @@ function loadCategoryDataFile() {
     supercategory = Mocap.motionSuperCategories[superCategorySelection.value];
     sequenceLength = getRandomIntRange(80, 500);
     console.log("sequence length: " + sequenceLength);
-    reader.onload = function (textResult) {
-        let text = textResult.target.result;
-        let split = text.split("#objectKey");
-        split[0] = last+split[0];
-        last = split[split.length-1];
-        split.pop();
-        let seqs = split.filter((s) => {return s != "";}).map((s) => s.split("\n"));
-        seqs = seqs.filter((s) => {return supercategory.indexOf(Mocap.getSequenceCategory(s)) != -1;});
+    Mocap.loadDataFromFile(dataFileInput.files[0], (result) => {
+        loaded = true;
+        sequences = result;
+        console.log("Loaded " + sequences.length + " sequences.");
+        createRandomTest();
+    }, (s) => {
         if (randomLengthInput.checked) {
-            let a  = seqs.map((s) => {return Mocap.getSequenceLength(s);});
-            seqs = seqs.filter((s) => {return Mocap.getSequenceLength(s) > sequenceLength*0.9-10 && Mocap.getSequenceLength(s) < sequenceLength*1.1+10;});
-        }
-        sequences.push(...seqs);
-        fileLocation += loadChunkMbSize*1024*1024;
-        if (dataFileInput.files[0].size > fileLocation) {
-            if (sequences.length > 500) {
-                return;
+            if (Mocap.getSequenceLength(s) < sequenceLength*0.9-10 || Mocap.getSequenceLength(s) > sequenceLength*1.1+10) {
+                return false;
             }
-            reader.readAsText(dataFileInput.files[0].slice(fileLocation, fileLocation+loadChunkMbSize*1024*1024), "UTF-8");
-        } else if (last.trim() != "") {
-            if (supercategory.indexOf(Mocap.getSequenceCategory(last.trim().split("\n")) != -1)) {
-                //sequences.push(last.trim().split("\n"));
-            }
-            loaded = true;
-            console.log("Loaded " + sequences.length + " sequences.");
-            createRandomTest();
         }
-    }
-    reader.onerror = function (e) {
-        console.log("Loading the data file failed, most likely because of how big the file is.");
-    }
-    reader.readAsText(dataFileInput.files[0].slice(0, loadChunkMbSize*1024*1024), "UTF-8");
+        return supercategory.indexOf(Mocap.getSequenceCategory(s)) != -1;
+    });
 }
 
 function getRandomInt(max) {
@@ -155,7 +137,7 @@ function loadQuestion() {
         keyframeAlgorithm = parseInt(text[1]);
         text = text.slice(2).join("\n");
         sequences = Mocap.loadDataFromString(text);
-        createRandomTest();
+        createRandomTest(false);
         console.log("Loaded " + sequences.length + " sequences from question.");
         loaded = true;
     }
@@ -165,7 +147,7 @@ function loadQuestion() {
     reader.readAsText(dataFileInput.files[0], "UTF-8");
 }
 
-function createRandomTest() {
+function createRandomTest(shuffleSequences = true) {
     let time = performance.now();
     let targetElement = document.getElementById("drawRegion");
     targetElement.innerHTML = "";
@@ -174,7 +156,9 @@ function createRandomTest() {
     selectedSequences = [];
     currentVisualizationDivs = [];
     submittedAnswers = false;
-    currentCategory = -1;
+    if (shuffleSequences) {
+        currentCategory = -1;
+    }
     let longestSequenceLength = 0;
     let targetLength = getRandomIntRange(130, 480);
     let randomizations = 0;
@@ -204,8 +188,6 @@ function createRandomTest() {
         }
         for (let i = 0; i < parseInt(randomSupercategoryInput.value); i++) {
             randomNum = getRandomInt(sequences.length);
-            //while (randomizations < 10000 && (currentSequences.indexOf(randomNum) != -1 || getSequenceCategory(sequences[randomNum]) > multTargetCategory+4 || getSequenceCategory(sequences[randomNum]) < multTargetCategory-4 
-            //|| getSequenceLength(sequences[randomNum]) > targetLength*1.25+10 || getSequenceLength(sequences[randomNum]) < targetLength*0.75-10)) {
             while (randomizations < 40000 && (currentSequences.indexOf(randomNum) != -1
                    || Mocap.getSequenceLength(sequences[randomNum]) > targetLength*1.25+10 || Mocap.getSequenceLength(sequences[randomNum]) < targetLength*0.75-10)) {
                 randomNum = getRandomInt(sequences.length);
@@ -222,13 +204,18 @@ function createRandomTest() {
             while (currentSequences.indexOf(randomNum) != -1) {
                 randomNum = getRandomInt(sequences.length);
             }
+            if (!shuffleSequences) {
+                randomNum = i;
+            }
             currentSequences.push(randomNum);
             if (Mocap.getSequenceLength(sequences[randomNum]) > longestSequenceLength) {
                 longestSequenceLength = Mocap.getSequenceLength(sequences[randomNum]);
             }
         }
     }
-    shuffle(currentSequences);
+    if (shuffleSequences) {
+        shuffle(currentSequences);
+    }
     function* elementGen() {
         for (let i = 0; i < currentSequences.length; i++) {
             let sequence = sequences[currentSequences[i]];

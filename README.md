@@ -23,7 +23,7 @@ Clone the repository, copy the contents of `src` into your project folder.
 ## Usage Example
 
 ```javascript
-    import * as Mocap from './mocap.js';
+    import * as Mocap from './mocap.min.js';
 
     Mocap.loadDataFromFile(dataFile, (sequences) => {
         let factory = new Mocap.VisualizationFactory();

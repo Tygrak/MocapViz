@@ -18,23 +18,14 @@ const numSequencesPageInput = document.getElementById("numSequencesPageInput");
 const numFramesInput = document.getElementById("numFramesInput");
 const numBlurFramesInput = document.getElementById("numBlurFramesInput");
 const loadButton = document.getElementById("dataInputLoadButton");
-const loadTextButton = document.getElementById("dataTextLoadButton");
+const loadSampleButton = document.getElementById("loadSampleButton");
 const bonesModelInput = document.getElementById("bonesModelInput");
-const scaleInput = document.getElementById("scaleInput");
-const autorotateInput = document.getElementById("autorotateInput");
-const autoscaleInput = document.getElementById("autoscaleInput");
 const mapPerSequenceInput = document.getElementById("mapsPerSequenceInput");
-const mapsParallelogramInput = document.getElementById("mapsParallelogramInput");
 const timeScaleInput = document.getElementById("timeScaleInput");
 const timeImageScaleInput = document.getElementById("timeImageScaleInput");
-const mapScalingEnabledInput = document.getElementById("mapScaleInput");
-const mapUnitGridInput = document.getElementById("mapUnitGridInput");
 const addFillKeyframesInput = document.getElementById("addFillKeyframesInput");
 const xAxisTimeInput = document.getElementById("xAxisTimeInput");
 const keyframeSelectionInput = document.getElementById("keyframeSelectionInput");
-const actorHeightInput = document.getElementById("actorHeightInput");
-const calculateConversionButton = document.getElementById("calculateConversionButton");
-const contentDiv = document.getElementById("content");
 const zoomableVisualizationsInput = document.getElementById("zoomableVisualizationsInput");
 const labelFramesInput = document.getElementById("labelFramesInput");
 const oldRenderingInput = document.getElementById("oldRenderingInput");
@@ -42,8 +33,31 @@ const categorySelection = document.getElementById("categorySelection");
 loadButton.onclick = loadDataFile;
 sequenceInputLoadButton.onclick = drawSequences;
 //calculateConversionButton.onclick = calculateConversion;
-const drawContainer = document.getElementById("drawContainer");
 
+loadSampleButton.onclick = () => {
+    if (!loaded) {
+        return;
+    }
+    loaded = false;
+    loadDataAjax(function(response) {
+        sequences = Mocap.loadDataFromString(response);
+        console.log("Loaded " + sequences.length + " sequences.");
+        loaded = true;
+        availableSequencesText.innerText = sequences.length;
+        createVisualizations(Model.modelVicon);
+});};
+
+function loadDataAjax(callback) {   
+    let xobj = new XMLHttpRequest();
+    xobj.overrideMimeType("application/text");
+    xobj.open('GET', 'hdm05part.txt', true);
+    xobj.onreadystatechange = function () {
+        if (xobj.readyState == 4 && xobj.status == "200") {
+            callback(xobj.responseText);
+        }
+    };
+    xobj.send(null);  
+}
 
 function loadDataFile() {
     if (dataFileInput.files.length == 0 || !loaded) {
