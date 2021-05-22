@@ -2,6 +2,13 @@ import * as Core from './mocapCore.js';
 import * as Model from './model.js';
 import * as THREE from './lib/three.module.js';
 
+/**
+ * Loads a sequence from a pair of files in the format .asf and .amc. 
+ * Invokes callback with an object containing the information parsed from the two files. 
+ * @param {Blob} asfFile - The .asf file
+ * @param {Blob} amcFile - The .amc file
+ * @param {function(result)} callback - One parametric callback. The object contains the sequence and skeleton model generated from the files.
+ */
 function loadAsfAmcFile(asfFile, amcFile, callback) {
     let asfStructure, skeletonModel, frames, data, seq;
     loadFile(asfFile, 
@@ -34,6 +41,11 @@ function loadFile(file, callback) {
     reader.readAsText(file, "UTF-8");
 }
 
+/**
+ * Loads data from an ASF/AMC string pair. Returns an object containing the loaded sequence and a skeletonModel.
+ * @param {string} asfString - String containing the .asf file
+ * @param {string} amcString - String containing the .amc file
+ */
 function loadAsfAmcString(asfString, amcString) {
     let asfStructure = loadAsfString(asfString);
     let skeletonModel = createSkeletonModel(asfStructure);

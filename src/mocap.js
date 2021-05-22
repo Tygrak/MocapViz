@@ -25,6 +25,10 @@ class Skeleton {
     }
 }
 
+/**
+ * Allows creation of visualization elements. 
+ * Manages the many parameters available for the creation of a visualization.
+ */
 class VisualizationFactory {
     constructor () {
         this.addFillingKeyframes = true;
@@ -50,6 +54,15 @@ class VisualizationFactory {
         this.numZoomedKeyframes = 12;
     }
 
+    /**
+     * Creates a visualization of a sequence according to the parameters set in the factory. 
+     * Returns a `<div>` element containing the visualization. 
+     * @param {string} sequence - Loaded sequence
+     * @param {*} visualizationWidth - Width of visualization in pixels
+     * @param {*} visualizationHeight - Height of visualization in pixels
+     * @param {*} mapWidth - Width of map in pixels
+     * @param {*} mapHeight - Height of map in pixels
+     */
     createVisualization(sequence, visualizationWidth = 850, visualizationHeight = 150, mapWidth = 150, mapHeight = 150) {
         let drawStyle = new Core.MocapDrawStyle(this.model, this.boneRadius, this.jointRadius, this.headRadius, this.boneStyle,
             this.leftBoneStyle, this.rightBoneStyle, this.jointStyle, 1, this.noseStyle, this.noseRadius, this.opacity);
@@ -451,14 +464,14 @@ function createTextElements(positions, keyframes, image, mapWidth, mainDiv) {
 
 function drawTimeScale(mocapRenderer, width, height, fps, length, keyframes) {
     let scene = new THREE.Scene();
-    let line = createBoxLine(new THREE.Vector3(0, height-0.1, 1), new THREE.Vector3(width*length/(fps*10), height-0.1, 1), "rgba(64, 64, 64, 1)", 0.25);
+    let line = createBoxLine(new THREE.Vector3(0, height-0.1, 1), new THREE.Vector3(width*length/(fps*10), height-0.1, 1), "rgba(64, 64, 64, 1)", 0.475);
     scene.add(line);
     for (let i = 0; i < keyframes.length; i++) {
-        line = createBoxLine(new THREE.Vector3(width*keyframes[i]/(fps*10), height-0.1, 0), new THREE.Vector3(width*keyframes[i]/(fps*10), height-1.05, 0), "rgba(64, 0, 192, 1)", 0.25);
+        line = createBoxLine(new THREE.Vector3(width*keyframes[i]/(fps*10), height-0.1, 0), new THREE.Vector3(width*keyframes[i]/(fps*10), height-0.7, 0), "rgba(64, 0, 192, 1)", 0.405);
         scene.add(line);
     }
     for (let i = 1; i < 10 && i*fps < length; i++) {
-        line = createBoxLine(new THREE.Vector3(width*i/10, height-0.1, 0.5), new THREE.Vector3(width*i/10, height-1, 0.5), "rgba(0, 0, 0, 1)", 0.375);
+        line = createBoxLine(new THREE.Vector3(width*i/10, height-0.1, 0.5), new THREE.Vector3(width*i/10, height-0.7, 0.5), "rgba(0, 0, 0, 1)", 0.375);
         scene.add(line);
     }
     mocapRenderer.renderer.render(scene, mocapRenderer.camera);
@@ -480,6 +493,14 @@ function findKeyframes(frames, numKeyframes, keyframeSelectionAlgorithm) {
     return keyframes;
 }
 
+/**
+ * Returns an element containing an animation of the given sequence with the given width and height. 
+ * The animation starts playing automatically when it is created.
+ * @param {string} sequence - Loaded sequence
+ * @param {Model.SkeletonModel} model - Skeleton model
+ * @param {*} visualizationWidth - Width of the animation in pixels
+ * @param {*} visualizationHeight - Height of the animation in pixels
+ */
 function createAnimationElement(sequence, model, visualizationWidth, visualizationHeight) {
     let drawStyle = new Core.MocapDrawStyle(model, 0.9, 0,
         2.25, Model.boneStyleDefault, Model.leftBoneStyleDefault, Model.rightBoneStyleDefault, Model.jointStyleDefault, 1, Model.noseStyleDefault, 0.9, 1);

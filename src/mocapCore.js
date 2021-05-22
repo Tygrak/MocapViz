@@ -38,12 +38,29 @@ function Vec3(x, y, z) {
     this.z = z;
 }
 
+/**
+ * Enumerates the available keyframe selection algorithms.
+ * The recommended options are `Decimation`, `Temporal`, `Lowe` and `Equidistant`.
+ */
 const KeyframeSelectionAlgorithmEnum = {Equidistant: 1, Euclidean: 2, Temporal: 3, Lowe: 4, Decimation: 5};
 
+/**
+ * Loads sequences contained in a string in the internal data format. Returns the loaded sequences.
+ * @param {string} dataString - String containing the data in the MocapViz internal file format
+ */
 function loadDataFromString(dataString) {
     return dataString.split("#objectKey").filter((s) => {return s != "";}).map((s) => s.split("\n"));
 }
 
+/**
+ * Loads sequences contained in a data file of the internal data format. 
+ * Invokes callback with the list of sequences contained in the file as a parameter.
+ * @param {Blob} dataFile - The data file.
+ * @param {function(string[])} callback - One parametric callback. Given the loaded sequences
+ * @param {funcion(string): Bool} filterPredicate - If provided filters sequences not matching the predicate
+ * @param {number} loadChunkMbSize 
+ * @param {number} maxSequencesLoad
+ */
 function loadDataFromFile(dataFile, callback, filterPredicate = null, loadChunkMbSize = 20, maxSequencesLoad = 500) {
     let sequences = [];
     let fileLocation = 0;
@@ -179,6 +196,11 @@ function processSequenceToFrames2d(rawData, canvasHeight, figureScale, switchY =
     return frames;
 }
 
+/**
+ * Returns the hdm05 motion category of a sequence. 
+ * Use in conjuction with `motionCategories` or `motionCategoriesHuman` to get the string representation of a motion category.
+ * @param {string} sequence - Loaded sequence
+ */
 function getSequenceCategory(sequence) {
     let lines = sequence;
     let description = lines[0].match(/messif.objects.keys.AbstractObjectKey (.+)/);
@@ -189,6 +211,10 @@ function getSequenceCategory(sequence) {
     return category;
 }
 
+/**
+ * Returns the length of a sequence in frames.
+ * @param {string} sequence - Loaded sequence
+ */
 function getSequenceLength(sequence) {
     let lines = sequence;
     let description = lines[1].match(/\d+(?=;)/);
@@ -198,6 +224,10 @@ function getSequenceLength(sequence) {
     return parseInt(description);
 }
 
+/**
+ * Returns the amount of joints per frame in the sequence. 
+ * @param {string} sequence - Loaded sequence.
+ */
 function getSequenceJointsPerFrame(sequence) {
     let lines = sequence;
     let split = lines[2].split(";");

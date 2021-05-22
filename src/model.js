@@ -41,8 +41,21 @@ const bonesKinect2d = [
 
 const bonesPointCloud = [];
 
+/**
+ * Contains the needed information about a skeleton model. 
+ * The available premade skeleton models are `modelVicon` (created for the HDM05 database), `modelKinect` and `modelKinect2d` (created for the PKU-MMD database).
+ */
 class SkeletonModel {
-    constructor (bonesModel, fps, headJointIndex, leftArmIndex, thoraxIndex, defaultScale, unitSize) {
+    /**
+     * @param {Object[]} bonesModel - Array of objects describing how to connect joints to create bones 
+     * @param {*} fps 
+     * @param {*} headJointIndex 
+     * @param {*} leftArmIndex 
+     * @param {*} thoraxIndex 
+     * @param {number} defaultScale - Used to scale the resulting skeletons.
+     * @param {number} unitSize - Used by the maps to calculate the minimap grid size
+     */
+    constructor (bonesModel, fps, headJointIndex, leftArmIndex, thoraxIndex, defaultScale = 8, unitSize = 6.207) {
         this.bonesModel = bonesModel;
         this.fps = fps;
         this.headJointIndex = headJointIndex;
@@ -65,6 +78,9 @@ const rightBoneStyleDefault = {r:0, g:0, b:144, a:1};
 const noseStyleDefault = {r: 192, g: 16, b: 128, a: 1};
 const blurStyleDefault = {r:0, g:0, b:0, a:0.1};
 
+/**
+ * Contains descriptions of motion categories from the HDM05 database.
+ */
 const motionCategories = {
     "1":"cartwheel",
     "2":"grabDepR",
@@ -221,6 +237,9 @@ const motionCategories = {
     "null":"-"
 }
 
+/**
+ * Contains human understable descriptions of motion categories from the HDM05 database.
+ */
 const motionCategoriesHuman = {
     "1":"Cartwheel",
     "2":"Grab Dep Right",
@@ -377,6 +396,9 @@ const motionCategoriesHuman = {
     "null":"-"
 }
 
+/**
+ * Contains groups of similar motion categories from the HDM05 database.
+ */
 const motionSuperCategories = {
     "turn":["22", "23"],
     "walk":["24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41"],

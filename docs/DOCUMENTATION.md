@@ -17,7 +17,7 @@ Loads a sequence from a pair of files in the format .asf and .amc. Invokes callb
 
 ### loadDataFromString(dataString)
 
-Loads sequences contained in a string in the iternal data format. Returns a list of sequences contained in the string.
+Loads sequences contained in a string in the internal data format. Returns a list of sequences contained in the string.
 
 ### loadDataFromFile(dataFile, callback, [filterPredicate, loadChunkMbSize, maxSequencesLoad])
 
@@ -32,6 +32,10 @@ Returns the hdm05 motion category of a sequence. Use in conjuction with `motionC
 ### getSequenceLength(sequence)
 
 Returns the length of a sequence in frames.
+
+### getSequenceJointsPerFrame(sequence)
+
+Returns the amount of joints per frame in the sequence. 
 
 ### VisualizationFactory
 
@@ -113,7 +117,11 @@ Contains descriptions of motion categories from the HDM05 database. For example 
 
 ### motionCategoriesHuman
 
-Contains descriptions of motion categories from the HDM05 database, changed to be more human understandable. For example `motionCategoriesHuman["22"]` returns `"Turn Right"`.
+Contains human understable descriptions of motion categories from the HDM05 database. For example `motionCategoriesHuman["22"]` returns `"Turn Right"`.
+
+### motionSuperCategories
+
+Contains groups of similar motion categories from the HDM05 database.
 
 ## 2d Context Canvas Rendering
 

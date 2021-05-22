@@ -103,7 +103,7 @@ function loadDataFile() {
 }
 
 function drawSequences() {
-    if (dataFileInput.files[0].name.endsWith(".amc")) {
+    if (dataFileInput.files.length > 0 && dataFileInput.files[0].name.endsWith(".amc")) {
         loadDataFile();
     } else {
         let model;
@@ -111,6 +111,8 @@ function drawSequences() {
             model = Model.modelKinect;
         } else if (bonesModelInput.value == "Kinect2d") {
             model = Model.modelKinect2d;
+        } else if (bonesModelInput.value == "PointCloud") {
+            model = Model.modelPointCloud;
         } else {
             model = Model.modelVicon;
         }
