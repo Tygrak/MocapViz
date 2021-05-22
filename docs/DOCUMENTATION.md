@@ -59,7 +59,7 @@ Name | Type | Description | Default Value
 `leftBoneStyle` | Object {r, g, b, a} | The color used to draw the left limbs of skeletons. | {r:144, g:0, b:0, a:1}
 `rightBoneStyle` | Object {r, g, b, a} | The color used to draw the right limbs of skeletons. | {r:0, g:0, b:144, a:1}
 `noseStyle` | Object {r, g, b, a} | The color used to draw the orientation arrow from the skeletons head. | {r: 192, g: 16, b: 128, a: 1}
-`jointRadius` | float | Currently unsupported. | 0
+`jointRadius` | float | Controls the width of the joints of the drawn skeletons. | 0
 `boneRadius` | float | Controls the width of the bones of the drawn skeletons. | 0.725
 `headRadius` | float | Controls the width of the head joint of the drawn skeletons. | 1.5
 `noseRadius` | float | Controls the width of the orientation arrow of the drawn skeletons. | 0.9

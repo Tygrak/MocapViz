@@ -70,6 +70,8 @@ function loadDataFile() {
         model = Model.modelKinect;
     } else if (bonesModelInput.value == "Kinect2d") {
         model = Model.modelKinect2d;
+    } else if (bonesModelInput.value == "PointCloud") {
+        model = Model.modelPointCloud;
     } else {
         model = Model.modelVicon;
     }
@@ -151,6 +153,11 @@ function createVisualizations(model) {
     factory.keyframeSelectionAlgorithm = keyframeAlgorithm;
     factory.numBlurFrames = numBlurFrames;
     factory.model = model;
+    if (model.bonesModel.length == 0) {
+        factory.jointRadius = 0.45;
+        factory.headRadius = 0.45;
+        factory.noseRadius = 0;
+    }
     function* elementGen() {
         for (let i = 0; i < toDrawSequences.length; i++) {
             const sequence = sequences[toDrawSequences[i]];
@@ -167,7 +174,7 @@ function createVisualizations(model) {
                 factory.numZoomedKeyframes = keyframesNum+2;
                 visualization = factory.createVisualization(sequence, visWidth, height, mapWidth, height);
             } else {
-                visualization = Mocap2d.createZoomableVisualizationElement(sequence, Mocap.modelVicon, numKeyframes, keyframesNum+2, numBlurFrames, 
+                visualization = Mocap2d.createZoomableVisualizationElement(sequence, model, numKeyframes, keyframesNum+2, numBlurFrames, 
                     mapWidth, height, visWidth, height, timeScale, addFilling, keyframeAlgorithm, labelFrames, useTrueTime);
             }
             visualization.children[0].classList.add("drawBox");

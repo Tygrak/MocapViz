@@ -7,16 +7,20 @@ let mainRenderer = null;
 const sceneWidth = 100;
 
 class Skeleton {
-    constructor (head, nose, bones, model) {
+    constructor (head, nose, bones, joints, model) {
         this.group = new THREE.Group();
         this.head = head;
         this.nose = nose;
         this.bones = bones;
+        this.joints = joints;
         this.model = model;
         this.group.add(head);
         this.group.add(nose);
         for (let i = 0; i < bones.length; i++) {
             this.group.add(bones[i]);
+        }
+        for (let i = 0; i < joints.length; i++) {
+            this.group.add(joints[i]);
         }
     }
 }
@@ -94,7 +98,7 @@ function moveBoxLine(box, pA, pB) {
     box.lookAt(pB);
 }
 
-function createSkeleton(drawStyle) {
+function createSkeleton(drawStyle, jointsCount) {
     let nose = createBoxLine(new THREE.Vector3(), new THREE.Vector3(), Core.rgbaToColorString(drawStyle.noseStyle), 0.5);
     let head = new THREE.Mesh(
         new THREE.SphereGeometry(1, 32, 32), 
@@ -111,19 +115,17 @@ function createSkeleton(drawStyle) {
         }
         bones.push(createBoxLine(new THREE.Vector3(), new THREE.Vector3(), color, drawStyle.boneRadius));
     }
-    //todo: add pointcloud support
-    /*let joints = [];
+    let joints = [];
     if (drawStyle.jointRadius > 0) {
-        for (let i = 0; i < array.length; i++) {
-            const element = array[i];
-            
+        for (let i = 0; i < jointsCount-1; i++) {
+            let joint = new THREE.Mesh(
+                new THREE.SphereBufferGeometry(1, 32, 32), 
+                new THREE.MeshBasicMaterial({color: new THREE.Color(Core.rgbaToColorString(drawStyle.jointStyle))}));
+            joint.scale.set(drawStyle.jointRadius, drawStyle.jointRadius, drawStyle.jointRadius);
+            joints.push(joint);
         }
-        let joint = new THREE.Mesh(
-            new THREE.SphereBufferGeometry(1, 32, 32), 
-            new THREE.MeshBasicMaterial({color: new THREE.Color(Core.rgbaToColorString(drawStyle.jointStyle))}));
-        joint.scale.set(drawStyle.jointRadius, drawStyle.jointRadius, drawStyle.jointRadius);
-    }*/
-    return new Skeleton(head, nose, bones, drawStyle.bonesModel);
+    }
+    return new Skeleton(head, nose, bones, joints, drawStyle.bonesModel);
 }
 
 function calculateNoseVector(headJoint, thoraxJoint, leftArmJoint, multiplyScalar = 1) {
@@ -148,6 +150,9 @@ function resizeSkeleton(skeleton, drawStyle, figureScale) {
         skeleton.bones[i].scale.x = drawStyle.boneRadius*figureScale;
         skeleton.bones[i].scale.y = drawStyle.boneRadius*figureScale;
     }
+    for (let i = 0; i < skeleton.joints.length; i++) {
+        skeleton.joints[i].scale.set(figureScale*drawStyle.jointRadius, figureScale*drawStyle.jointRadius, figureScale*drawStyle.jointRadius);
+    }
 }
 
 function modifySkeletonToFrame(skeleton, frame, drawStyle, xShift, yShift, figureScale) {
@@ -157,6 +162,8 @@ function modifySkeletonToFrame(skeleton, frame, drawStyle, xShift, yShift, figur
     skeleton.nose.material.color.setRGB(drawStyle.noseStyle.r/255, drawStyle.noseStyle.g/255, drawStyle.noseStyle.b/255);
     skeleton.head.position.set(frame[drawStyle.headIndex].x+xShift, frame[drawStyle.headIndex].y+yShift, frame[drawStyle.headIndex].z);
     skeleton.head.material.color.setRGB(drawStyle.jointStyle.r/255, drawStyle.jointStyle.g/255, drawStyle.jointStyle.b/255);
+    skeleton.head.visible = !(drawStyle.opacity <= 0 || drawStyle.headRadius <= 0 || drawStyle.jointStyle.a <= 0);
+    skeleton.nose.visible = !(drawStyle.opacity <= 0 || drawStyle.noseRadius <= 0 || drawStyle.noseStyle.a <= 0);
     if (drawStyle.opacity < 1) {
         skeleton.nose.material.opacity = drawStyle.opacity;
         skeleton.nose.material.transparent = true;
@@ -185,12 +192,32 @@ function modifySkeletonToFrame(skeleton, frame, drawStyle, xShift, yShift, figur
         } else {
             skeleton.bones[i].material.color.setRGB(drawStyle.boneStyle.r/255, drawStyle.boneStyle.g/255, drawStyle.boneStyle.b/255);
         }
+        skeleton.bones[i].visible = !(drawStyle.opacity <= 0 || drawStyle.boneRadius <= 0 || drawStyle.boneStyle.a <= 0);
         if (drawStyle.opacity < 1) {
             skeleton.bones[i].material.opacity = drawStyle.opacity;
             skeleton.bones[i].material.transparent = true;
         } else {
             skeleton.bones[i].material.opacity = 1;
             skeleton.bones[i].material.transparent = false;
+        }
+    }
+    if (skeleton.joints.length != 0) {
+        let jointIndex = 0;
+        for (let i = 0; i < frame.length; i++) {
+            if (i == drawStyle.headIndex) {
+                continue;
+            }
+            skeleton.joints[jointIndex].position.set(frame[jointIndex].x+xShift, frame[jointIndex].y+yShift, frame[jointIndex].z);
+            skeleton.joints[jointIndex].material.color.setRGB(drawStyle.jointStyle.r/255, drawStyle.jointStyle.g/255, drawStyle.jointStyle.b/255);
+            skeleton.joints[jointIndex].visible = !(drawStyle.opacity <= 0 || drawStyle.jointRadius <= 0 || drawStyle.jointStyle.a <= 0);
+            if (drawStyle.opacity < 1) {
+                skeleton.joints[jointIndex].material.opacity = drawStyle.opacity;
+                skeleton.joints[jointIndex].material.transparent = true;
+            } else {
+                skeleton.joints[jointIndex].material.opacity = 1;
+                skeleton.joints[jointIndex].material.transparent = false;
+            }
+            jointIndex++;
         }
     }
 }
@@ -239,7 +266,7 @@ function clearRenderer(mocapRenderer) {
     mocapRenderer.renderer.render(mocapRenderer.clearScene, mocapRenderer.camera);
 }
 
-function initializeMocapRenderer(canvas, width, height, drawStyle) {
+function initializeMocapRenderer(canvas, width, height, drawStyle, jointsCount) {
     let renderer = new THREE.WebGLRenderer({canvas, preserveDrawingBuffer: true, alpha: true, antialiasing: true});
     renderer.setPixelRatio(window.devicePixelRatio*1.5);
     renderer.autoClearColor = false;
@@ -252,7 +279,7 @@ function initializeMocapRenderer(canvas, width, height, drawStyle) {
     let camera = new THREE.OrthographicCamera(-sceneWidth/2, sceneWidth/2, (sceneWidth/2)/ratio, -(sceneWidth/2)/ratio, 0.1, 1000);
     camera.position.set(sceneWidth/2, (sceneWidth/2)/ratio, sceneWidth);
     camera.lookAt(sceneWidth/2, (sceneWidth/2)/ratio, 0);
-    let skeleton = createSkeleton(drawStyle);
+    let skeleton = createSkeleton(drawStyle, jointsCount);
     scene.add(skeleton.group);
     return new MocapRenderer(canvas, renderer, camera, skeleton, scene);
 }
@@ -307,7 +334,8 @@ function visualizeToCanvas(canvas, sequence, model, numKeyframes, numBlurFrames,
         1.5, Model.boneStyleDefault, Model.leftBoneStyleDefault, Model.rightBoneStyleDefault, Model.jointStyleDefault, 1, Model.noseStyleDefault, 0.9, 1);
     let drawStyleBlur = new Core.MocapDrawStyle(model, 0.725, 0,
         1.5, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, Model.blurStyleDefault, 1, Model.blurStyleDefault, 0.9, 0.125);
-    let mocapRenderer = initializeMocapRenderer(canvas, width, height, drawStyle);
+    let jointsCount = Core.getSequenceJointsPerFrame(sequence);
+    let mocapRenderer = initializeMocapRenderer(canvas, width, height, drawStyle, jointsCount);
     let processed = Core.processSequence(sequence, numKeyframes, sceneWidth, width, height, drawStyle);
     let figureScale = processed.figureScale;
     let frames = processed.frames;
@@ -334,9 +362,10 @@ function createVisualizationElement(sequence, model, numKeyframes, numBlurFrames
 }
 
 function createVisualizationElementCustom(sequence, model, numKeyframes, numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight, drawStyle, drawStyleBlur, addTimeScale = false, addFillingKeyframes = true, keyframeSelectionAlgorithm = 4, labelFrames = true, useTrueTime = true) {
-    if (mainRenderer == null || mainRenderer.skeleton.model != model.bonesModel) {
+    if (mainRenderer == null || mainRenderer.skeleton.model != model.bonesModel || (drawStyle.jointRadius > 0) != (mainRenderer.skeleton.joints.length > 0)) {
         let canvas = document.createElement("canvas");
-        mainRenderer = initializeMocapRenderer(canvas, visualizationWidth, visualizationHeight, drawStyle);
+        let jointsCount = Core.getSequenceJointsPerFrame(sequence);
+        mainRenderer = initializeMocapRenderer(canvas, visualizationWidth, visualizationHeight, drawStyle, jointsCount);
     } else {
         resizeMocapRenderer(mainRenderer, visualizationWidth, visualizationHeight);
     }
@@ -459,7 +488,8 @@ function createAnimationElement(sequence, model, visualizationWidth, visualizati
     let canvas = document.createElement("canvas");
     canvas.className = "drawItemVisualization";
     div.appendChild(canvas);
-    let mocapRenderer = initializeMocapRenderer(canvas, visualizationWidth, visualizationHeight, drawStyle);
+    let jointsCount = Core.getSequenceJointsPerFrame(sequence);
+    let mocapRenderer = initializeMocapRenderer(canvas, visualizationWidth, visualizationHeight, drawStyle, jointsCount);
     let processed = Core.processSequence(sequence, 12, sceneWidth, visualizationWidth, visualizationHeight, drawStyle);
     let figureScale = processed.figureScale;
     let frames = processed.frames;
@@ -488,7 +518,7 @@ function createAnimationElement(sequence, model, visualizationWidth, visualizati
 }
 
 export {VisualizationFactory, visualizeToCanvas, createVisualizationElement, createZoomableVisualizationElement, createAnimationElement};
-export {loadDataFromString, loadDataFromFile, getSequenceLength, getSequenceCategory, KeyframeSelectionAlgorithmEnum} from './mocapCore.js';
+export {loadDataFromString, loadDataFromFile, getSequenceLength, getSequenceCategory, getSequenceJointsPerFrame, KeyframeSelectionAlgorithmEnum} from './mocapCore.js';
 export * from './model.js';
 export * from './asfAmcParser.js';
 //export * from './mocapCanvas2d.js';

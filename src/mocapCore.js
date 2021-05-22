@@ -198,6 +198,12 @@ function getSequenceLength(sequence) {
     return parseInt(description);
 }
 
+function getSequenceJointsPerFrame(sequence) {
+    let lines = sequence;
+    let split = lines[2].split(";");
+    return split.length;
+}
+
 function drawTopDownMap(canvas, frames, indexes, topLeft, bottomLeft, bottomRight, drawUntilFrame, mapScale, dmsize, clear = true, drawLength = false, fps = 120) {
     let ctx = canvas.getContext("2d");
     if (clear) {
@@ -835,4 +841,4 @@ function drawRectangle(ctx, a, b, radius, xShift, yShift) {
     ctx.fill();
 }
 
-export {loadDataFromString, loadDataFromFile, getSequenceLength, getSequenceCategory, MocapDrawStyle, KeyframeSelectionAlgorithmEnum, processSequence, processSequenceToFramesAuto, processSequenceToFrames, processSequenceToFrames2d, drawTopDownMap, findMinimumsFromFrame, findMaximumsFromFrame, findKeyframesEquidistant, findKeyframesEuclidean, findKeyframesDot, findKeyframesTemporal, findKeyframesDecimation, findKeyframesLowe, getFillKeyframes, findMapScale, findOptimalRotation, checkSequenceNeedsFlip, findSequenceMinimums, findSequenceMaximums, findOptimalScale, findMeterConversion, frameSubtract, frameLength, frameDot, frameDistance, frameDistanceTemporal, frameCosineSimilarity, vecXZDistance, frameRotateY, moveOriginXBy, clearCanvas, clamp, lerpFrame, lerp, inverseLerp, hue2rgb, hslToRgb, scaleRgbaColor, rgbaToColorString, drawRectangle, calculateNoseVec3, Vec3};
+export {loadDataFromString, loadDataFromFile, getSequenceLength, getSequenceJointsPerFrame, getSequenceCategory, MocapDrawStyle, KeyframeSelectionAlgorithmEnum, processSequence, processSequenceToFramesAuto, processSequenceToFrames, processSequenceToFrames2d, drawTopDownMap, findMinimumsFromFrame, findMaximumsFromFrame, findKeyframesEquidistant, findKeyframesEuclidean, findKeyframesDot, findKeyframesTemporal, findKeyframesDecimation, findKeyframesLowe, getFillKeyframes, findMapScale, findOptimalRotation, checkSequenceNeedsFlip, findSequenceMinimums, findSequenceMaximums, findOptimalScale, findMeterConversion, frameSubtract, frameLength, frameDot, frameDistance, frameDistanceTemporal, frameCosineSimilarity, vecXZDistance, frameRotateY, moveOriginXBy, clearCanvas, clamp, lerpFrame, lerp, inverseLerp, hue2rgb, hslToRgb, scaleRgbaColor, rgbaToColorString, drawRectangle, calculateNoseVec3, Vec3};

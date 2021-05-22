@@ -1,5 +1,4 @@
 import * as Mocap from '../src/mocap.js';
-import * as Mocap2d from '../src/mocapCanvas2d.js';
 
 let maxCategoriesLoad = 500;
 let loaded = true;

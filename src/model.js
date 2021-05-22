@@ -56,7 +56,7 @@ class SkeletonModel {
 const modelVicon = new SkeletonModel(bonesVicon, 120, 16, 17, 13, 8, 6.207);
 const modelKinect = new SkeletonModel(bonesKinect, 30, 3, 4, 20, 180, 139.6575);
 const modelKinect2d = new SkeletonModel(bonesKinect2d, 30, 9, 12, 7, 0.6, 0.4655);
-const modelPointCloud = new SkeletonModel(bonesPointCloud, 30, 0, 0, 0, 1, 1);
+const modelPointCloud = new SkeletonModel(bonesPointCloud, 30, 0, 0, 0, 8, 6.207);
 
 const jointStyleDefault = {r:0, g:0, b:0, a:1};
 const boneStyleDefault = {r:0, g:0, b:0, a:1};
