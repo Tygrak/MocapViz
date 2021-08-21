@@ -38,6 +38,12 @@ function Vec3(x, y, z) {
     this.z = z;
 }
 
+function DTWSquare(v1, v2, v3) {
+    this.leftUpper = v1;
+    this.leftBottom = v2;
+    this.rightBottom = v3;
+}
+
 /**
  * Enumerates the available keyframe selection algorithms.
  * The recommended options are `Decimation`, `Temporal`, `Lowe` and `Equidistant`.
@@ -61,7 +67,7 @@ function loadDataFromString(dataString) {
  * @param {number} loadChunkMbSize 
  * @param {number} maxSequencesLoad
  */
-function loadDataFromFile(dataFile, callback, filterPredicate = null, loadChunkMbSize = 20, maxSequencesLoad = 500) {
+function loadDataFromFile(dataFile, callback, filterPredicate = null, loadChunkMbSize = 20, maxSequencesLoad = 10000) {
     let sequences = [];
     let fileLocation = 0;
     let reader = new FileReader();
@@ -151,7 +157,7 @@ function processSequenceToFrames(rawData, canvasHeight, figureScale, switchY = f
     frames = frames.filter((f) => {return f.length > 0 && !isNaN(f[0].x) && !isNaN(f[0].y) && !isNaN(f[0].z)});
     if (frames.length == 0) {
         return frames;
-    } 
+    }
     let yShift = canvasHeight-Math.max(findMaximumsFromFrame(frames[0]).y, findMaximumsFromFrame(frames[frames.length-1]).y);
     if (!switchY) {
         yShift = -20+canvasHeight-Math.max(findMaximumsFromFrame(frames[0]).y, findMaximumsFromFrame(frames[frames.length-1]).y);
@@ -871,4 +877,4 @@ function drawRectangle(ctx, a, b, radius, xShift, yShift) {
     ctx.fill();
 }
 
-export {loadDataFromString, loadDataFromFile, getSequenceLength, getSequenceJointsPerFrame, getSequenceCategory, MocapDrawStyle, KeyframeSelectionAlgorithmEnum, processSequence, processSequenceToFramesAuto, processSequenceToFrames, processSequenceToFrames2d, drawTopDownMap, findMinimumsFromFrame, findMaximumsFromFrame, findKeyframesEquidistant, findKeyframesEuclidean, findKeyframesDot, findKeyframesTemporal, findKeyframesDecimation, findKeyframesLowe, getFillKeyframes, findMapScale, findOptimalRotation, checkSequenceNeedsFlip, findSequenceMinimums, findSequenceMaximums, findOptimalScale, findMeterConversion, frameSubtract, frameLength, frameDot, frameDistance, frameDistanceTemporal, frameCosineSimilarity, vecXZDistance, frameRotateY, moveOriginXBy, clearCanvas, clamp, lerpFrame, lerp, inverseLerp, hue2rgb, hslToRgb, scaleRgbaColor, rgbaToColorString, drawRectangle, calculateNoseVec3, Vec3};
+export {loadDataFromString, loadDataFromFile, getSequenceLength, getSequenceJointsPerFrame, getSequenceCategory, MocapDrawStyle, KeyframeSelectionAlgorithmEnum, processSequence, processSequenceToFramesAuto, processSequenceToFrames, processSequenceToFrames2d, drawTopDownMap, findMinimumsFromFrame, findMaximumsFromFrame, findKeyframesEquidistant, findKeyframesEuclidean, findKeyframesDot, findKeyframesTemporal, findKeyframesDecimation, findKeyframesLowe, getFillKeyframes, findMapScale, findOptimalRotation, checkSequenceNeedsFlip, findSequenceMinimums, findSequenceMaximums, findOptimalScale, findMeterConversion, frameSubtract, frameLength, frameDot, frameDistance, frameDistanceTemporal, frameCosineSimilarity, vecXZDistance, frameRotateY, moveOriginXBy, clearCanvas, clamp, lerpFrame, lerp, inverseLerp, hue2rgb, hslToRgb, scaleRgbaColor, rgbaToColorString, drawRectangle, calculateNoseVec3, Vec3, DTWSquare};

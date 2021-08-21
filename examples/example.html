@@ -30,8 +30,9 @@
                     factory.leftBoneStyle = {r: 0, g: 180, b: 0, a: 1};
                     factory.opacity = 0.6;
                     factory.blurFrameOpacity = 0.17;
-                    let visualizationElement = factory.createVisualization(sequences[0], 850, 250, 250, 250);
-                    document.body.appendChild(visualizationElement);
+                    factory.countDtw(sequences.slice(1800, 2400));
+                    //let visualizationElement = factory.createVisualization(sequences[0], 850, 250, 250, 250);
+                    //document.body.appendChild(visualizationElement);
                 });
             }
         </script>  

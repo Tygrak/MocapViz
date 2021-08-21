@@ -2,6 +2,7 @@ import * as THREE from './lib/three.module.js';
 import * as Model from './model.js';
 import * as Core from './mocapCore.js';
 import {OrbitControls} from './lib/OrbitControls.js';
+import {Vec3, DTWSquare} from "./mocapCore.js";
 
 let mainRenderer = null;
 const sceneWidth = 100;
@@ -26,7 +27,7 @@ class Skeleton {
 }
 
 /**
- * Allows creation of visualization elements. 
+ * Allows creation of visualization elements.
  * Manages the many parameters available for the creation of a visualization.
  */
 class VisualizationFactory {
@@ -55,8 +56,8 @@ class VisualizationFactory {
     }
 
     /**
-     * Creates a visualization of a sequence according to the parameters set in the factory. 
-     * Returns a `<div>` element containing the visualization. 
+     * Creates a visualization of a sequence according to the parameters set in the factory.
+     * Returns a `<div>` element containing the visualization.
      * @param {string} sequence - Loaded sequence
      * @param {*} visualizationWidth - Width of visualization in pixels
      * @param {*} visualizationHeight - Height of visualization in pixels
@@ -70,17 +71,146 @@ class VisualizationFactory {
             this.boneStyle, this.boneStyle, this.jointStyle, 1, this.boneStyle, this.noseRadius, this.blurFrameOpacity);
         let visualization;
         if (this.createZoomable && this.numZoomedKeyframes > 1) {
-            visualization = createZoomableVisualizationElementCustom(sequence, this.model, this.numKeyframes, 
+            visualization = createZoomableVisualizationElementCustom(sequence, this.model, this.numKeyframes,
                 this.numZoomedKeyframes, this.numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight,
-                drawStyle, drawStyleBlur, this.addTimeScale, this.addFillingKeyframes, this.keyframeSelectionAlgorithm, 
+                drawStyle, drawStyleBlur, this.addTimeScale, this.addFillingKeyframes, this.keyframeSelectionAlgorithm,
                 this.labelFrames, this.useTrueTime);
         } else {
-            visualization = createVisualizationElementCustom(sequence, this.model, this.numKeyframes, 
+            visualization = createVisualizationElementCustom(sequence, this.model, this.numKeyframes,
                 this.numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight,
-                drawStyle, drawStyleBlur, this.addTimeScale, this.addFillingKeyframes, this.keyframeSelectionAlgorithm, 
+                drawStyle, drawStyleBlur, this.addTimeScale, this.addFillingKeyframes, this.keyframeSelectionAlgorithm,
                 this.labelFrames, this.useTrueTime);
         }
         return visualization;
+    }
+
+    countDtw(sequences) {
+        // 3136_100_1245_236 : 449
+        // 3169_118_2582_434 : 55
+        // 3169_117_2584_147 : 485
+        // 3169_119_478_129 : 6
+        // 3169_119_737_168 : 91
+        // 20093.38
+        console.log(sequences);
+        let parsedSequences = [];
+        let index1 = -1;
+        let index2 = -1;
+        let count = 0;
+        sequences.forEach(sequence => {
+            let frames = sequence.map((frame) => {
+                return frame.replace(" ", "").split(';').map((joint) => {
+                    let xyz = joint.split(',');
+                    return {x:xyz[0], y:xyz[1], z:xyz[2]};
+                });
+            });
+            if (frames[0][0].x.includes("3136_100_1245_236")) { index1 = count; }
+            //if (frames[0][0].x.includes("3169_118_2582_434")) { index2 = count; }
+            //if (frames[0][0].x.includes("3169_117_2584_147")) { index2 = count; }
+            if (frames[0][0].x.includes("3169_119_737_168")) { index2 = count; }
+            frames = frames.filter((f) => {return f.length > 0 && !isNaN(f[0].x) && !isNaN(f[0].y) && !isNaN(f[0].z)});
+            parsedSequences.push(frames);
+            count++;
+        });
+        console.log(index1);
+        console.log(index2);
+        this.countTwoSequences(parsedSequences[449], parsedSequences[91]);
+
+    }
+
+    countTwoSequences(seq1, seq2) {
+        let len1= seq1.length + 1;
+        let len2 = seq2.length + 1;
+        let arr = new Array(len1);
+        for (let i = 0; i < len1; i++) {
+            arr[i] = new Array(len2);
+        }
+
+        for (let i = 0; i < len1; i++) {
+            arr[i][0] = Number.POSITIVE_INFINITY;
+        }
+
+        for (let i = 0; i < len2; i++) {
+            arr[0][i] = Number.POSITIVE_INFINITY;
+        }
+
+        arr[0][0] = 0;
+
+        //let square = new DTWSquare(arr[0][0], arr[1][0], arr[0][1]);
+        //let res = this.countTwoTimeSeries(seq1[0], seq2[0], square);
+        //console.log(res);
+
+        for (let i = 1; i < len1; i++) {
+            for (let j = 1; j < len2; j++) {
+                //console.log(seq2[j - 1][0]);
+                let square = new DTWSquare(arr[i - 1][j - 1], arr[i][j - 1], arr[i - 1][j]);
+                arr[i][j] = this.countTwoTimeSeries(seq1[i - 1], seq2[j - 1], square);
+            }
+        }
+        console.log(arr);
+        //console.log(arr[len1 - 1][len2 - 1]);
+        let res = this.countMatrix(arr);
+        console.log(res);
+    }
+
+    countTwoTimeSeries(m1, m2, square) {
+        //console.log(m1);
+        //console.log(m2);
+        let euclidDistance = this.getValueFromModels(m1, m2);
+        let minPreviousValue = Math.min(square.leftBottom, square.leftUpper, square.rightBottom);
+        return euclidDistance + minPreviousValue;
+    }
+
+    getValueFromModels(m1, m2) {
+        let vec1 = new Vec3(m1[0].x, m1[0].y, m1[0].z);
+        let vec2 = new Vec3(m2[0].x, m2[0].y, m2[0].z);
+        let res = this.getVectorEuclideanDistance(vec1, vec2);
+        for (let i = 0; i < m1.length; i++) {
+            vec1 = new Vec3(m1[i].x, m1[i].y, m1[i].z);
+            vec2 = new Vec3(m2[i].x, m2[i].y, m2[i].z);
+            res += this.getVectorEuclideanDistance(vec1, vec2);
+        }
+        return res;
+    }
+
+    getVectorEuclideanDistance(v1, v2) {
+        //console.log("Vector1: ");
+        //console.log(v1);
+        //console.log("Vector2: ");
+        //console.log(v2);
+        let res =  Math.pow(v1.x - v2.x, 2) + Math.pow(v1.y - v2.y, 2) + Math.pow(v1.z - v2.z, 2);
+        //console.log("Res: " + res);
+        return res;
+    }
+
+    countMatrix(arr) {
+        let i = 0;
+        let j = 0;
+        let len1 = arr.length - 1;
+        let len2 = arr[0].length - 1;
+        let res = 0;
+        while (i !== len1 || j !== len2) {
+            let chooseVal = [];
+            if (i !== len1) chooseVal.push(arr[i + 1][j]);
+            else chooseVal.push(Number.MAX_VALUE);
+
+            if (j !== len2) chooseVal.push(arr[i][j + 1]);
+            else chooseVal.push(Number.MAX_VALUE);
+
+            if (i !== len1 && j !== len2) chooseVal.push(arr[i + 1][j + 1]);
+            else chooseVal.push(Number.MAX_VALUE);
+
+            let min = Math.min.apply(null, chooseVal);
+            if (min === chooseVal[0]) {
+                i += 1;
+            } else if (min === chooseVal[1]) {
+                j += 1;
+            } else {
+                i += 1;
+                j += 1;
+            }
+            res += min;
+        }
+        return Math.sqrt(res);
     }
 }
 
