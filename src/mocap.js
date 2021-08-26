@@ -86,12 +86,12 @@ class VisualizationFactory {
 
     countDtw(sequences) {
         // 3136_100_1245_236 : 449
-        // 3169_118_2582_434 : 55
-        // 3169_117_2584_147 : 485
-        // 3169_119_478_129 : 6
-        // 3169_119_737_168 : 91
-        // 20093.38
-        console.log(sequences);
+        // 3169_118_2582_434 : 55 //res: 20093.38
+        // 3169_117_2584_147 : 485 //res: 11605.422
+        // 3169_119_478_129 : 6 //res: 9107.671
+        // 3169_119_737_168 : 91 //res: 9425.537
+        // 3170_133_1143_160 : 450 //res: 9237.544
+        // 3169_112_1222_138 : 151 //res: 8603.593
         let parsedSequences = [];
         let index1 = -1;
         let index2 = -1;
@@ -103,21 +103,31 @@ class VisualizationFactory {
                     return {x:xyz[0], y:xyz[1], z:xyz[2]};
                 });
             });
-            if (frames[0][0].x.includes("3136_100_1245_236")) { index1 = count; }
-            //if (frames[0][0].x.includes("3169_118_2582_434")) { index2 = count; }
-            //if (frames[0][0].x.includes("3169_117_2584_147")) { index2 = count; }
-            if (frames[0][0].x.includes("3169_119_737_168")) { index2 = count; }
+            //if (frames[0][0].x.includes("3136_100_1245_236")) { index1 = count; }
+            //if (frames[0][0].x.includes("3169_112_1222_138")) { index2 = count; }
             frames = frames.filter((f) => {return f.length > 0 && !isNaN(f[0].x) && !isNaN(f[0].y) && !isNaN(f[0].z)});
             parsedSequences.push(frames);
             count++;
         });
-        console.log(index1);
-        console.log(index2);
-        this.countTwoSequences(parsedSequences[449], parsedSequences[91]);
-
+        //console.log(index1);
+        //console.log(index2);
+        const res = this.countTwoSequences(parsedSequences[449], parsedSequences[55]);
+        //const res = this.countTwoSequences([1, 2, 3, 3, 5], [1, 2, 2, 2, 2, 2, 2, 4]);
+        console.log(res);
+        // let inf = Number.POSITIVE_INFINITY;
+        // let testArr = [
+        //     [ 0, inf, inf, inf, inf, inf, inf ],
+        //     [ inf, 2, 4, 6, 1, 2, 3 ],
+        //     [ inf, 5, 5, 3, 1, 2, 3 ],
+        //     [ inf, 7, 4, 6, 5, 3, 3 ],
+        //     [ inf, 5, 4, 6, 1, 2, 3 ]
+        // ];
+        // console.log(this.countMatrix(testArr));
     }
 
     countTwoSequences(seq1, seq2) {
+        console.log(seq1);
+        console.log(seq2);
         let len1= seq1.length + 1;
         let len2 = seq2.length + 1;
         let arr = new Array(len1);
@@ -135,82 +145,74 @@ class VisualizationFactory {
 
         arr[0][0] = 0;
 
-        //let square = new DTWSquare(arr[0][0], arr[1][0], arr[0][1]);
-        //let res = this.countTwoTimeSeries(seq1[0], seq2[0], square);
-        //console.log(res);
-
         for (let i = 1; i < len1; i++) {
             for (let j = 1; j < len2; j++) {
-                //console.log(seq2[j - 1][0]);
                 let square = new DTWSquare(arr[i - 1][j - 1], arr[i][j - 1], arr[i - 1][j]);
                 arr[i][j] = this.countTwoTimeSeries(seq1[i - 1], seq2[j - 1], square);
             }
         }
         console.log(arr);
-        //console.log(arr[len1 - 1][len2 - 1]);
-        let res = this.countMatrix(arr);
-        console.log(res);
+        console.log(arr[len1 - 1][len2 - 1]);
+        return this.countMatrix(arr);
     }
 
     countTwoTimeSeries(m1, m2, square) {
-        //console.log(m1);
-        //console.log(m2);
         let euclidDistance = this.getValueFromModels(m1, m2);
         let minPreviousValue = Math.min(square.leftBottom, square.leftUpper, square.rightBottom);
         return euclidDistance + minPreviousValue;
     }
 
     getValueFromModels(m1, m2) {
-        let vec1 = new Vec3(m1[0].x, m1[0].y, m1[0].z);
-        let vec2 = new Vec3(m2[0].x, m2[0].y, m2[0].z);
-        let res = this.getVectorEuclideanDistance(vec1, vec2);
+        let res = 0;
         for (let i = 0; i < m1.length; i++) {
-            vec1 = new Vec3(m1[i].x, m1[i].y, m1[i].z);
-            vec2 = new Vec3(m2[i].x, m2[i].y, m2[i].z);
-            res += this.getVectorEuclideanDistance(vec1, vec2);
+            res += this.getVectorEuclideanDistance(m1[i], m2[i]);
         }
-        return res;
+        return Math.sqrt(res);
     }
 
     getVectorEuclideanDistance(v1, v2) {
-        //console.log("Vector1: ");
-        //console.log(v1);
-        //console.log("Vector2: ");
-        //console.log(v2);
-        let res =  Math.pow(v1.x - v2.x, 2) + Math.pow(v1.y - v2.y, 2) + Math.pow(v1.z - v2.z, 2);
-        //console.log("Res: " + res);
-        return res;
+        return Math.pow(v1.x - v2.x, 2) + Math.pow(v1.y - v2.y, 2) + Math.pow(v1.z - v2.z, 2);
     }
 
     countMatrix(arr) {
-        let i = 0;
-        let j = 0;
-        let len1 = arr.length - 1;
-        let len2 = arr[0].length - 1;
-        let res = 0;
-        while (i !== len1 || j !== len2) {
-            let chooseVal = [];
-            if (i !== len1) chooseVal.push(arr[i + 1][j]);
-            else chooseVal.push(Number.MAX_VALUE);
-
-            if (j !== len2) chooseVal.push(arr[i][j + 1]);
-            else chooseVal.push(Number.MAX_VALUE);
-
-            if (i !== len1 && j !== len2) chooseVal.push(arr[i + 1][j + 1]);
-            else chooseVal.push(Number.MAX_VALUE);
-
-            let min = Math.min.apply(null, chooseVal);
-            if (min === chooseVal[0]) {
-                i += 1;
-            } else if (min === chooseVal[1]) {
-                j += 1;
-            } else {
-                i += 1;
-                j += 1;
-            }
-            res += min;
+        let len1 = arr.length;
+        let len2 = arr[0].length;
+        let pathArr = new Array(len1);
+        for (let i = 0; i < len1; i++) {
+            pathArr[i] = new Array(len2);
         }
-        return Math.sqrt(res);
+        for (let i = 0; i < len1; i++) {
+            for (let j = 0; j < len2; j++) {
+                pathArr[i][j] = Number.POSITIVE_INFINITY;
+            }
+        }
+        pathArr[0][0] = 0;
+        pathArr[1][1] = arr[1][1]
+        let queue = [ [1, 1] ];
+        while (queue.length !== 0) {
+            let coords = queue.shift();
+            let i = coords[0];
+            let j = coords[1];
+            // move right : depends on how you look at it
+            if (i + 1 !== len1 && pathArr[i + 1][j] > pathArr[i][j] + arr[i + 1][j]) {
+                queue.push([i + 1, j]);
+                pathArr[i + 1][ j] = pathArr[i][j] + arr[i + 1][j];
+            }
+
+            // move bottom right
+            if (i + 1 !== len1 && j + 1 !== len2 && pathArr[i + 1][j + 1] > pathArr[i][j] + arr[i + 1][j + 1]) {
+                queue.push([i + 1, j + 1]);
+                pathArr[i + 1][j + 1] = pathArr[i][j] + arr[i + 1][j + 1];
+            }
+
+            // move bottom
+            if (j + 1 !== len2 && pathArr[i][j + 1] > pathArr[i][j] + arr[i][j + 1]) {
+                queue.push([i, j + 1]);
+                pathArr[i][j + 1] = pathArr[i][j] + arr[i][j + 1];
+            }
+        }
+        console.log(pathArr);
+        return Math.sqrt(pathArr[len1 - 1][len2 - 1]);
     }
 }
 
