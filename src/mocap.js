@@ -103,17 +103,17 @@ class VisualizationFactory {
                     return {x:xyz[0], y:xyz[1], z:xyz[2]};
                 });
             });
-            //if (frames[0][0].x.includes("3136_100_1245_236")) { index1 = count; }
-            //if (frames[0][0].x.includes("3169_112_1222_138")) { index2 = count; }
+            if (frames[0][0].x.includes("3169_114_2047_151")) { index1 = count; }
+            if (frames[0][0].x.includes("3194_73_3336_291")) { index2 = count; }
             frames = frames.filter((f) => {return f.length > 0 && !isNaN(f[0].x) && !isNaN(f[0].y) && !isNaN(f[0].z)});
             parsedSequences.push(frames);
             count++;
         });
-        //console.log(index1);
-        //console.log(index2);
-        const res = this.countTwoSequences(parsedSequences[449], parsedSequences[55]);
+        console.log(index1);
+        console.log(index2);
+        const res = this.countTwoSequences(parsedSequences[0], parsedSequences[1]);
         //const res = this.countTwoSequences([1, 2, 3, 3, 5], [1, 2, 2, 2, 2, 2, 2, 4]);
-        console.log(res);
+        //console.log(res);
         // let inf = Number.POSITIVE_INFINITY;
         // let testArr = [
         //     [ 0, inf, inf, inf, inf, inf, inf ],
