@@ -2,7 +2,7 @@ import * as THREE from './lib/three.module.js';
 import * as Model from './model.js';
 import * as Core from './mocapCore.js';
 import {OrbitControls} from './lib/OrbitControls.js';
-import {Vec3, DTWSquare} from "./mocapCore.js";
+import {Vec3, DTWSquare, compareTwoTimeSeries} from "./mocapCore.js";
 
 let mainRenderer = null;
 const sceneWidth = 100;
@@ -84,51 +84,29 @@ class VisualizationFactory {
         return visualization;
     }
 
-    countDtw(sequences) {
-        // 3136_100_1245_236 : 449
-        // 3169_118_2582_434 : 55 //res: 20093.38
-        // 3169_117_2584_147 : 485 //res: 11605.422
-        // 3169_119_478_129 : 6 //res: 9107.671
-        // 3169_119_737_168 : 91 //res: 9425.537
-        // 3170_133_1143_160 : 450 //res: 9237.544
-        // 3169_112_1222_138 : 151 //res: 8603.593
-        let parsedSequences = [];
-        let index1 = -1;
-        let index2 = -1;
-        let count = 0;
-        sequences.forEach(sequence => {
-            let frames = sequence.map((frame) => {
-                return frame.replace(" ", "").split(';').map((joint) => {
-                    let xyz = joint.split(',');
-                    return {x:xyz[0], y:xyz[1], z:xyz[2]};
-                });
+    countDtwFromSequences(seq1, seq2) {
+        let frames = seq1.map((frame) => {
+            return frame.replace(" ", "").split(';').map((joint) => {
+                let xyz = joint.split(',');
+                return {x:xyz[0], y:xyz[1], z:xyz[2]};
             });
-            if (frames[0][0].x.includes("3169_114_2047_151")) { index1 = count; }
-            if (frames[0][0].x.includes("3194_73_3336_291")) { index2 = count; }
-            frames = frames.filter((f) => {return f.length > 0 && !isNaN(f[0].x) && !isNaN(f[0].y) && !isNaN(f[0].z)});
-            parsedSequences.push(frames);
-            count++;
         });
-        console.log(index1);
-        console.log(index2);
-        const res = this.countTwoSequences(parsedSequences[0], parsedSequences[1]);
-        //const res = this.countTwoSequences([1, 2, 3, 3, 5], [1, 2, 2, 2, 2, 2, 2, 4]);
-        //console.log(res);
-        // let inf = Number.POSITIVE_INFINITY;
-        // let testArr = [
-        //     [ 0, inf, inf, inf, inf, inf, inf ],
-        //     [ inf, 2, 4, 6, 1, 2, 3 ],
-        //     [ inf, 5, 5, 3, 1, 2, 3 ],
-        //     [ inf, 7, 4, 6, 5, 3, 3 ],
-        //     [ inf, 5, 4, 6, 1, 2, 3 ]
-        // ];
-        // console.log(this.countMatrix(testArr));
+        frames = frames.filter((f) => {return f.length > 0 && !isNaN(f[0].x) && !isNaN(f[0].y) && !isNaN(f[0].z)});
+
+        let frames2 = seq2.map((frame) => {
+            return frame.replace(" ", "").split(';').map((joint) => {
+                let xyz = joint.split(',');
+                return {x:xyz[0], y:xyz[1], z:xyz[2]};
+            });
+        });
+        frames2 = frames2.filter((f) => {return f.length > 0 && !isNaN(f[0].x) && !isNaN(f[0].y) && !isNaN(f[0].z)});
+        const res = this.countDtw(frames, frames2);
+        console.log(res);
     }
 
-    countTwoSequences(seq1, seq2) {
+    countDtw(seq1, seq2) {
         console.log(seq1);
-        console.log(seq2);
-        let len1= seq1.length + 1;
+        let len1 = seq1.length + 1;
         let len2 = seq2.length + 1;
         let arr = new Array(len1);
         for (let i = 0; i < len1; i++) {
@@ -148,30 +126,11 @@ class VisualizationFactory {
         for (let i = 1; i < len1; i++) {
             for (let j = 1; j < len2; j++) {
                 let square = new DTWSquare(arr[i - 1][j - 1], arr[i][j - 1], arr[i - 1][j]);
-                arr[i][j] = this.countTwoTimeSeries(seq1[i - 1], seq2[j - 1], square);
+                arr[i][j] = compareTwoTimeSeries(seq1[i - 1], seq2[j - 1], square);
             }
         }
-        console.log(arr);
-        console.log(arr[len1 - 1][len2 - 1]);
-        return this.countMatrix(arr);
-    }
 
-    countTwoTimeSeries(m1, m2, square) {
-        let euclidDistance = this.getValueFromModels(m1, m2);
-        let minPreviousValue = Math.min(square.leftBottom, square.leftUpper, square.rightBottom);
-        return euclidDistance + minPreviousValue;
-    }
-
-    getValueFromModels(m1, m2) {
-        let res = 0;
-        for (let i = 0; i < m1.length; i++) {
-            res += this.getVectorEuclideanDistance(m1[i], m2[i]);
-        }
-        return Math.sqrt(res);
-    }
-
-    getVectorEuclideanDistance(v1, v2) {
-        return Math.pow(v1.x - v2.x, 2) + Math.pow(v1.y - v2.y, 2) + Math.pow(v1.z - v2.z, 2);
+        return arr[len1 - 1][len2 - 1];
     }
 
     countMatrix(arr) {
