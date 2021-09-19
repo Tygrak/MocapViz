@@ -2,6 +2,7 @@ import * as THREE from './lib/three.module.js';
 import * as Model from './model.js';
 import * as Core from './mocapCore.js';
 import {OrbitControls} from './lib/OrbitControls.js';
+import {Vec3, DTWSquare, compareTwoTimeSeries} from "./mocapCore.js";
 
 let mainRenderer = null;
 const sceneWidth = 100;
@@ -26,7 +27,7 @@ class Skeleton {
 }
 
 /**
- * Allows creation of visualization elements. 
+ * Allows creation of visualization elements.
  * Manages the many parameters available for the creation of a visualization.
  */
 class VisualizationFactory {
@@ -55,8 +56,8 @@ class VisualizationFactory {
     }
 
     /**
-     * Creates a visualization of a sequence according to the parameters set in the factory. 
-     * Returns a `<div>` element containing the visualization. 
+     * Creates a visualization of a sequence according to the parameters set in the factory.
+     * Returns a `<div>` element containing the visualization.
      * @param {string} sequence - Loaded sequence
      * @param {*} visualizationWidth - Width of visualization in pixels
      * @param {*} visualizationHeight - Height of visualization in pixels
@@ -70,17 +71,107 @@ class VisualizationFactory {
             this.boneStyle, this.boneStyle, this.jointStyle, 1, this.boneStyle, this.noseRadius, this.blurFrameOpacity);
         let visualization;
         if (this.createZoomable && this.numZoomedKeyframes > 1) {
-            visualization = createZoomableVisualizationElementCustom(sequence, this.model, this.numKeyframes, 
+            visualization = createZoomableVisualizationElementCustom(sequence, this.model, this.numKeyframes,
                 this.numZoomedKeyframes, this.numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight,
-                drawStyle, drawStyleBlur, this.addTimeScale, this.addFillingKeyframes, this.keyframeSelectionAlgorithm, 
+                drawStyle, drawStyleBlur, this.addTimeScale, this.addFillingKeyframes, this.keyframeSelectionAlgorithm,
                 this.labelFrames, this.useTrueTime);
         } else {
-            visualization = createVisualizationElementCustom(sequence, this.model, this.numKeyframes, 
+            visualization = createVisualizationElementCustom(sequence, this.model, this.numKeyframes,
                 this.numBlurFrames, mapWidth, mapHeight, visualizationWidth, visualizationHeight,
-                drawStyle, drawStyleBlur, this.addTimeScale, this.addFillingKeyframes, this.keyframeSelectionAlgorithm, 
+                drawStyle, drawStyleBlur, this.addTimeScale, this.addFillingKeyframes, this.keyframeSelectionAlgorithm,
                 this.labelFrames, this.useTrueTime);
         }
         return visualization;
+    }
+
+    countDtwFromSequences(seq1, seq2) {
+        let frames = seq1.map((frame) => {
+            return frame.replace(" ", "").split(';').map((joint) => {
+                let xyz = joint.split(',');
+                return {x:xyz[0], y:xyz[1], z:xyz[2]};
+            });
+        });
+        frames = frames.filter((f) => {return f.length > 0 && !isNaN(f[0].x) && !isNaN(f[0].y) && !isNaN(f[0].z)});
+
+        let frames2 = seq2.map((frame) => {
+            return frame.replace(" ", "").split(';').map((joint) => {
+                let xyz = joint.split(',');
+                return {x:xyz[0], y:xyz[1], z:xyz[2]};
+            });
+        });
+        frames2 = frames2.filter((f) => {return f.length > 0 && !isNaN(f[0].x) && !isNaN(f[0].y) && !isNaN(f[0].z)});
+        const res = this.countDtw(frames, frames2);
+        console.log(res);
+    }
+
+    countDtw(seq1, seq2) {
+        console.log(seq1);
+        let len1 = seq1.length + 1;
+        let len2 = seq2.length + 1;
+        let arr = new Array(len1);
+        for (let i = 0; i < len1; i++) {
+            arr[i] = new Array(len2);
+        }
+
+        for (let i = 0; i < len1; i++) {
+            arr[i][0] = Number.POSITIVE_INFINITY;
+        }
+
+        for (let i = 0; i < len2; i++) {
+            arr[0][i] = Number.POSITIVE_INFINITY;
+        }
+
+        arr[0][0] = 0;
+
+        for (let i = 1; i < len1; i++) {
+            for (let j = 1; j < len2; j++) {
+                let square = new DTWSquare(arr[i - 1][j - 1], arr[i][j - 1], arr[i - 1][j]);
+                arr[i][j] = compareTwoTimeSeries(seq1[i - 1], seq2[j - 1], square);
+            }
+        }
+
+        return arr[len1 - 1][len2 - 1];
+    }
+
+    countMatrix(arr) {
+        let len1 = arr.length;
+        let len2 = arr[0].length;
+        let pathArr = new Array(len1);
+        for (let i = 0; i < len1; i++) {
+            pathArr[i] = new Array(len2);
+        }
+        for (let i = 0; i < len1; i++) {
+            for (let j = 0; j < len2; j++) {
+                pathArr[i][j] = Number.POSITIVE_INFINITY;
+            }
+        }
+        pathArr[0][0] = 0;
+        pathArr[1][1] = arr[1][1]
+        let queue = [ [1, 1] ];
+        while (queue.length !== 0) {
+            let coords = queue.shift();
+            let i = coords[0];
+            let j = coords[1];
+            // move right : depends on how you look at it
+            if (i + 1 !== len1 && pathArr[i + 1][j] > pathArr[i][j] + arr[i + 1][j]) {
+                queue.push([i + 1, j]);
+                pathArr[i + 1][ j] = pathArr[i][j] + arr[i + 1][j];
+            }
+
+            // move bottom right
+            if (i + 1 !== len1 && j + 1 !== len2 && pathArr[i + 1][j + 1] > pathArr[i][j] + arr[i + 1][j + 1]) {
+                queue.push([i + 1, j + 1]);
+                pathArr[i + 1][j + 1] = pathArr[i][j] + arr[i + 1][j + 1];
+            }
+
+            // move bottom
+            if (j + 1 !== len2 && pathArr[i][j + 1] > pathArr[i][j] + arr[i][j + 1]) {
+                queue.push([i, j + 1]);
+                pathArr[i][j + 1] = pathArr[i][j] + arr[i][j + 1];
+            }
+        }
+        console.log(pathArr);
+        return Math.sqrt(pathArr[len1 - 1][len2 - 1]);
     }
 }
 
