@@ -38,30 +38,6 @@ function Vec3(x, y, z) {
     this.z = z;
 }
 
-function DTWSquare(v1, v2, v3) {
-    this.leftUpper = v1;
-    this.leftBottom = v2;
-    this.rightBottom = v3;
-}
-
-function compareTwoTimeSeries(m1, m2, square) {
-    let euclidDistance = getValueFromModels(m1, m2);
-    let minPreviousValue = Math.min(square.leftBottom, square.leftUpper, square.rightBottom);
-    return euclidDistance + minPreviousValue;
-}
-
-function  getValueFromModels(m1, m2) {
-    let res = 0;
-    for (let i = 0; i < m1.length; i++) {
-        res += getVectorEuclideanDistance(m1[i], m2[i]);
-    }
-    return Math.sqrt(res);
-}
-
-function  getVectorEuclideanDistance(v1, v2) {
-    return Math.pow(v1.x - v2.x, 2) + Math.pow(v1.y - v2.y, 2) + Math.pow(v1.z - v2.z, 2);
-}
-
 /**
  * Enumerates the available keyframe selection algorithms.
  * The recommended options are `Decimation`, `Temporal`, `Lowe` and `Equidistant`.
@@ -895,4 +871,4 @@ function drawRectangle(ctx, a, b, radius, xShift, yShift) {
     ctx.fill();
 }
 
-export {compareTwoTimeSeries, loadDataFromString, loadDataFromFile, getSequenceLength, getSequenceJointsPerFrame, getSequenceCategory, MocapDrawStyle, KeyframeSelectionAlgorithmEnum, processSequence, processSequenceToFramesAuto, processSequenceToFrames, processSequenceToFrames2d, drawTopDownMap, findMinimumsFromFrame, findMaximumsFromFrame, findKeyframesEquidistant, findKeyframesEuclidean, findKeyframesDot, findKeyframesTemporal, findKeyframesDecimation, findKeyframesLowe, getFillKeyframes, findMapScale, findOptimalRotation, checkSequenceNeedsFlip, findSequenceMinimums, findSequenceMaximums, findOptimalScale, findMeterConversion, frameSubtract, frameLength, frameDot, frameDistance, frameDistanceTemporal, frameCosineSimilarity, vecXZDistance, frameRotateY, moveOriginXBy, clearCanvas, clamp, lerpFrame, lerp, inverseLerp, hue2rgb, hslToRgb, scaleRgbaColor, rgbaToColorString, drawRectangle, calculateNoseVec3, Vec3, DTWSquare};
+export {loadDataFromString, loadDataFromFile, getSequenceLength, getSequenceJointsPerFrame, getSequenceCategory, MocapDrawStyle, KeyframeSelectionAlgorithmEnum, processSequence, processSequenceToFramesAuto, processSequenceToFrames, processSequenceToFrames2d, drawTopDownMap, findMinimumsFromFrame, findMaximumsFromFrame, findKeyframesEquidistant, findKeyframesEuclidean, findKeyframesDot, findKeyframesTemporal, findKeyframesDecimation, findKeyframesLowe, getFillKeyframes, findMapScale, findOptimalRotation, checkSequenceNeedsFlip, findSequenceMinimums, findSequenceMaximums, findOptimalScale, findMeterConversion, frameSubtract, frameLength, frameDot, frameDistance, frameDistanceTemporal, frameCosineSimilarity, vecXZDistance, frameRotateY, moveOriginXBy, clearCanvas, clamp, lerpFrame, lerp, inverseLerp, hue2rgb, hslToRgb, scaleRgbaColor, rgbaToColorString, drawRectangle, calculateNoseVec3, Vec3};

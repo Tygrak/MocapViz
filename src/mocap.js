@@ -2,7 +2,7 @@ import * as THREE from './lib/three.module.js';
 import * as Model from './model.js';
 import * as Core from './mocapCore.js';
 import {OrbitControls} from './lib/OrbitControls.js';
-import {Vec3, DTWSquare, compareTwoTimeSeries} from "./mocapCore.js";
+import {createDiffVisualization} from "./mocapDiffs.js";
 
 let mainRenderer = null;
 const sceneWidth = 100;
@@ -84,95 +84,25 @@ class VisualizationFactory {
         return visualization;
     }
 
-    countDtwFromSequences(seq1, seq2) {
-        let frames = seq1.map((frame) => {
-            return frame.replace(" ", "").split(';').map((joint) => {
-                let xyz = joint.split(',');
-                return {x:xyz[0], y:xyz[1], z:xyz[2]};
-            });
-        });
-        frames = frames.filter((f) => {return f.length > 0 && !isNaN(f[0].x) && !isNaN(f[0].y) && !isNaN(f[0].z)});
-
-        let frames2 = seq2.map((frame) => {
-            return frame.replace(" ", "").split(';').map((joint) => {
-                let xyz = joint.split(',');
-                return {x:xyz[0], y:xyz[1], z:xyz[2]};
-            });
-        });
-        frames2 = frames2.filter((f) => {return f.length > 0 && !isNaN(f[0].x) && !isNaN(f[0].y) && !isNaN(f[0].z)});
-        const res = this.countDtw(frames, frames2);
-        console.log(res);
+    getIndexOfSequenceById(sequence, id) {
+        for (let i = 0; i < sequence.length; i++) {
+            if (sequence[i][0].includes(id)) {
+                return i;
+            }
+        }
+        return -1;
     }
 
-    countDtw(seq1, seq2) {
-        console.log(seq1);
-        let len1 = seq1.length + 1;
-        let len2 = seq2.length + 1;
-        let arr = new Array(len1);
-        for (let i = 0; i < len1; i++) {
-            arr[i] = new Array(len2);
-        }
+    visualizeSequenceDiffs(sequence1, sequence2, visualizationWidth = 1905, visualizationHeight = 200, mapWidth = 350, mapHeight = 350) {
+        let drawStyle = new Core.MocapDrawStyle(this.model, this.boneRadius, this.jointRadius, this.headRadius, this.boneStyle,
+            this.leftBoneStyle, this.rightBoneStyle, this.jointStyle, 1, this.noseStyle, this.noseRadius, this.opacity);
+        let drawStyleBlur = new Core.MocapDrawStyle(this.model, this.boneRadius, this.jointRadius, this.headRadius, this.boneStyle,
+            this.boneStyle, this.boneStyle, this.jointStyle, 1, this.boneStyle, this.noseRadius, this.blurFrameOpacity);
 
-        for (let i = 0; i < len1; i++) {
-            arr[i][0] = Number.POSITIVE_INFINITY;
-        }
-
-        for (let i = 0; i < len2; i++) {
-            arr[0][i] = Number.POSITIVE_INFINITY;
-        }
-
-        arr[0][0] = 0;
-
-        for (let i = 1; i < len1; i++) {
-            for (let j = 1; j < len2; j++) {
-                let square = new DTWSquare(arr[i - 1][j - 1], arr[i][j - 1], arr[i - 1][j]);
-                arr[i][j] = compareTwoTimeSeries(seq1[i - 1], seq2[j - 1], square);
-            }
-        }
-
-        return arr[len1 - 1][len2 - 1];
+        return createDiffVisualization(mainRenderer, sequence1, sequence2, visualizationWidth, visualizationHeight, drawStyle, drawStyleBlur, mapWidth, mapHeight, 5);
     }
 
-    countMatrix(arr) {
-        let len1 = arr.length;
-        let len2 = arr[0].length;
-        let pathArr = new Array(len1);
-        for (let i = 0; i < len1; i++) {
-            pathArr[i] = new Array(len2);
-        }
-        for (let i = 0; i < len1; i++) {
-            for (let j = 0; j < len2; j++) {
-                pathArr[i][j] = Number.POSITIVE_INFINITY;
-            }
-        }
-        pathArr[0][0] = 0;
-        pathArr[1][1] = arr[1][1]
-        let queue = [ [1, 1] ];
-        while (queue.length !== 0) {
-            let coords = queue.shift();
-            let i = coords[0];
-            let j = coords[1];
-            // move right : depends on how you look at it
-            if (i + 1 !== len1 && pathArr[i + 1][j] > pathArr[i][j] + arr[i + 1][j]) {
-                queue.push([i + 1, j]);
-                pathArr[i + 1][ j] = pathArr[i][j] + arr[i + 1][j];
-            }
 
-            // move bottom right
-            if (i + 1 !== len1 && j + 1 !== len2 && pathArr[i + 1][j + 1] > pathArr[i][j] + arr[i + 1][j + 1]) {
-                queue.push([i + 1, j + 1]);
-                pathArr[i + 1][j + 1] = pathArr[i][j] + arr[i + 1][j + 1];
-            }
-
-            // move bottom
-            if (j + 1 !== len2 && pathArr[i][j + 1] > pathArr[i][j] + arr[i][j + 1]) {
-                queue.push([i, j + 1]);
-                pathArr[i][j + 1] = pathArr[i][j] + arr[i][j + 1];
-            }
-        }
-        console.log(pathArr);
-        return Math.sqrt(pathArr[len1 - 1][len2 - 1]);
-    }
 }
 
 class MocapRenderer {
@@ -326,7 +256,7 @@ function modifySkeletonToFrame(skeleton, frame, drawStyle, xShift, yShift, figur
     }
 }
 
-function drawSequence(mocapRenderer, frames, indexes, numBlurPositions, drawStyle, drawStyleBlur, figureScale, yShift = 0, clear = true, useTrueTime = true) {
+function drawSequence(mocapRenderer, frames, indexes, numBlurPositions, drawStyle, drawStyleBlur, figureScale, yShift = 0, clear = true, useTrueTime = true, xCoefficient = 1) {
     if (clear) {
         clearRenderer(mocapRenderer);
     }
@@ -343,9 +273,9 @@ function drawSequence(mocapRenderer, frames, indexes, numBlurPositions, drawStyl
     let xPositions = [];
     for (let i = 0; i < indexes.length; i++) {
         let coreX = frames[indexes[i]][0].x;
-        let xShift = (indexes[i]/frames.length)*(98-widthFirst/2-widthLast/2)+widthFirst/2+0.5;
+        let xShift = ((indexes[i]/frames.length)*(98-widthFirst/2-widthLast/2)+widthFirst/2+0.5)/xCoefficient;
         if (!useTrueTime) {
-            xShift = (i/(indexes.length-1))*(98-widthFirst/2-widthLast/2)+widthFirst/2+0.5;
+            xShift = ((i/(indexes.length-1))*(98-widthFirst/2-widthLast/2)+widthFirst/2+0.5)/xCoefficient;
         }
         for (let j = 1; j < numBlurPositions+1; j++) {
             if (indexes[i]-j < 0) {
@@ -354,6 +284,7 @@ function drawSequence(mocapRenderer, frames, indexes, numBlurPositions, drawStyl
             drawFrame(mocapRenderer, Core.moveOriginXBy(frames[indexes[i]-j], coreX), figureScale, xShift, yShift, drawStyleBlur, false);
         }
         drawFrame(mocapRenderer, Core.moveOriginXBy(frames[indexes[i]], coreX), figureScale, xShift, yShift, drawStyle, false);
+
         xPositions.push(xShift);
     }
     return xPositions;
@@ -495,6 +426,14 @@ function createVisualizationElementCustom(sequence, model, numKeyframes, numBlur
         drawSequence(mainRenderer, frames, fillKeyframes, 0, fillStyle, drawStyleBlur, figureScale, 0, false, useTrueTime);
     }
     let positions = drawSequence(mainRenderer, frames, keyframes, numBlurFrames, drawStyle, drawStyleBlur, figureScale, 0, false, useTrueTime);
+
+    let circleRadius = 0.1;
+    let shift = positions[positions.length - 1]/frames.length;
+    let xPosition = 1;
+    for (let i = 0; i < frames.length; i ++) {
+        drawDotFrame(mainRenderer, xPosition, circleRadius);
+        xPosition += shift;
+    }
     if (mapWidth > 0 && mapHeight > 0) {
         let map = addMapToVisualization(frames, keyframes, figureScale, model, mapWidth, mapHeight);
         div.appendChild(map);
@@ -544,8 +483,8 @@ function createTextElements(positions, keyframes, image, mapWidth, mainDiv) {
         element.style.width = 40;
         element.style.height = 25;
         element.innerHTML = keyframes[i];
-        element.style.top = (2) + 'px';;//(image.height-18) + 'px';
-        element.style.left = ((positions[i]/100)*image.width+mapWidth-3) + 'px';
+        element.style.top = (image.height-18) + 'px';
+        element.style.left = ((positions[i]/100)*image.width-3) + 'px';
         element.style.fontSize = "0.75em";
         element.style.color = "rgb(5, 10, 5)";
         element.style.textAlign = "left";
@@ -590,7 +529,7 @@ function findKeyframes(frames, numKeyframes, keyframeSelectionAlgorithm) {
  * @param {string} sequence - Loaded sequence
  * @param {Model.SkeletonModel} model - Skeleton model
  * @param {*} visualizationWidth - Width of the animation in pixels
- * @param {*} visualizationHeight - Height of the animation in pixels
+ * @param {*} visualizationHeight - Height of tdrawItemVisualizationhe animation in pixels
  */
 function createAnimationElement(sequence, model, visualizationWidth, visualizationHeight) {
     let drawStyle = new Core.MocapDrawStyle(model, 0.9, 0,
@@ -598,7 +537,7 @@ function createAnimationElement(sequence, model, visualizationWidth, visualizati
     let div = document.createElement("div");
     div.className = "drawItem-"+Model.motionCategories[Core.getSequenceCategory(sequence)];
     let canvas = document.createElement("canvas");
-    canvas.className = "drawItemVisualization";
+    canvas.className = "";
     div.appendChild(canvas);
     let jointsCount = Core.getSequenceJointsPerFrame(sequence);
     let mocapRenderer = initializeMocapRenderer(canvas, visualizationWidth, visualizationHeight, drawStyle, jointsCount);
@@ -629,8 +568,9 @@ function createAnimationElement(sequence, model, visualizationWidth, visualizati
     return div;
 }
 
-export {VisualizationFactory, visualizeToCanvas, createVisualizationElement, createZoomableVisualizationElement, createAnimationElement};
+export {VisualizationFactory, visualizeToCanvas, createVisualizationElement, createZoomableVisualizationElement, createAnimationElement, drawSequence, resizeSkeleton, findKeyframes, clearRenderer, initializeMocapRenderer, resizeMocapRenderer, addMapToVisualization};
 export {loadDataFromString, loadDataFromFile, getSequenceLength, getSequenceCategory, getSequenceJointsPerFrame, KeyframeSelectionAlgorithmEnum} from './mocapCore.js';
+export {createDiffVisualization} from './mocapDiffs.js';
 export * from './model.js';
 export * from './asfAmcParser.js';
 //export * from './mocapCanvas2d.js';
