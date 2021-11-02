@@ -40,30 +40,30 @@ function createDiffVisualization(mainRenderer, sequence1, sequence2, visualizati
 
     // draw skeletons
     let yThird = visualizationHeight / (visualizationWidth / visualizationHeight * 6);
-    let processed1 = Core.processSequence(longerSeq, numKeyframes, sceneWidth, visualizationWidth, visualizationHeight  / 3, drawStyle);
-    let positions1 = drawSequenceIntoImage(mainRenderer, processed1, drawStyle, drawStyleBlur, yThird * 2);
+    let longerProcessed = Core.processSequence(longerSeq, numKeyframes, sceneWidth, visualizationWidth, visualizationHeight  / 3, drawStyle);
+    let longerPositions = drawSequenceIntoImage(mainRenderer, longerProcessed, drawStyle, drawStyleBlur, yThird * 2);
 
-    let processed2 = Core.processSequence(shorterSeq, numKeyframes, sceneWidth, visualizationWidth, visualizationHeight  / 3, drawStyle);
-    let positions2 = drawSequenceIntoImage(mainRenderer, processed2, drawStyle, drawStyleBlur, 0, longerSeq.length / shorterSeq.length);
+    let shorterProcessed = Core.processSequence(shorterSeq, numKeyframes, sceneWidth, visualizationWidth, visualizationHeight  / 3, drawStyle);
+    let shorterPositions = drawSequenceIntoImage(mainRenderer, shorterProcessed, drawStyle, drawStyleBlur, 0, longerSeq.length / shorterSeq.length);
 
     // count DTW
-    let DTWArr = countDTW(prepareSequence(longerSeq), prepareSequence(shorterSeq));
+    let DTWArr = countDTW(prepareSequence(longerSeq), prepareSequence(shorterSeq), compareTwoTimeSeries);
     console.log(DTWArr[DTWArr.length - 1][DTWArr[0].length - 1]);
     let DTWMapping = countMatrix(DTWArr);
 
     // draw dots
     const largestDistance = findLargestDistance(DTWMapping, DTWArr);
     let colorCoefficient = 255 / largestDistance;
-    let dotCoords1 = drawDots(mainRenderer, yThird * 2, positions1, processed1.frames, DTWMapping, DTWArr, colorCoefficient);
-    let dotCoords2 = drawDots(mainRenderer, yThird, positions2, processed2.frames, DTWMapping, DTWArr, colorCoefficient);
+    let dotCoords1 = drawDots(mainRenderer, yThird * 2, longerPositions, longerProcessed.frames, DTWMapping, DTWArr, colorCoefficient);
+    let dotCoords2 = drawDots(mainRenderer, yThird, shorterPositions, shorterProcessed.frames, DTWMapping, DTWArr, colorCoefficient, true);
 
     // draw lines
     drawLines(mainRenderer, dotCoords1, dotCoords2, DTWMapping, DTWArr, lineCoefficient, colorCoefficient);
 
     // add maps
-    div.appendChild(addMapToSequence(processed1, mapWidth, mapHeight));
+    div.appendChild(addMapToSequence(longerProcessed, mapWidth, mapHeight));
     div.appendChild(image);
-    div.appendChild(addMapToSequence(processed2, mapWidth, mapHeight));
+    div.appendChild(addMapToSequence(shorterProcessed, mapWidth, mapHeight));
     image.src = mainRenderer.canvas.toDataURL("image/png");
     image.height = visualizationHeight;
     image.width = visualizationWidth;
@@ -94,23 +94,37 @@ function drawSequenceIntoImage(mainRenderer, processed, drawStyle, drawStyleBlur
     return drawSequence(mainRenderer, frames, keyframes, 0, drawStyle, drawStyleBlur, figureScale, yShift, false, true, xCoefficient);
 }
 
-function drawDots(mainRenderer, dotYShift, positions, frames, path, dtwArr, colorCoefficient) {
+function drawDots(mainRenderer, dotYShift, positions, frames, path, dtwArr, colorCoefficient, shorter = false) {
     let shift = positions[positions.length - 1]/frames.length;
     let xPosition = startDotXPosition;
     let dots = [];
-    for (let i = 0; i < frames.length; i ++) {
-        let colorValue;
-        if (i > 0) {
-            colorValue = dtwArr[path[i][0]][path[i][1]] - dtwArr[path[i - 1][0]][path[i - 1][1]];
-        } else {
-            colorValue = dtwArr[path[i][0]][path[i][1]];
-        }
-        let color = Math.floor(colorCoefficient * colorValue);
+    for (let i = 1; i < frames.length; i ++) {
+        let color = getColorForIndex(i, path, dtwArr, colorCoefficient, shorter);
         drawDotFrame(mainRenderer, xPosition, dotYShift, circleRadius, color);
         dots.push(new Vec3(xPosition, dotYShift, 0));
         xPosition += shift;
     }
     return dots;
+}
+
+function getColorForIndex(index, path, dtwArr, colorCoefficient, shorter) {
+    let colorValue;
+    let i = (shorter) ? getIndexForShorterSequence(path, index) : index;
+    if (i > 0) {
+        colorValue = dtwArr[path[i][0]][path[i][1]] - dtwArr[path[i - 1][0]][path[i - 1][1]];
+    } else {
+        colorValue = dtwArr[path[i][0]][path[i][1]];
+    }
+    return Math.floor(colorCoefficient * colorValue);
+}
+
+function getIndexForShorterSequence(path, searchingValue) {
+    for (let i = 0; i < path.length; i ++) {
+        if (path[i][1] === searchingValue) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 function drawDotFrame(mocapRenderer, xPosition, yPosition, circleRadius, color) {
@@ -123,7 +137,7 @@ function drawDotFrame(mocapRenderer, xPosition, yPosition, circleRadius, color) 
     mocapRenderer.renderer.render(scene, mocapRenderer.camera);
 }
 
-function countDTW(seq1, seq2) {
+function countDTW(seq1, seq2, comparisonFunction) {
     let len1 = seq1.length + 1;
     let len2 = seq2.length + 1;
     let arr = new Array(len1);
@@ -144,7 +158,7 @@ function countDTW(seq1, seq2) {
     for (let i = 1; i < len1; i++) {
         for (let j = 1; j < len2; j++) {
             let square = new DTWSquare(arr[i - 1][j - 1], arr[i][j - 1], arr[i - 1][j]);
-            arr[i][j] = compareTwoTimeSeries(seq1[i - 1], seq2[j - 1], square);
+            arr[i][j] = comparisonFunction(seq1[i - 1], seq2[j - 1], square);
         }
     }
 
@@ -241,18 +255,12 @@ function PathArrEl(value, path) {
 }
 
 function drawLines(mocapRenderer, dots1, dots2, path, dtwArr, lineCoefficient, colorCoefficient) {
-    for (let i = 0; i < path.length; i += lineCoefficient) {
-        let colorValue;
-        if (i > 0) {
-            colorValue = dtwArr[path[i][0]][path[i][1]] - dtwArr[path[i - 1][0]][path[i - 1][1]];
-        } else {
-            colorValue = dtwArr[path[i][0]][path[i][1]];
-        }
-        let color = Math.floor(colorCoefficient * colorValue);
-        if (path[i][0] >= dots1.length || path[i][1] >= dots2.length){
+    for (let i = 1; i < path.length; i += lineCoefficient) {
+        let color = getColorForIndex(i, path, dtwArr, colorCoefficient, false);
+        if (path[i - 1][0] >= dots1.length || path[i - 1][1] >= dots2.length){
             break;
         }
-        drawLine(mocapRenderer, dots1[path[i][0]], dots2[path[i][1]], color);
+        drawLine(mocapRenderer, dots1[path[i - 1][0]], dots2[path[i - 1][1]], color);
     }
 }
 
