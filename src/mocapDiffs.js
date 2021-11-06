@@ -10,7 +10,7 @@ import {
 } from "./mocap.js";
 
 import * as THREE from "./lib/three.module.js";
-import {Vec3} from "./mocapCore.js";
+import {rgbaToColorString, Vec3} from "./mocapCore.js";
 import * as Model from "./model.js";
 
 const sceneWidth = 100;
@@ -67,6 +67,7 @@ function createDiffVisualization(mainRenderer, sequence1, sequence2, visualizati
     div.appendChild(addMapToSequence(longerProcessed, mapWidth, mapHeight));
     div.appendChild(image);
     div.appendChild(addMapToSequence(shorterProcessed, mapWidth, mapHeight));
+    div.appendChild(drawBar(100, 100));
     image.src = mainRenderer.canvas.toDataURL("image/png");
     image.height = visualizationHeight;
     image.width = visualizationWidth;
@@ -291,6 +292,27 @@ function drawLine(mocapRenderer, coord1, coord2, color) {
     const line = new THREE.Line(geometry, material);
     scene.add(line);
     mocapRenderer.renderer.render(scene, mocapRenderer.camera);
+}
+
+function drawBar(barWidth, barHeight) {
+    let canvas = document.createElement("canvas");
+    canvas.className = "drawItemMap";
+    canvas.width = barWidth;
+    canvas.height = barHeight;
+    canvas.style = "width: "+barWidth+"px; height: "+barHeight+"px;";
+
+    let ctx = canvas.getContext("2d");
+    ctx.fillStyle = rgbaToColorString("rgba(0,0,0)");
+    ctx.beginPath();
+    ctx.moveTo(5, 5);
+    ctx.lineTo(50, 5);
+    ctx.lineTo(50, 50);
+    ctx.lineTo(5, 50);
+    ctx.lineTo(5, 5);
+    ctx.closePath();
+    ctx.fill();
+
+    return canvas;
 }
 
 function findLargestDistance(path, dtwArr) {
