@@ -47,8 +47,11 @@ function createDiffVisualization(mainRenderer, sequence1, sequence2, visualizati
     let shorterPositions = drawSequenceIntoImage(mainRenderer, shorterProcessed, drawStyle, drawStyleBlur, 0, longerSeq.length / shorterSeq.length);
 
     // count DTW
-    let DTWArr = countDTW(prepareSequence(longerSeq), prepareSequence(shorterSeq), compareTwoTimeSeries);
-    console.log(DTWArr[DTWArr.length - 1][DTWArr[0].length - 1]);
+    longerSeq = prepareSequence(longerSeq);
+    shorterSeq = prepareSequence(shorterSeq);
+    let DTWArr = countDTW( longerSeq, shorterSeq, -1);
+    console.log("DTW result: " + DTWArr[DTWArr.length - 1][DTWArr[0].length - 1]);
+    dtwPerJoints(longerSeq, shorterSeq);
     let DTWMapping = countMatrix(DTWArr);
 
     // draw dots
@@ -71,6 +74,14 @@ function createDiffVisualization(mainRenderer, sequence1, sequence2, visualizati
     div.style.position = "relative";
 
     return div;
+}
+
+function dtwPerJoints(seq1, seq2) {
+    console.log(seq1[0].length);
+    for (let i = 0; i < seq1[0].length; i ++) {
+        let DTWForJoint = countDTW(seq1, seq2, i);
+        console.log("DTW result for joint: " + DTWForJoint[DTWForJoint.length - 1][DTWForJoint[0].length - 1]);
+    }
 }
 
 function addMapToSequence(processed, mapWidth, mapHeight) {
@@ -138,7 +149,7 @@ function drawDotFrame(mocapRenderer, xPosition, yPosition, circleRadius, color) 
     mocapRenderer.renderer.render(scene, mocapRenderer.camera);
 }
 
-function countDTW(seq1, seq2, comparisonFunction) {
+function countDTW(seq1, seq2, jointIndex) {
     let len1 = seq1.length + 1;
     let len2 = seq2.length + 1;
     let arr = new Array(len1);
@@ -159,7 +170,7 @@ function countDTW(seq1, seq2, comparisonFunction) {
     for (let i = 1; i < len1; i++) {
         for (let j = 1; j < len2; j++) {
             let square = new DTWSquare(arr[i - 1][j - 1], arr[i][j - 1], arr[i - 1][j]);
-            arr[i][j] = comparisonFunction(seq1[i - 1], seq2[j - 1], square);
+            arr[i][j] = compareTwoTimeSeries(seq1[i - 1], seq2[j - 1], square, jointIndex);
         }
     }
 
@@ -182,8 +193,13 @@ function DTWSquare(v1, v2, v3) {
     this.rightBottom = v3;
 }
 
-function compareTwoTimeSeries(m1, m2, square) {
-    let euclidDistance = getValueFromModels(m1, m2);
+function getValueFromModelsPerJoint(m1, m2, jointIndex) {
+    let distance = getVectorEuclideanDistance(m1[jointIndex], m2[jointIndex]);
+    return Math.sqrt(distance);
+}
+
+function compareTwoTimeSeries(m1, m2, square, jointIndex) {
+    let euclidDistance = (jointIndex === -1) ? getValueFromModels(m1, m2) : getValueFromModelsPerJoint(m1, m2, jointIndex);
     let minPreviousValue = Math.min(square.leftBottom, square.leftUpper, square.rightBottom);
     return euclidDistance + minPreviousValue;
 }
