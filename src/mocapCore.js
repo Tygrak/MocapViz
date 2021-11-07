@@ -94,7 +94,7 @@ function loadDataFromFile(dataFile, callback, filterPredicate = null, loadChunkM
     reader.readAsText(dataFile.slice(0, loadChunkMbSize*1024*1024), "UTF-8");
 }
 
-function processSequence(sequence, numKeyframes, sceneWidth, width, height, drawStyle, switchY = true) {
+function processSequence(sequence, numKeyframes, sceneWidth, width, height, drawStyle, switchY = true, needsToFlip = true) {
     let ratio = width/height;
     let processed = processSequenceToFramesAuto(sequence, numKeyframes, sceneWidth, sceneWidth/ratio, switchY);
     let frames = processed.frames;
@@ -103,7 +103,7 @@ function processSequence(sequence, numKeyframes, sceneWidth, width, height, draw
     for (let i = 0; i < frames.length; i++) {
         frames[i] = frameRotateY(frames[i], bestRotation);
     }
-    if (checkSequenceNeedsFlip(frames, drawStyle)) {
+    if (needsToFlip && checkSequenceNeedsFlip(frames, drawStyle)) {
         for (let i = 0; i < frames.length; i++) {
             frames[i] = frameRotateY(frames[i], Math.PI);
         }
