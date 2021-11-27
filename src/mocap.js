@@ -2,8 +2,7 @@ import * as THREE from './lib/three.module.js';
 import * as Model from './model.js';
 import * as Core from './mocapCore.js';
 import {OrbitControls} from './lib/OrbitControls.js';
-import {createDiffVisualization, sampling} from "./mocapDiffs.js";
-import {ContextOption, VisualizationService} from "./ComparisonVizualization/VisualizationService.js";
+import {createDiffVisualization} from "./mocapDiffs.js";
 
 let mainRenderer = null;
 const sceneWidth = 100;
@@ -54,7 +53,6 @@ class VisualizationFactory {
         this.numKeyframes = 10;
         this.numBlurFrames = 10;
         this.numZoomedKeyframes = 12;
-        this.visualizationService = new VisualizationService();
     }
 
     /**
@@ -95,22 +93,16 @@ class VisualizationFactory {
         return -1;
     }
 
-    visualizeSequenceDiffs(sequence1, sequence2, visualizationWidth = 1905, visualizationHeight = 200, mapWidth = 350, mapHeight = 350, contextOption = ContextOption.NO_CONTEXT, defaultContext = 0) {
+    visualizeSequenceDiffs(sequence1, sequence2, visualizationWidth = 1905, visualizationHeight = 200, mapWidth = 350, mapHeight = 350) {
         let drawStyle = new Core.MocapDrawStyle(this.model, this.boneRadius, this.jointRadius, this.headRadius, this.boneStyle,
             this.leftBoneStyle, this.rightBoneStyle, this.jointStyle, 1, this.noseStyle, this.noseRadius, this.opacity);
         let drawStyleBlur = new Core.MocapDrawStyle(this.model, this.boneRadius, this.jointRadius, this.headRadius, this.boneStyle,
             this.boneStyle, this.boneStyle, this.jointStyle, 1, this.boneStyle, this.noseRadius, this.blurFrameOpacity);
 
-        return this.visualizationService.createSequenceComparisonVisualization(sequence1, sequence2, visualizationWidth, visualizationHeight, drawStyle, drawStyleBlur, mapWidth, mapHeight, contextOption, defaultContext);
+        return createDiffVisualization(mainRenderer, sequence1, sequence2, visualizationWidth, visualizationHeight, drawStyle, drawStyleBlur, mapWidth, mapHeight, 5);
     }
 
-    sampling(sequences, count = 1) {
-        this.visualizationService.sampleDataSet(sequences, count);
-    }
 
-    clearSampling() {
-        this.visualizationService.clearSampling();
-    }
 }
 
 class MocapRenderer {
@@ -309,7 +301,7 @@ function clearRenderer(mocapRenderer) {
     mocapRenderer.renderer.render(mocapRenderer.clearScene, mocapRenderer.camera);
 }
 
-function initializeMocapRenderer(canvas, width, height, drawStyle, jointsCount, defaultSceneWidth = 0) {
+function initializeMocapRenderer(canvas, width, height, drawStyle, jointsCount) {
     let renderer = new THREE.WebGLRenderer({canvas, preserveDrawingBuffer: true, alpha: true, antialiasing: true});
     renderer.setPixelRatio(window.devicePixelRatio*1.5);
     renderer.autoClearColor = false;
@@ -318,15 +310,10 @@ function initializeMocapRenderer(canvas, width, height, drawStyle, jointsCount, 
 
     let scene = new THREE.Scene();
     scene.background = new THREE.Color(0xffffff);
-
-    let sceneWidthValue = sceneWidth;
-    if (defaultSceneWidth !== 0) {
-        sceneWidthValue = defaultSceneWidth;
-    }
     
-    let camera = new THREE.OrthographicCamera(-sceneWidthValue/2, sceneWidthValue/2, (sceneWidthValue/2)/ratio, -(sceneWidthValue/2)/ratio, 0.1, 1000);
-    camera.position.set(sceneWidthValue/2, (sceneWidthValue/2)/ratio, sceneWidthValue);
-    camera.lookAt(sceneWidthValue/2, (sceneWidthValue/2)/ratio, 0);
+    let camera = new THREE.OrthographicCamera(-sceneWidth/2, sceneWidth/2, (sceneWidth/2)/ratio, -(sceneWidth/2)/ratio, 0.1, 1000);
+    camera.position.set(sceneWidth/2, (sceneWidth/2)/ratio, sceneWidth);
+    camera.lookAt(sceneWidth/2, (sceneWidth/2)/ratio, 0);
     let skeleton = createSkeleton(drawStyle, jointsCount);
     scene.add(skeleton.group);
     return new MocapRenderer(canvas, renderer, camera, skeleton, scene);
@@ -439,6 +426,14 @@ function createVisualizationElementCustom(sequence, model, numKeyframes, numBlur
         drawSequence(mainRenderer, frames, fillKeyframes, 0, fillStyle, drawStyleBlur, figureScale, 0, false, useTrueTime);
     }
     let positions = drawSequence(mainRenderer, frames, keyframes, numBlurFrames, drawStyle, drawStyleBlur, figureScale, 0, false, useTrueTime);
+
+    let circleRadius = 0.1;
+    let shift = positions[positions.length - 1]/frames.length;
+    let xPosition = 1;
+    for (let i = 0; i < frames.length; i ++) {
+        drawDotFrame(mainRenderer, xPosition, circleRadius);
+        xPosition += shift;
+    }
     if (mapWidth > 0 && mapHeight > 0) {
         let map = addMapToVisualization(frames, keyframes, figureScale, model, mapWidth, mapHeight);
         div.appendChild(map);
@@ -573,7 +568,7 @@ function createAnimationElement(sequence, model, visualizationWidth, visualizati
     return div;
 }
 
-export {VisualizationFactory, visualizeToCanvas, drawFrame, createVisualizationElement, createZoomableVisualizationElement, createAnimationElement, drawSequence, resizeSkeleton, findKeyframes, clearRenderer, initializeMocapRenderer, resizeMocapRenderer, addMapToVisualization};
+export {VisualizationFactory, visualizeToCanvas, createVisualizationElement, createZoomableVisualizationElement, createAnimationElement, drawSequence, resizeSkeleton, findKeyframes, clearRenderer, initializeMocapRenderer, resizeMocapRenderer, addMapToVisualization};
 export {loadDataFromString, loadDataFromFile, getSequenceLength, getSequenceCategory, getSequenceJointsPerFrame, KeyframeSelectionAlgorithmEnum} from './mocapCore.js';
 export {createDiffVisualization} from './mocapDiffs.js';
 export * from './model.js';

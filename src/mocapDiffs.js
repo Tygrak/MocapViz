@@ -18,8 +18,9 @@ const numKeyframes = 10;
 const circleRadius = 0.1;
 const startDotXPosition = 1;
 const model = Model.modelVicon;
+const sampleCount = 10;
 
-function createDiffVisualization(mainRenderer, sequence1, sequence2, visualizationWidth, visualizationHeight, drawStyle, drawStyleBlur, mapWidth, mapHeight, lineCoefficient = 5) {
+function createDiffVisualization(mainRenderer, sequence1, sequence2, visualizationWidth, visualizationHeight, drawStyle, drawStyleBlur, mapWidth, mapHeight, lineCoefficient = 1) {
     let longerSeq;
     let shorterSeq;
     if (sequence1.length > sequence2.length) {
@@ -40,28 +41,34 @@ function createDiffVisualization(mainRenderer, sequence1, sequence2, visualizati
 
     // draw skeletons
     let yThird = visualizationHeight / (visualizationWidth / visualizationHeight * 6);
-    let longerProcessed = Core.processSequence(longerSeq, numKeyframes, sceneWidth, visualizationWidth, visualizationHeight  / 3, drawStyle);
+    let longerProcessed = Core.processSequence(longerSeq, numKeyframes, sceneWidth, visualizationWidth, visualizationHeight  / 3, drawStyle, true, false);
     let longerPositions = drawSequenceIntoImage(mainRenderer, longerProcessed, drawStyle, drawStyleBlur, yThird * 2);
 
-    let shorterProcessed = Core.processSequence(shorterSeq, numKeyframes, sceneWidth, visualizationWidth, visualizationHeight  / 3, drawStyle);
+    let shorterProcessed = Core.processSequence(shorterSeq, numKeyframes, sceneWidth, visualizationWidth, visualizationHeight  / 3, drawStyle, true, false);
     let shorterPositions = drawSequenceIntoImage(mainRenderer, shorterProcessed, drawStyle, drawStyleBlur, 0, longerSeq.length / shorterSeq.length);
 
     // count DTW
     longerSeq = prepareSequence(longerSeq);
     shorterSeq = prepareSequence(shorterSeq);
     let DTWArr = countDTW( longerSeq, shorterSeq, -1);
+    const DTW = DTWArr[DTWArr.length - 1][DTWArr[0].length - 1];
+
+    let text = document.createElement("p");
+    text.textContent = "DTW value: " + DTW;
+    div.appendChild(text);
     console.log("DTW result: " + DTWArr[DTWArr.length - 1][DTWArr[0].length - 1]);
-    dtwPerJoints(longerSeq, shorterSeq);
+    //dtwPerJoints(longerSeq, shorterSeq);
     let DTWMapping = countMatrix(DTWArr);
 
     // draw dots
     const largestDistance = findLargestDistance(DTWMapping, DTWArr);
-    let colorCoefficient = 255 / largestDistance;
-    let dotCoords1 = drawDots(mainRenderer, yThird * 2, longerPositions, longerProcessed.frames, DTWMapping, DTWArr, colorCoefficient);
-    let dotCoords2 = drawDots(mainRenderer, yThird, shorterPositions, shorterProcessed.frames, DTWMapping, DTWArr, colorCoefficient, true);
+    const lowestDistance = findLowestDistance(DTWMapping, DTWArr);
+    let colorCoefficient = 255 / (largestDistance - lowestDistance);
+    let dotCoords1 = drawDots(mainRenderer, yThird * 2, longerPositions, longerProcessed.frames, DTWMapping, DTWArr, colorCoefficient, lowestDistance);
+    let dotCoords2 = drawDots(mainRenderer, yThird, shorterPositions, shorterProcessed.frames, DTWMapping, DTWArr, colorCoefficient, lowestDistance, true);
 
     // draw lines
-    drawLines(mainRenderer, dotCoords1, dotCoords2, DTWMapping, DTWArr, lineCoefficient, colorCoefficient);
+    drawLines(mainRenderer, dotCoords1, dotCoords2, DTWMapping, DTWArr, lineCoefficient, colorCoefficient, lowestDistance);
 
     // add maps
     div.appendChild(addMapToSequence(longerProcessed, mapWidth, mapHeight));
@@ -77,7 +84,6 @@ function createDiffVisualization(mainRenderer, sequence1, sequence2, visualizati
 }
 
 function dtwPerJoints(seq1, seq2) {
-    console.log(seq1[0].length);
     for (let i = 0; i < seq1[0].length; i ++) {
         let DTWForJoint = countDTW(seq1, seq2, i);
         console.log("DTW result for joint: " + DTWForJoint[DTWForJoint.length - 1][DTWForJoint[0].length - 1]);
@@ -106,12 +112,12 @@ function drawSequenceIntoImage(mainRenderer, processed, drawStyle, drawStyleBlur
     return drawSequence(mainRenderer, frames, keyframes, 0, drawStyle, drawStyleBlur, figureScale, yShift, false, true, xCoefficient);
 }
 
-function drawDots(mainRenderer, dotYShift, positions, frames, path, dtwArr, colorCoefficient, shorter = false) {
+function drawDots(mainRenderer, dotYShift, positions, frames, path, dtwArr, colorCoefficient, lowestDistance, shorter = false) {
     let shift = positions[positions.length - 1]/frames.length;
     let xPosition = startDotXPosition;
     let dots = [];
     for (let i = 1; i < frames.length; i ++) {
-        let color = getColorForIndex(i, path, dtwArr, colorCoefficient, shorter);
+        let color = getColorForIndex(i, path, dtwArr, colorCoefficient, shorter, lowestDistance);
         drawDotFrame(mainRenderer, xPosition, dotYShift, circleRadius, color);
         dots.push(new Vec3(xPosition, dotYShift, 0));
         xPosition += shift;
@@ -119,7 +125,7 @@ function drawDots(mainRenderer, dotYShift, positions, frames, path, dtwArr, colo
     return dots;
 }
 
-function getColorForIndex(index, path, dtwArr, colorCoefficient, shorter) {
+function getColorForIndex(index, path, dtwArr, colorCoefficient, shorter, lowestDistance) {
     let colorValue;
     let i = (shorter) ? getIndexForShorterSequence(path, index) : index;
     if (i > 0) {
@@ -127,6 +133,7 @@ function getColorForIndex(index, path, dtwArr, colorCoefficient, shorter) {
     } else {
         colorValue = dtwArr[path[i][0]][path[i][1]];
     }
+    colorValue -= lowestDistance;
     return Math.floor(colorCoefficient * colorValue);
 }
 
@@ -271,9 +278,9 @@ function PathArrEl(value, path) {
     this.path = path;
 }
 
-function drawLines(mocapRenderer, dots1, dots2, path, dtwArr, lineCoefficient, colorCoefficient) {
+function drawLines(mocapRenderer, dots1, dots2, path, dtwArr, lineCoefficient, colorCoefficient, lowestDistance) {
     for (let i = 1; i < path.length; i += lineCoefficient) {
-        let color = getColorForIndex(i, path, dtwArr, colorCoefficient, false);
+        let color = getColorForIndex(i, path, dtwArr, colorCoefficient, false, lowestDistance);
         if (path[i - 1][0] >= dots1.length || path[i - 1][1] >= dots2.length){
             break;
         }
@@ -322,6 +329,15 @@ function findLargestDistance(path, dtwArr) {
         max = (newVal > max) ? newVal : max;
     }
     return max;
+}
+
+function findLowestDistance(path, dtwArr) {
+    let min = Number.POSITIVE_INFINITY;
+    for (let i = 1; i < path.length; i ++) {
+        let newVal = dtwArr[path[i][0]][path[i][1]] - dtwArr[path[i - 1][0]][path[i - 1][1]];
+        min = (newVal < min) ? newVal : min;
+    }
+    return min;
 }
 
 export {createDiffVisualization};
