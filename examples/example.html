@@ -30,9 +30,11 @@
                     factory.leftBoneStyle = {r: 0, g: 180, b: 0, a: 1};
                     factory.opacity = 0.6;
                     factory.blurFrameOpacity = 0.17;
+                    //let sampleAverage = factory.sampling(sequences, 3);
+                    //console.log(sampleAverage);
                     //console.log(factory.getIndexOfSequenceById(sequences, "3405_91_539_126"));
                     let visualizationElement = factory.visualizeSequenceDiffs(sequences[1918], sequences[1071]);
-                    let sampleAverage = factory.sampling(sequences);
+
                     document.body.appendChild(visualizationElement);
                 });
             }

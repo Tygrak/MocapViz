@@ -102,11 +102,12 @@ class VisualizationFactory {
         return createDiffVisualization(mainRenderer, sequence1, sequence2, visualizationWidth, visualizationHeight, drawStyle, drawStyleBlur, mapWidth, mapHeight);
     }
 
-    sampling(sequences) {
-        console.log(sequences);
-        var value = sampling(sequences);
-        console.log(value);
-        return value;
+    sampling(sequences, count = 1) {
+        let samples = 0;
+        for (let i = 0; i < count; i ++) {
+            samples += sampling(sequences);
+        }
+        return (samples / count);
     }
 }
 
