@@ -41,16 +41,16 @@ function createDiffVisualization(mainRenderer, sequence1, sequence2, visualizati
 
     // draw skeletons
     let yThird = visualizationHeight / (visualizationWidth / visualizationHeight * 6);
-    let longerProcessed = Core.processSequence(longerSeq, numKeyframes, sceneWidth, visualizationWidth, visualizationHeight  / 3, drawStyle, true, false);
+    let longerProcessed = Core.processSequence(longerSeq, numKeyframes, sceneWidth, visualizationWidth, visualizationHeight / 3, drawStyle, true, false);
     let longerPositions = drawSequenceIntoImage(mainRenderer, longerProcessed, drawStyle, drawStyleBlur, yThird * 2);
 
-    let shorterProcessed = Core.processSequence(shorterSeq, numKeyframes, sceneWidth, visualizationWidth, visualizationHeight  / 3, drawStyle, true, false);
+    let shorterProcessed = Core.processSequence(shorterSeq, numKeyframes, sceneWidth, visualizationWidth, visualizationHeight / 3, drawStyle, true, false);
     let shorterPositions = drawSequenceIntoImage(mainRenderer, shorterProcessed, drawStyle, drawStyleBlur, 0, longerSeq.length / shorterSeq.length);
 
     // count DTW
     longerSeq = prepareSequence(longerSeq);
     shorterSeq = prepareSequence(shorterSeq);
-    let DTWArr = countDTW( longerSeq, shorterSeq, -1);
+    let DTWArr = countDTW(longerSeq, shorterSeq, -1);
     const DTW = DTWArr[DTWArr.length - 1][DTWArr[0].length - 1];
 
     let text = document.createElement("p");
@@ -340,7 +340,64 @@ function findLowestDistance(path, dtwArr) {
     return min;
 }
 
-export {createDiffVisualization};
+function sampling(sequences) {
+    let coeff = Math.floor(sequences.length / (sampleCount * 2));
+    if (coeff < 1) {
+        coeff = 1;
+    }
+
+    let samples = [];
+    for (let i = 0; i < sequences.length; i += coeff) {
+        samples.push(sequences[i]);
+    }
+
+    let shuffledSamples = shuffle(samples);
+    return countDTWsAverage(shuffledSamples)
+}
+
+function countDTWsAverage(samples) {
+    let DTWs = [];
+
+    if (samples.length % 2 === 1) {
+        samples.pop();
+    }
+
+    console.log(samples.length);
+    console.log(samples);
+
+    for (let i = 0; i < samples.length - 1; i += 2) {
+        console.log(i);
+        console.log(samples[i]);
+        console.log(i + 1);
+        console.log(samples[i + 1]);
+        let seq1 = prepareSequence(samples[i]);
+        let seq2 = prepareSequence(samples[i + 1]);
+        let dtwMatrix = countDTW(seq1, seq2, -1);
+        DTWs.push(dtwMatrix[dtwMatrix.length - 1][dtwMatrix[0].length - 1]);
+    }
+    console.log(DTWs);
+    return arrayAverage(DTWs);
+}
+
+function shuffle(array) {
+    let currentIndex = array.length,  randomIndex;
+
+    while (currentIndex !== 0) {
+        randomIndex = Math.floor(Math.random() * currentIndex);
+        currentIndex--;
+
+        [array[currentIndex], array[randomIndex]] = [
+            array[randomIndex], array[currentIndex]];
+    }
+
+    return array;
+}
+
+function arrayAverage(array) {
+    return array.reduce((a, b) => a + b, 0) / array.length;
+}
+
+export {createDiffVisualization, sampling};
 export {VisualizationFactory, visualizeToCanvas, createVisualizationElement, createZoomableVisualizationElement, createAnimationElement, drawSequence, resizeSkeleton, findKeyframes, clearRenderer, initializeMocapRenderer, resizeMocapRenderer} from './mocap.js';
 export {loadDataFromString, loadDataFromFile, getSequenceLength, getSequenceCategory, getSequenceJointsPerFrame, KeyframeSelectionAlgorithmEnum} from './mocapCore.js';
 export * from './model.js';

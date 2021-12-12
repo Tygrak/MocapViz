@@ -99,10 +99,15 @@ class VisualizationFactory {
         let drawStyleBlur = new Core.MocapDrawStyle(this.model, this.boneRadius, this.jointRadius, this.headRadius, this.boneStyle,
             this.boneStyle, this.boneStyle, this.jointStyle, 1, this.boneStyle, this.noseRadius, this.blurFrameOpacity);
 
-        return createDiffVisualization(mainRenderer, sequence1, sequence2, visualizationWidth, visualizationHeight, drawStyle, drawStyleBlur, mapWidth, mapHeight, 5);
+        return createDiffVisualization(mainRenderer, sequence1, sequence2, visualizationWidth, visualizationHeight, drawStyle, drawStyleBlur, mapWidth, mapHeight);
     }
 
-
+    sampling(sequences) {
+        console.log(sequences);
+        var value = sampling(sequences);
+        console.log(value);
+        return value;
+    }
 }
 
 class MocapRenderer {
