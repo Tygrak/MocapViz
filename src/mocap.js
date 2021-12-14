@@ -3,6 +3,7 @@ import * as Model from './model.js';
 import * as Core from './mocapCore.js';
 import {OrbitControls} from './lib/OrbitControls.js';
 import {createDiffVisualization, sampling} from "./mocapDiffs.js";
+import {VisualizationService} from "./ComparisonVizualization/VisualizationService.js";
 
 let mainRenderer = null;
 const sceneWidth = 100;
@@ -53,6 +54,7 @@ class VisualizationFactory {
         this.numKeyframes = 10;
         this.numBlurFrames = 10;
         this.numZoomedKeyframes = 12;
+        this.visualizationService = new VisualizationService();
     }
 
     /**
@@ -99,15 +101,17 @@ class VisualizationFactory {
         let drawStyleBlur = new Core.MocapDrawStyle(this.model, this.boneRadius, this.jointRadius, this.headRadius, this.boneStyle,
             this.boneStyle, this.boneStyle, this.jointStyle, 1, this.boneStyle, this.noseRadius, this.blurFrameOpacity);
 
-        return createDiffVisualization(mainRenderer, sequence1, sequence2, visualizationWidth, visualizationHeight, drawStyle, drawStyleBlur, mapWidth, mapHeight);
+        return this.visualizationService.createSequenceComparisonVisualization(sequence1, sequence2, visualizationWidth, visualizationHeight, drawStyle, drawStyleBlur, mapWidth, mapHeight);
+        //return createDiffVisualization(mainRenderer, sequence1, sequence2, visualizationWidth, visualizationHeight, drawStyle, drawStyleBlur, mapWidth, mapHeight);
     }
 
     sampling(sequences, count = 1) {
-        let samples = 0;
-        for (let i = 0; i < count; i ++) {
-            samples += sampling(sequences);
-        }
-        return (samples / count);
+        this.visualizationService.sampleDataSet(sequences, count);
+        // let samples = 0;
+        // for (let i = 0; i < count; i ++) {
+        //     samples += sampling(sequences);
+        // }
+        // return (samples / count);
     }
 }
 
