@@ -1,8 +1,10 @@
-class DTWHandler {
-    static calculateDTW(seq1, seq2, jointIndex, sampleValue, useContext) {
-        let arr = DTWHandler.#countDTW(seq1, seq2, jointIndex);
+import * as Model from "../model.js";
 
-        let dtw = DTW.init(arr[arr.length - 1][arr[0].length - 1], arr, DTWHandler.#countMatrix(arr), useContext);
+class DTWCalculator {
+    static calculateDTW(seq1, seq2, jointIndex, sampleValue, useContext) {
+        let arr = DTWCalculator.countDTW(seq1, seq2, jointIndex);
+
+        let dtw = DTW.init(arr[arr.length - 1][arr[0].length - 1], arr, DTWCalculator.#countMatrix(arr), useContext);
 
         if (sampleValue !== 0) {
             let DTWCoeff = Math.floor((dtw.Val / sampleValue) * 50);
@@ -12,19 +14,40 @@ class DTWHandler {
         return dtw;
     }
 
-    static dtwPerJoints(seq1, seq2, dtwCoeff, useContext) {
-        let len = seq1[0].length;
-        // let len = 3;
-        let dtwParts = [];
-        for (let i = 0; i < len; i ++) {
-            let arr = DTWHandler.#countDTW(seq1, seq2, i);
-            dtwParts.push(new DTW(arr[arr.length - 1][arr[0].length - 1], arr, DTWHandler.#countMatrix(arr), dtwCoeff / len, useContext));
+    static dtwPerBodyPart(seq1, seq2, dtwCoeff, useContext, bodyPart, model) {
+        let indexes;
+        if (model === Model.modelVicon) {
+            indexes = DTWCalculator.getIndexesForBodyPartsVicon(bodyPart);
+        } else if (model === Model.modelKinect) {
+            indexes = DTWCalculator.getIndexesForBodyPartsKinect(bodyPart);
         }
 
-        return dtwParts;
+        let arr = DTWCalculator.countDTW(seq1, seq2, indexes);
+        return new DTW(
+            arr[arr.length - 1][arr[0].length - 1],
+            arr,
+            DTWCalculator.#countMatrix(arr),
+            dtwCoeff * (indexes.length / seq1[0].length),
+            useContext);
     }
 
-    static #countDTW(seq1, seq2, jointIndex) {
+    static getIndexesForBodyPartsVicon(bodyPart) {
+        let filteredBones = Model.bonesVicon.filter(function(b) {
+           return b.type === bodyPart
+        });
+
+        return filteredBones.map(b => b.a);
+    }
+
+    static getIndexesForBodyPartsKinect(bodyPart) {
+        let filteredBones = Model.bonesKinect.filter(function(b) {
+            return b.type === bodyPart
+        });
+
+        return filteredBones.map(b => b.a);
+    }
+
+    static countDTW(seq1, seq2, jointIndexes) {
         let len1 = seq1.length + 1;
         let len2 = seq2.length + 1;
         let arr = new Array(len1);
@@ -45,29 +68,32 @@ class DTWHandler {
         for (let i = 1; i < len1; i++) {
             for (let j = 1; j < len2; j++) {
                 let square = new DTWSquare(arr[i - 1][j - 1], arr[i][j - 1], arr[i - 1][j]);
-                arr[i][j] = DTWHandler.#compareTwoTimeSeries(seq1[i - 1], seq2[j - 1], square, jointIndex);
+                arr[i][j] = DTWCalculator.#compareTwoTimeSeries(seq1[i - 1], seq2[j - 1], square, jointIndexes);
             }
         }
 
         return arr;
     }
 
-    static #compareTwoTimeSeries(m1, m2, square, jointIndex) {
-        let euclidDistance = (jointIndex === -1) ? DTWHandler.#getValueFromModels(m1, m2) : DTWHandler.#getValueFromModelsPerJoint(m1, m2, jointIndex);
+    static #compareTwoTimeSeries(m1, m2, square, jointIndexes) {
+        let euclidDistance = (jointIndexes === -1) ? DTWCalculator.#getValueFromModels(m1, m2) : DTWCalculator.#getValueFromModelsPerBodyType(m1, m2, jointIndexes);
         let minPreviousValue = Math.min(square.leftBottom, square.leftUpper, square.rightBottom);
         return euclidDistance + minPreviousValue;
     }
 
     static #getValueFromModels(m1, m2) {
-        let res = 0;
+        let distance = 0;
         for (let i = 0; i < m1.length; i++) {
-            res += DTWHandler.#getVectorEuclideanDistance(m1[i], m2[i]);
+            distance += DTWCalculator.#getVectorEuclideanDistance(m1[i], m2[i]);
         }
-        return Math.sqrt(res);
+        return Math.sqrt(distance);
     }
 
-    static #getValueFromModelsPerJoint(m1, m2, jointIndex) {
-        let distance = DTWHandler.#getVectorEuclideanDistance(m1[jointIndex], m2[jointIndex]);
+    static #getValueFromModelsPerBodyType(m1, m2, jointIndexes) {
+        let distance = 0;
+        jointIndexes.forEach(function(i) {
+            distance += DTWCalculator.#getVectorEuclideanDistance(m1[i], m2[i]);
+        });
         return Math.sqrt(distance);
     }
 
@@ -191,4 +217,4 @@ class DTW {
     }
 }
 
-export {DTWHandler};
+export {DTWCalculator};

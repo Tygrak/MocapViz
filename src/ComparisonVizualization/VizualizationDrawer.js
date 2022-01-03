@@ -1,28 +1,42 @@
-import {addMapToVisualization, drawSequence, findKeyframes, initializeMocapRenderer, resizeSkeleton} from "../mocap.js";
+import {
+    addMapToVisualization, drawFrame,
+    drawSequence,
+    findKeyframes,
+    initializeMocapRenderer,
+    resizeSkeleton
+} from "../mocap.js";
 import * as Core from "../mocapCore.js";
 import {rgbaToColorString, Vec3} from "../mocapCore.js";
 import * as THREE from "../lib/three.module.js";
-import * as Model from "../model.js";
 
 class VisualizationDrawer {
     numKeyframes = 10;
     sceneWidth = 100;
     startDotXPosition = 1;
     circleRadius = 0.1;
-    model = Model.modelVicon;
     #bars = document.createElement("canvas");
+    #detail = document.createElement("canvas");
+    #detailRenderer;
 
-    constructor(visualizationWidth, visualizationHeight, drawStyle, jointsCount, drawStyleBlur, mapWidth, mapHeight) {
+    constructor(visualizationWidth, visualizationHeight, drawStyle, jointsCount, drawStyleBlur, mapWidth, mapHeight, model) {
         this.drawStyle = drawStyle;
         this.drawStyleBlur = drawStyleBlur;
         this.visualizationWidth = visualizationWidth;
         this.visualizationHeight = visualizationHeight;
         this.mapWidth = mapWidth;
         this.mapHeight = mapHeight;
+        this.model = model;
 
         this.div = document.createElement("div");
         this.image = document.createElement("img");
         this.image.className = "drawItemVisualization";
+
+        this.#detail.id = "detailCanvas";
+        this.#detail.width = 300;
+        this.#detail.height = 300;
+        this.#detail.className = "drawItemVisualization";
+
+        this.#detailRenderer = initializeMocapRenderer(this.#detail, this.#detail.width, this.#detail.height, drawStyle, jointsCount);
 
         this.canvas = document.createElement("canvas");
         this.mainRenderer = initializeMocapRenderer(this.canvas, visualizationWidth, visualizationHeight, drawStyle, jointsCount);
@@ -66,12 +80,76 @@ class VisualizationDrawer {
         return dots;
     }
 
+    drawLines(dots1, dots2, path, dtwArr, lineCoefficient, colorCoefficient, DTWcoeff, lowestDistance) {
+        for (let i = 1; i < path.length; i += lineCoefficient) {
+            let color = VisualizationDrawer.#getColorForIndex(i, path, dtwArr, colorCoefficient, DTWcoeff, false, lowestDistance);
+            if (path[i - 1][0] >= dots1.length || path[i - 1][1] >= dots2.length) {
+                break;
+            }
+            this.#drawLine(dots1[path[i - 1][0]], dots2[path[i - 1][1]], color);
+        }
+    }
+
+    drawBars(dtws) {
+        let height = 18;
+        let textSpace = 100;
+        let oneBarPieceWidth = 4;
+
+        let dtw = dtws[0][0];
+        const canvas = document.createElement("canvas");
+        canvas.width = dtw.Map.length * oneBarPieceWidth + textSpace;
+        canvas.height = 20 * dtws.length;
+        const ctx = canvas.getContext('2d');
+        ctx.font = `${height}px Arial`;
+
+        for (let j = 0; j < dtws.length; j ++ ) {
+            ctx.fillStyle = "black";
+            ctx.fillText(dtws[j][1], 0, j * height + height, textSpace);
+            for (let i = 1; i < dtws[j][0].Map.length; i ++) {
+                let color = VisualizationDrawer.#getColorForIndex(i, dtws[j][0].Map, dtws[j][0].Arr, dtws[j][0].ColorCoeff, dtws[j][0].ContextColorCoeff, false, dtws[j][0].LowestDistance)
+                ctx.fillStyle = VisualizationDrawer.#getRGBFromColor(color);
+                ctx.fillRect(i * oneBarPieceWidth + textSpace, j * height, oneBarPieceWidth, height);
+            }
+        }
+
+        this.#bars = canvas;
+    }
+
+    setDetailView(dtw, processedLongerSeqFrames) {
+        // this.image.onmousemove = (event) => this.#onMouseMoveMapping(event, dtw, processedLongerSeqFrames);
+        this.image.onmouseover = (event) => this.#onMouseMoveMapping(event, dtw, processedLongerSeqFrames);
+    }
+
+    #onMouseMoveMapping(mouseEvent, dtw, processedLongerSeqFrames) {
+        const frames = processedLongerSeqFrames.frames;
+        let index = 10;
+        let coreX = frames[index][0].x;
+        let frame = Core.moveOriginXBy(frames[index], coreX);
+        drawFrame(this.#detailRenderer, frame, processedLongerSeqFrames.figureScale, 50, 50, this.drawStyle, false);
+
+        // const ctx = this.#detail.getContext('2d');
+        // console.log(ctx);
+        // ctx.clearRect(0, 0, this.#detail.width, this.#detail.height);
+        // ctx.font = "20px Arial";
+        //
+        // ctx.fillStyle = "black";
+        // ctx.fillText(mouseEvent.x.toString(), 1, 21);
+        // ctx.fillText(mouseEvent.y.toString(), 1, 43);
+    }
+
+    drawDetail(frame, figureScale) {
+        const ctx = this.#detail.getContext('2d');
+        ctx.clearRect(0, 0, this.#detail.width, this.#detail.height);
+        drawFrame(this.#detailRenderer, frame, figureScale, 0, 0, this.drawStyle, true);
+    }
+
     putTogetherImage(longerProcessed, shorterProcessed) {
         this.div.appendChild(this.#addMapToSequence(longerProcessed, this.mapWidth, this.mapHeight));
-        this.div.appendChild(this.image);
         this.div.appendChild(this.#addMapToSequence(shorterProcessed, this.mapWidth, this.mapHeight));
         this.div.appendChild(this.#bars);
-        //this.div.appendChild(VisualizationDrawer.#drawBar(100, 100));
+        this.div.appendChild(this.image);
+        this.div.appendChild(this.#detail);
+
         this.image.src = this.mainRenderer.canvas.toDataURL("image/png");
         this.image.height = this.visualizationHeight;
         this.image.width = this.visualizationWidth;
@@ -91,16 +169,6 @@ class VisualizationDrawer {
         this.mainRenderer.renderer.render(scene, this.mainRenderer.camera);
     }
 
-    drawLines(dots1, dots2, path, dtwArr, lineCoefficient, colorCoefficient, DTWcoeff, lowestDistance) {
-        for (let i = 1; i < path.length; i += lineCoefficient) {
-            let color = VisualizationDrawer.#getColorForIndex(i, path, dtwArr, colorCoefficient, DTWcoeff, false, lowestDistance);
-            if (path[i - 1][0] >= dots1.length || path[i - 1][1] >= dots2.length) {
-                break;
-            }
-            this.#drawLine(dots1[path[i - 1][0]], dots2[path[i - 1][1]], color);
-        }
-    }
-
     #drawLine(coord1, coord2, color) {
         let scene = new THREE.Scene();
         let rgb = VisualizationDrawer.#getRGBFromColor(color);
@@ -114,6 +182,13 @@ class VisualizationDrawer {
         const line = new THREE.Line(geometry, material);
         scene.add(line);
         this.mainRenderer.renderer.render(scene, this.mainRenderer.camera);
+    }
+
+    #addMapToSequence(processed, mapWidth, mapHeight) {
+        let frames = processed.frames;
+        let keyframes = findKeyframes(frames, this.numKeyframes, Core.KeyframeSelectionAlgorithmEnum.Decimation);
+        let figureScale = processed.figureScale;
+        return addMapToVisualization(frames, keyframes, figureScale, this.model, mapWidth, mapHeight);
     }
 
     static #getColorForIndex(index, path, dtwArr, colorCoefficient, DTWcoeff, shorter, lowestDistance) {
@@ -137,56 +212,8 @@ class VisualizationDrawer {
         return -1;
     }
 
-    #addMapToSequence(processed, mapWidth, mapHeight) {
-        let frames = processed.frames;
-        let keyframes = findKeyframes(frames, this.numKeyframes, Core.KeyframeSelectionAlgorithmEnum.Decimation);
-        let figureScale = processed.figureScale;
-        return addMapToVisualization(frames, keyframes, figureScale, this.model, mapWidth, mapHeight);
-    }
-
-    drawBars(dtws) {
-        let dtw = dtws[0];
-        const canvas = document.createElement("canvas");
-        canvas.width = dtw.Map.length * 3;
-        canvas.height = 10 * dtws.length;
-        const ctx = canvas.getContext('2d');
-
-        for (let j = 0; j < dtws.length; j ++ ) {
-            for (let i = 1; i < dtws[j].Map.length; i ++) {
-                let color = VisualizationDrawer.#getColorForIndex(i, dtws[j].Map, dtws[j].Arr, dtws[j].ColorCoeff, dtws[j].ContextColorCoeff, false, dtws[j].LowestDistance)
-                ctx.fillStyle = VisualizationDrawer.#getRGBFromColor(color);
-                ctx.fillRect(i * 3, j * 10, 3, 10);
-            }
-        }
-
-        this.#bars = canvas;
-    }
-
     static #getRGBFromColor(color) {
         return `rgb(${color}, ${255 - color}, 0)`;
-    }
-
-    //TODO: implement
-    static #drawBar(barWidth, barHeight) {
-        let canvas = document.createElement("canvas");
-        canvas.className = "drawItemMap";
-        canvas.width = barWidth;
-        canvas.height = barHeight;
-        canvas.style = "width: "+barWidth+"px; height: "+barHeight+"px;";
-
-        let ctx = canvas.getContext("2d");
-        ctx.fillStyle = rgbaToColorString("rgba(10,100,100)");
-        ctx.beginPath();
-        ctx.moveTo(5, 5);
-        ctx.lineTo(50, 5);
-        ctx.lineTo(50, 50);
-        ctx.lineTo(5, 50);
-        ctx.lineTo(5, 5);
-        ctx.closePath();
-        ctx.fill();
-
-        this.bar = canvas;
-        return canvas;
     }
 }
 

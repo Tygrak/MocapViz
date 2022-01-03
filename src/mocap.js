@@ -436,14 +436,6 @@ function createVisualizationElementCustom(sequence, model, numKeyframes, numBlur
         drawSequence(mainRenderer, frames, fillKeyframes, 0, fillStyle, drawStyleBlur, figureScale, 0, false, useTrueTime);
     }
     let positions = drawSequence(mainRenderer, frames, keyframes, numBlurFrames, drawStyle, drawStyleBlur, figureScale, 0, false, useTrueTime);
-
-    let circleRadius = 0.1;
-    let shift = positions[positions.length - 1]/frames.length;
-    let xPosition = 1;
-    for (let i = 0; i < frames.length; i ++) {
-        drawDotFrame(mainRenderer, xPosition, circleRadius);
-        xPosition += shift;
-    }
     if (mapWidth > 0 && mapHeight > 0) {
         let map = addMapToVisualization(frames, keyframes, figureScale, model, mapWidth, mapHeight);
         div.appendChild(map);
@@ -578,7 +570,7 @@ function createAnimationElement(sequence, model, visualizationWidth, visualizati
     return div;
 }
 
-export {VisualizationFactory, visualizeToCanvas, createVisualizationElement, createZoomableVisualizationElement, createAnimationElement, drawSequence, resizeSkeleton, findKeyframes, clearRenderer, initializeMocapRenderer, resizeMocapRenderer, addMapToVisualization};
+export {VisualizationFactory, visualizeToCanvas, drawFrame, createVisualizationElement, createZoomableVisualizationElement, createAnimationElement, drawSequence, resizeSkeleton, findKeyframes, clearRenderer, initializeMocapRenderer, resizeMocapRenderer, addMapToVisualization};
 export {loadDataFromString, loadDataFromFile, getSequenceLength, getSequenceCategory, getSequenceJointsPerFrame, KeyframeSelectionAlgorithmEnum} from './mocapCore.js';
 export {createDiffVisualization} from './mocapDiffs.js';
 export * from './model.js';
