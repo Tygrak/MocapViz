@@ -2,7 +2,8 @@ import * as THREE from './lib/three.module.js';
 import * as Model from './model.js';
 import * as Core from './mocapCore.js';
 import {OrbitControls} from './lib/OrbitControls.js';
-import {createDiffVisualization} from "./mocapDiffs.js";
+import {createDiffVisualization, sampling} from "./mocapDiffs.js";
+import {VisualizationService} from "./ComparisonVizualization/VisualizationService.js";
 
 let mainRenderer = null;
 const sceneWidth = 100;
@@ -53,6 +54,7 @@ class VisualizationFactory {
         this.numKeyframes = 10;
         this.numBlurFrames = 10;
         this.numZoomedKeyframes = 12;
+        this.visualizationService = new VisualizationService();
     }
 
     /**
@@ -99,10 +101,18 @@ class VisualizationFactory {
         let drawStyleBlur = new Core.MocapDrawStyle(this.model, this.boneRadius, this.jointRadius, this.headRadius, this.boneStyle,
             this.boneStyle, this.boneStyle, this.jointStyle, 1, this.boneStyle, this.noseRadius, this.blurFrameOpacity);
 
-        return createDiffVisualization(mainRenderer, sequence1, sequence2, visualizationWidth, visualizationHeight, drawStyle, drawStyleBlur, mapWidth, mapHeight, 5);
+        return this.visualizationService.createSequenceComparisonVisualization(sequence1, sequence2, visualizationWidth, visualizationHeight, drawStyle, drawStyleBlur, mapWidth, mapHeight);
+        //return createDiffVisualization(mainRenderer, sequence1, sequence2, visualizationWidth, visualizationHeight, drawStyle, drawStyleBlur, mapWidth, mapHeight);
     }
 
-
+    sampling(sequences, count = 1) {
+        this.visualizationService.sampleDataSet(sequences, count);
+        // let samples = 0;
+        // for (let i = 0; i < count; i ++) {
+        //     samples += sampling(sequences);
+        // }
+        // return (samples / count);
+    }
 }
 
 class MocapRenderer {
@@ -426,14 +436,6 @@ function createVisualizationElementCustom(sequence, model, numKeyframes, numBlur
         drawSequence(mainRenderer, frames, fillKeyframes, 0, fillStyle, drawStyleBlur, figureScale, 0, false, useTrueTime);
     }
     let positions = drawSequence(mainRenderer, frames, keyframes, numBlurFrames, drawStyle, drawStyleBlur, figureScale, 0, false, useTrueTime);
-
-    let circleRadius = 0.1;
-    let shift = positions[positions.length - 1]/frames.length;
-    let xPosition = 1;
-    for (let i = 0; i < frames.length; i ++) {
-        drawDotFrame(mainRenderer, xPosition, circleRadius);
-        xPosition += shift;
-    }
     if (mapWidth > 0 && mapHeight > 0) {
         let map = addMapToVisualization(frames, keyframes, figureScale, model, mapWidth, mapHeight);
         div.appendChild(map);
@@ -568,7 +570,7 @@ function createAnimationElement(sequence, model, visualizationWidth, visualizati
     return div;
 }
 
-export {VisualizationFactory, visualizeToCanvas, createVisualizationElement, createZoomableVisualizationElement, createAnimationElement, drawSequence, resizeSkeleton, findKeyframes, clearRenderer, initializeMocapRenderer, resizeMocapRenderer, addMapToVisualization};
+export {VisualizationFactory, visualizeToCanvas, drawFrame, createVisualizationElement, createZoomableVisualizationElement, createAnimationElement, drawSequence, resizeSkeleton, findKeyframes, clearRenderer, initializeMocapRenderer, resizeMocapRenderer, addMapToVisualization};
 export {loadDataFromString, loadDataFromFile, getSequenceLength, getSequenceCategory, getSequenceJointsPerFrame, KeyframeSelectionAlgorithmEnum} from './mocapCore.js';
 export {createDiffVisualization} from './mocapDiffs.js';
 export * from './model.js';

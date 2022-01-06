@@ -30,11 +30,11 @@
                     factory.leftBoneStyle = {r: 0, g: 180, b: 0, a: 1};
                     factory.opacity = 0.6;
                     factory.blurFrameOpacity = 0.17;
+                    // factory.sampling(sequences, 10);
+                    //console.log(sampleAverage);
                     //console.log(factory.getIndexOfSequenceById(sequences, "3405_91_539_126"));
-                    //let visualizationElement = factory.visualizeSequenceDiffs(sequences[0], sequences[1572]);
-                    let visualizationElement = factory.visualizeSequenceDiffs(sequences[2269], sequences[2252]);
-                    //let visualizationElement = factory.visualizeSequenceDiffs(sequences[1918], sequences[1071]);
-                    //let visualizationElement = factory.createVisualization(sequences[0], 1200, 50, 250, 150);
+                    let visualizationElement = factory.visualizeSequenceDiffs(sequences[1918], sequences[1071]);
+
                     document.body.appendChild(visualizationElement);
                 });
             }
