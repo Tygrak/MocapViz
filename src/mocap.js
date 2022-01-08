@@ -311,7 +311,7 @@ function clearRenderer(mocapRenderer) {
     mocapRenderer.renderer.render(mocapRenderer.clearScene, mocapRenderer.camera);
 }
 
-function initializeMocapRenderer(canvas, width, height, drawStyle, jointsCount) {
+function initializeMocapRenderer(canvas, width, height, drawStyle, jointsCount, defaultSceneWidth = 0) {
     let renderer = new THREE.WebGLRenderer({canvas, preserveDrawingBuffer: true, alpha: true, antialiasing: true});
     renderer.setPixelRatio(window.devicePixelRatio*1.5);
     renderer.autoClearColor = false;
@@ -320,10 +320,15 @@ function initializeMocapRenderer(canvas, width, height, drawStyle, jointsCount) 
 
     let scene = new THREE.Scene();
     scene.background = new THREE.Color(0xffffff);
+
+    let sceneWidthValue = sceneWidth;
+    if (defaultSceneWidth !== 0) {
+        sceneWidthValue = defaultSceneWidth;
+    }
     
-    let camera = new THREE.OrthographicCamera(-sceneWidth/2, sceneWidth/2, (sceneWidth/2)/ratio, -(sceneWidth/2)/ratio, 0.1, 1000);
-    camera.position.set(sceneWidth/2, (sceneWidth/2)/ratio, sceneWidth);
-    camera.lookAt(sceneWidth/2, (sceneWidth/2)/ratio, 0);
+    let camera = new THREE.OrthographicCamera(-sceneWidthValue/2, sceneWidthValue/2, (sceneWidthValue/2)/ratio, -(sceneWidthValue/2)/ratio, 0.1, 1000);
+    camera.position.set(sceneWidthValue/2, (sceneWidthValue/2)/ratio, sceneWidthValue);
+    camera.lookAt(sceneWidthValue/2, (sceneWidthValue/2)/ratio, 0);
     let skeleton = createSkeleton(drawStyle, jointsCount);
     scene.add(skeleton.group);
     return new MocapRenderer(canvas, renderer, camera, skeleton, scene);

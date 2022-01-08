@@ -26,36 +26,35 @@ class VisualizationService {
         let shorterPositions = drawer.drawSequenceIntoImage(this.#shorterProcessed, 0, longerSeq.length / shorterSeq.length);
 
         // count DTW
-        // longerSeq = this.#parseSequence(longerSeq);
-        // shorterSeq = this.#parseSequence(shorterSeq);
-        // let dtw;
-        // // if we want to use context, the value of distance will have only 105/255 of 1 the rest will be context
-        // if (useContext) {
-        //     dtw = DTWCalculator.calculateDTW(longerSeq, shorterSeq, -1, this.context.getValue(), useContext);
-        // } else {
-        //     dtw = DTWCalculator.calculateDTW(longerSeq, shorterSeq, -1, 0, useContext);
-        // }
-        //
-        // // draw DTW
-        // drawer.drawDTWValueToImage(dtw.Val);
-        // console.log("DTW result: " + dtw.Val);
-        //
-        // let dotCoords1 = drawer.drawDots(yThird * 2, longerPositions, this.#longerProcessed.frames, dtw.Map, dtw.Arr, dtw.ColorCoeff, dtw.ContextColorCoeff, dtw.LowestDistance);
-        // let dotCoords2 = drawer.drawDots(yThird, shorterPositions, this.#shorterProcessed.frames, dtw.Map, dtw.Arr, dtw.ColorCoeff, dtw.ContextColorCoeff, dtw.LowestDistance, true);
-        //
-        // // draw lines
-        // drawer.drawLines(dotCoords1, dotCoords2, dtw.Map, dtw.Arr, lineCoefficient, dtw.ColorCoeff, dtw.ContextColorCoeff, dtw.LowestDistance);
-        //
-        // // set detail
-        // drawer.setDetailView(dtw, this.#longerProcessed);
-        //
-        // // draw body parts
-        // let dtws = this.#visualizeBodyParts(longerSeq, shorterSeq, dtw.ContextColorCoeff, useContext);
-        //
-        // drawer.drawBars(dtws);
-        //
-        // // add maps
-        // return drawer.putTogetherImage(this.#longerProcessed, this.#shorterProcessed);
+        longerSeq = this.#parseSequence(longerSeq);
+        shorterSeq = this.#parseSequence(shorterSeq);
+        let dtw;
+        // if we want to use context, the value of distance will have only 105/255 of 1 the rest will be context
+        if (useContext) {
+            dtw = DTWCalculator.calculateDTW(longerSeq, shorterSeq, -1, this.context.getValue(), useContext);
+        } else {
+            dtw = DTWCalculator.calculateDTW(longerSeq, shorterSeq, -1, 0, useContext);
+        }
+
+        // draw DTW
+        drawer.drawDTWValueToImage(dtw.Val);
+        console.log("DTW result: " + dtw.Val);
+
+        let dotCoords1 = drawer.drawDots(yThird * 2, longerPositions, this.#longerProcessed.frames, dtw.Map, dtw.Arr, dtw.ColorCoeff, dtw.ContextColorCoeff, dtw.LowestDistance);
+        let dotCoords2 = drawer.drawDots(yThird, shorterPositions, this.#shorterProcessed.frames, dtw.Map, dtw.Arr, dtw.ColorCoeff, dtw.ContextColorCoeff, dtw.LowestDistance, true);
+
+        // draw lines
+        drawer.drawLines(dotCoords1, dotCoords2, dtw.Map, dtw.Arr, lineCoefficient, dtw.ColorCoeff, dtw.ContextColorCoeff, dtw.LowestDistance);
+
+        drawer.setDetailView(dtw, this.#longerProcessed, this.#shorterProcessed);
+
+        // draw body parts
+        let dtws = this.#visualizeBodyParts(longerSeq, shorterSeq, dtw.ContextColorCoeff, useContext);
+
+        drawer.drawBars(dtws);
+
+        // add maps
+        return drawer.putTogetherImage(this.#longerProcessed, this.#shorterProcessed);
     }
 
     sampleDataSet(sequences, count) {

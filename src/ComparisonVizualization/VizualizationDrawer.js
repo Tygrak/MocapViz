@@ -31,14 +31,11 @@ class VisualizationDrawer {
         this.image = document.createElement("img");
         this.image.className = "drawItemVisualization";
 
-        this.#detail.id = "detailCanvas";
-        this.#detail.width = 300;
-        this.#detail.height = 300;
-        this.#detail.className = "drawItemVisualization";
-
-        this.#detailRenderer = initializeMocapRenderer(this.#detail, this.#detail.width, this.#detail.height, drawStyle, jointsCount);
+        this.#detailRenderer = initializeMocapRenderer(this.#detail, 600, 300, drawStyle, jointsCount, 10);
 
         this.canvas = document.createElement("canvas");
+        this.style = drawStyle;
+        this.style.figureScale = 1.5;
         this.mainRenderer = initializeMocapRenderer(this.canvas, visualizationWidth, visualizationHeight, drawStyle, jointsCount);
     }
 
@@ -115,32 +112,29 @@ class VisualizationDrawer {
         this.#bars = canvas;
     }
 
-    setDetailView(dtw, processedLongerSeqFrames) {
-        // this.image.onmousemove = (event) => this.#onMouseMoveMapping(event, dtw, processedLongerSeqFrames);
-        this.image.onmouseover = (event) => this.#onMouseMoveMapping(event, dtw, processedLongerSeqFrames);
+    setDetailView(dtw, processedLongerSeqFrames, processedShorterSeqFrames) {
+        this.image.onmousemove = (event) => this.#onMouseMoveMapping(event, dtw, processedLongerSeqFrames, processedShorterSeqFrames);
     }
 
-    #onMouseMoveMapping(mouseEvent, dtw, processedLongerSeqFrames) {
-        const frames = processedLongerSeqFrames.frames;
-        let index = 10;
-        let coreX = frames[index][0].x;
-        let frame = Core.moveOriginXBy(frames[index], coreX);
-        drawFrame(this.#detailRenderer, frame, processedLongerSeqFrames.figureScale, 50, 50, this.drawStyle, false);
+    #onMouseMoveMapping(mouseEvent, dtw, processedLongerSeqFrames, processedShorterSeqFrames) {
+        const longerFrames = processedLongerSeqFrames.frames;
+        const shorterFrames = processedShorterSeqFrames.frames;
+        let oneFrameVal = this.visualizationWidth / dtw.Map.length;
+        let figureScale = processedLongerSeqFrames.figureScale;
 
-        // const ctx = this.#detail.getContext('2d');
-        // console.log(ctx);
-        // ctx.clearRect(0, 0, this.#detail.width, this.#detail.height);
-        // ctx.font = "20px Arial";
-        //
-        // ctx.fillStyle = "black";
-        // ctx.fillText(mouseEvent.x.toString(), 1, 21);
-        // ctx.fillText(mouseEvent.y.toString(), 1, 43);
-    }
+        let index = Math.floor(mouseEvent.pageX / oneFrameVal);
+        let longerSeqFrameIndex = dtw.Map[index][0];
+        let shorterSeqFrameIndex = dtw.Map[index][1];
 
-    drawDetail(frame, figureScale) {
-        const ctx = this.#detail.getContext('2d');
-        ctx.clearRect(0, 0, this.#detail.width, this.#detail.height);
-        drawFrame(this.#detailRenderer, frame, figureScale, 0, 0, this.drawStyle, true);
+        let coreX = longerFrames[longerSeqFrameIndex][0].x;
+        let longerSeqFrame = Core.moveOriginXBy(longerFrames[longerSeqFrameIndex], coreX);
+        resizeSkeleton(this.#detailRenderer.skeleton, this.drawStyle, figureScale);
+        drawFrame(this.#detailRenderer, longerSeqFrame, figureScale, 1, 0, this.drawStyle, true);
+
+        coreX = shorterFrames[shorterSeqFrameIndex][0].x;
+        let shorterSeqFrame = Core.moveOriginXBy(shorterFrames[shorterSeqFrameIndex], coreX);
+        resizeSkeleton(this.#detailRenderer.skeleton, this.drawStyle, figureScale);
+        drawFrame(this.#detailRenderer, shorterSeqFrame, figureScale, 3, 0, this.drawStyle, false);
     }
 
     putTogetherImage(longerProcessed, shorterProcessed) {
