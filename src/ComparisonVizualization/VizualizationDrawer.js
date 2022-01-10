@@ -31,7 +31,7 @@ class VisualizationDrawer {
         this.image = document.createElement("img");
         this.image.className = "drawItemVisualization";
 
-        this.#detailRenderer = initializeMocapRenderer(this.#detail, 600, 300, drawStyle, jointsCount, 10);
+        this.#detailRenderer = initializeMocapRenderer(this.#detail, 600, 200, drawStyle, jointsCount, 10);
 
         this.canvas = document.createElement("canvas");
         this.style = drawStyle;
