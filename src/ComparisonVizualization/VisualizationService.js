@@ -66,18 +66,30 @@ class VisualizationService {
         console.log(this.context);
     }
 
-    static onMouseMoveMapping(mouseEvent, dtw) {
-        // console.log("I am here!");
-        // const canvas = document.getElementById("detailCanvas");
-        // console.log(canvas);
-        // const ctx = canvas.getContext('2d');
-        // console.log(ctx);
-        // ctx.clearRect(0, 0, canvas.width, canvas.height);
-        // ctx.font = "20px Arial";
-        //
-        // ctx.fillStyle = "black";
-        // ctx.fillText(mouseEvent.x.toString(), 1, 21);
-        // ctx.fillText(mouseEvent.y.toString(), 1, 43);
+    static #timeAligning(longerSeq, shorterSeq) {
+        let ratioIndex = longerSeq.length / shorterSeq.length;
+        ratioIndex = Math.floor(ratioIndex);
+
+        let newLongerSeq = [];
+        if (ratioIndex > 1) {
+            for (let i = 0; i < longerSeq.length; i += ratioIndex) {
+                newLongerSeq.push(longerSeq[i]);
+            }
+        } else {
+            newLongerSeq = longerSeq;
+        }
+
+        let newLength = newLongerSeq.length;
+        ratioIndex = newLength / (newLength - shorterSeq.length);
+        ratioIndex = Math.floor(ratioIndex);
+
+        let i = newLongerSeq.length;
+
+        while (i--) {
+            (i + 1) % ratioIndex === 0 && newLongerSeq.splice(i, 1);
+        }
+
+        return newLongerSeq;
     }
 
     static #sortSequences(sequence1, sequence2) {
