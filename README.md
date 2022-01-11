@@ -27,7 +27,7 @@ Clone the repository, copy the contents of `src` into your project folder.
 
     Mocap.loadDataFromFile(dataFile, (sequences) => {
         let factory = new Mocap.VisualizationFactory();
-        let visualizationElement = factory.createVisualization(sequences[0], 850, 250, 250, 250);
+        let visualizationElement = factory.visualizeSequenceDiffs(sequences[0], 850, 250, 250, 250);
         document.body.appendChild(visualizationElement);
     });
 ```
