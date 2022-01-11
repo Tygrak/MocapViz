@@ -31,34 +31,35 @@ class VisualizationDrawer {
         this.image = document.createElement("img");
         this.image.className = "drawItemVisualization";
 
-        this.#detail.id = "detailCanvas";
-        this.#detail.width = 300;
-        this.#detail.height = 300;
-        this.#detail.className = "drawItemVisualization";
-
-        this.#detailRenderer = initializeMocapRenderer(this.#detail, this.#detail.width, this.#detail.height, drawStyle, jointsCount);
+        this.#detailRenderer = initializeMocapRenderer(this.#detail, 600, 200, drawStyle, jointsCount, 10);
 
         this.canvas = document.createElement("canvas");
+        this.style = drawStyle;
+        this.style.figureScale = 1.5;
         this.mainRenderer = initializeMocapRenderer(this.canvas, visualizationWidth, visualizationHeight, drawStyle, jointsCount);
+
+        this.timeAlignedCanvas = document.createElement("canvas");
+        this.timeAlignedRenderer = initializeMocapRenderer(this.timeAlignedCanvas, visualizationWidth, visualizationHeight, drawStyle, jointsCount);
     }
 
     processSequenceForDrawing(seq) {
         return Core.processSequence(seq, this.numKeyframes, this.sceneWidth, this.visualizationWidth, this.visualizationHeight / 3, this.drawStyle, true, false);
     }
 
-    drawSequenceIntoImage(processed, yShift, xCoefficient = 1) {
+    drawSequenceIntoImage(processed, yShift, xCoefficient = 1, defaultRenderer = null) {
+        let renderer = (defaultRenderer === null) ? this.mainRenderer : defaultRenderer;
         let figureScale = processed.figureScale;
         let frames = processed.frames;
-        resizeSkeleton(this.mainRenderer.skeleton, this.drawStyle, figureScale);
+        resizeSkeleton(renderer.skeleton, this.drawStyle, figureScale);
         let keyframes = findKeyframes(frames, this.numKeyframes, Core.KeyframeSelectionAlgorithmEnum.Decimation);
 
         let fillKeyframes = Core.getFillKeyframes(frames, keyframes, this.sceneWidth);
         let fillStyle = new Core.MocapDrawStyle(this.drawStyle.skeletonModel, this.drawStyle.boneRadius, this.drawStyle.jointRadius,
             this.drawStyle.headRadius, this.drawStyle.boneStyle, this.drawStyle.leftBoneStyle, this.drawStyle.rightBoneStyle,
             this.drawStyle.jointStyle, this.drawStyle.figureScale, this.drawStyle.noseStyle, this.drawStyle.noseRadius, 0.4);
-        drawSequence(this.mainRenderer, frames, fillKeyframes, 0, fillStyle, this.drawStyleBlur, figureScale, yShift, false, true, xCoefficient);
+        drawSequence(renderer, frames, fillKeyframes, 0, fillStyle, this.drawStyleBlur, figureScale, yShift, false, true, xCoefficient);
 
-        return drawSequence(this.mainRenderer, frames, keyframes, 0, this.drawStyle, this.drawStyleBlur, figureScale, yShift, false, true, xCoefficient);
+        return drawSequence(renderer, frames, keyframes, 0, this.drawStyle, this.drawStyleBlur, figureScale, yShift, false, true, xCoefficient);
     }
 
     drawDTWValueToImage(dtwValue) {
@@ -67,26 +68,26 @@ class VisualizationDrawer {
         this.div.appendChild(text);
     }
 
-    drawDots(dotYShift, positions, frames, dtwMap, dtwArr, colorCoefficient, DTWcoeff, lowestDistance, shorter = false) {
+    drawDots(dotYShift, positions, frames, dtwMap, dtwArr, colorCoefficient, DTWcoeff, lowestDistance, shorter = false, defaultRenderer = null) {
         let shift = positions[positions.length - 1] / frames.length;
         let xPosition = this.startDotXPosition;
         let dots = [];
         for (let i = 1; i < frames.length; i++) {
             let color = VisualizationDrawer.#getColorForIndex(i, dtwMap, dtwArr, colorCoefficient, DTWcoeff, shorter, lowestDistance);
-            this.#drawDotFrame(xPosition, dotYShift, this.circleRadius, color);
+            this.#drawDotFrame(xPosition, dotYShift, this.circleRadius, color, defaultRenderer);
             dots.push(new Vec3(xPosition, dotYShift, 0));
             xPosition += shift;
         }
         return dots;
     }
 
-    drawLines(dots1, dots2, path, dtwArr, lineCoefficient, colorCoefficient, DTWcoeff, lowestDistance) {
+    drawLines(dots1, dots2, path, dtwArr, lineCoefficient, colorCoefficient, DTWcoeff, lowestDistance, defaultRenderer = null) {
         for (let i = 1; i < path.length; i += lineCoefficient) {
             let color = VisualizationDrawer.#getColorForIndex(i, path, dtwArr, colorCoefficient, DTWcoeff, false, lowestDistance);
             if (path[i - 1][0] >= dots1.length || path[i - 1][1] >= dots2.length) {
                 break;
             }
-            this.#drawLine(dots1[path[i - 1][0]], dots2[path[i - 1][1]], color);
+            this.#drawLine(dots1[path[i - 1][0]], dots2[path[i - 1][1]], color, defaultRenderer);
         }
     }
 
@@ -115,32 +116,29 @@ class VisualizationDrawer {
         this.#bars = canvas;
     }
 
-    setDetailView(dtw, processedLongerSeqFrames) {
-        // this.image.onmousemove = (event) => this.#onMouseMoveMapping(event, dtw, processedLongerSeqFrames);
-        this.image.onmouseover = (event) => this.#onMouseMoveMapping(event, dtw, processedLongerSeqFrames);
+    setDetailView(dtw, processedLongerSeqFrames, processedShorterSeqFrames) {
+        this.image.onmousemove = (event) => this.#onMouseMoveMapping(event, dtw, processedLongerSeqFrames, processedShorterSeqFrames);
     }
 
-    #onMouseMoveMapping(mouseEvent, dtw, processedLongerSeqFrames) {
-        const frames = processedLongerSeqFrames.frames;
-        let index = 10;
-        let coreX = frames[index][0].x;
-        let frame = Core.moveOriginXBy(frames[index], coreX);
-        drawFrame(this.#detailRenderer, frame, processedLongerSeqFrames.figureScale, 50, 50, this.drawStyle, false);
+    #onMouseMoveMapping(mouseEvent, dtw, processedLongerSeqFrames, processedShorterSeqFrames) {
+        const longerFrames = processedLongerSeqFrames.frames;
+        const shorterFrames = processedShorterSeqFrames.frames;
+        let oneFrameVal = this.visualizationWidth / dtw.Map.length;
+        let figureScale = processedLongerSeqFrames.figureScale;
 
-        // const ctx = this.#detail.getContext('2d');
-        // console.log(ctx);
-        // ctx.clearRect(0, 0, this.#detail.width, this.#detail.height);
-        // ctx.font = "20px Arial";
-        //
-        // ctx.fillStyle = "black";
-        // ctx.fillText(mouseEvent.x.toString(), 1, 21);
-        // ctx.fillText(mouseEvent.y.toString(), 1, 43);
-    }
+        let index = Math.floor(mouseEvent.pageX / oneFrameVal);
+        let longerSeqFrameIndex = dtw.Map[index][0];
+        let shorterSeqFrameIndex = dtw.Map[index][1];
 
-    drawDetail(frame, figureScale) {
-        const ctx = this.#detail.getContext('2d');
-        ctx.clearRect(0, 0, this.#detail.width, this.#detail.height);
-        drawFrame(this.#detailRenderer, frame, figureScale, 0, 0, this.drawStyle, true);
+        let coreX = longerFrames[longerSeqFrameIndex][0].x;
+        let longerSeqFrame = Core.moveOriginXBy(longerFrames[longerSeqFrameIndex], coreX);
+        resizeSkeleton(this.#detailRenderer.skeleton, this.drawStyle, figureScale);
+        drawFrame(this.#detailRenderer, longerSeqFrame, figureScale, 1, 0, this.drawStyle, true);
+
+        coreX = shorterFrames[shorterSeqFrameIndex][0].x;
+        let shorterSeqFrame = Core.moveOriginXBy(shorterFrames[shorterSeqFrameIndex], coreX);
+        resizeSkeleton(this.#detailRenderer.skeleton, this.drawStyle, figureScale);
+        drawFrame(this.#detailRenderer, shorterSeqFrame, figureScale, 3, 0, this.drawStyle, false);
     }
 
     putTogetherImage(longerProcessed, shorterProcessed) {
@@ -149,6 +147,7 @@ class VisualizationDrawer {
         this.div.appendChild(this.#bars);
         this.div.appendChild(this.image);
         this.div.appendChild(this.#detail);
+        this.div.appendChild(this.timeAlignedCanvas);
 
         this.image.src = this.mainRenderer.canvas.toDataURL("image/png");
         this.image.height = this.visualizationHeight;
@@ -158,7 +157,8 @@ class VisualizationDrawer {
         return this.div;
     }
 
-    #drawDotFrame(xPosition, yPosition, circleRadius, color) {
+    #drawDotFrame(xPosition, yPosition, circleRadius, color, defaultRenderer = null) {
+        let renderer = (defaultRenderer === null) ? this.mainRenderer : defaultRenderer;
         let scene = new THREE.Scene();
         const geometry = new THREE.CircleGeometry(circleRadius, 32);
         let rgb = VisualizationDrawer.#getRGBFromColor(color);
@@ -166,10 +166,11 @@ class VisualizationDrawer {
         const circle = new THREE.Mesh(geometry, material);
         circle.position.set(xPosition, 0.1 + yPosition, 0);
         scene.add(circle);
-        this.mainRenderer.renderer.render(scene, this.mainRenderer.camera);
+        renderer.renderer.render(scene, renderer.camera);
     }
 
-    #drawLine(coord1, coord2, color) {
+    #drawLine(coord1, coord2, color, defaultRenderer = null) {
+        let renderer = (defaultRenderer === null) ? this.mainRenderer : defaultRenderer;
         let scene = new THREE.Scene();
         let rgb = VisualizationDrawer.#getRGBFromColor(color);
         const material = new THREE.LineBasicMaterial({color: rgb});
@@ -181,7 +182,7 @@ class VisualizationDrawer {
         const geometry = new THREE.BufferGeometry().setFromPoints(points);
         const line = new THREE.Line(geometry, material);
         scene.add(line);
-        this.mainRenderer.renderer.render(scene, this.mainRenderer.camera);
+        renderer.renderer.render(scene, renderer.camera);
     }
 
     #addMapToSequence(processed, mapWidth, mapHeight) {

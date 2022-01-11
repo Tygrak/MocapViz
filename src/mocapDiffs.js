@@ -18,12 +18,7 @@ const numKeyframes = 10;
 const circleRadius = 0.1;
 const startDotXPosition = 1;
 const model = Model.modelVicon;
-const sampleCount = 100;
-
-// TODO: delete this
-let sampleConst = 39000;
-let DTWcoeff = 150;
-
+const sampleCount = 10;
 
 function createDiffVisualization(mainRenderer, sequence1, sequence2, visualizationWidth, visualizationHeight, drawStyle, drawStyleBlur, mapWidth, mapHeight, lineCoefficient = 1) {
     let longerSeq;
@@ -68,9 +63,7 @@ function createDiffVisualization(mainRenderer, sequence1, sequence2, visualizati
     // draw dots
     const largestDistance = findLargestDistance(DTWMapping, DTWArr);
     const lowestDistance = findLowestDistance(DTWMapping, DTWArr);
-    DTWcoeff = (DTW / sampleConst) * 50;
-    DTWcoeff = (DTWcoeff > 150) ? 150 : DTWcoeff;
-    let colorCoefficient = 105 / (largestDistance - lowestDistance);
+    let colorCoefficient = 255 / (largestDistance - lowestDistance);
     let dotCoords1 = drawDots(mainRenderer, yThird * 2, longerPositions, longerProcessed.frames, DTWMapping, DTWArr, colorCoefficient, lowestDistance);
     let dotCoords2 = drawDots(mainRenderer, yThird, shorterPositions, shorterProcessed.frames, DTWMapping, DTWArr, colorCoefficient, lowestDistance, true);
 
@@ -141,7 +134,7 @@ function getColorForIndex(index, path, dtwArr, colorCoefficient, shorter, lowest
         colorValue = dtwArr[path[i][0]][path[i][1]];
     }
     colorValue -= lowestDistance;
-    return Math.floor((colorCoefficient * colorValue) + DTWcoeff);
+    return Math.floor(colorCoefficient * colorValue);
 }
 
 function getIndexForShorterSequence(path, searchingValue) {
@@ -348,7 +341,7 @@ function findLowestDistance(path, dtwArr) {
 }
 
 function sampling(sequences) {
-    let coeff = Math.ceil(sequences.length / (sampleCount * 2));
+    let coeff = Math.floor(sequences.length / (sampleCount * 2));
     if (coeff < 1) {
         coeff = 1;
     }
@@ -359,8 +352,6 @@ function sampling(sequences) {
     }
 
     let shuffledSamples = shuffle(samples);
-    console.log("samples: ");
-    console.log(samples);
     return countDTWsAverage(shuffledSamples)
 }
 
@@ -371,7 +362,14 @@ function countDTWsAverage(samples) {
         samples.pop();
     }
 
+    console.log(samples.length);
+    console.log(samples);
+
     for (let i = 0; i < samples.length - 1; i += 2) {
+        console.log(i);
+        console.log(samples[i]);
+        console.log(i + 1);
+        console.log(samples[i + 1]);
         let seq1 = prepareSequence(samples[i]);
         let seq2 = prepareSequence(samples[i + 1]);
         let dtwMatrix = countDTW(seq1, seq2, -1);
@@ -382,8 +380,7 @@ function countDTWsAverage(samples) {
 }
 
 function shuffle(array) {
-    let currentIndex = array.length
-    let randomIndex;
+    let currentIndex = array.length,  randomIndex;
 
     while (currentIndex !== 0) {
         randomIndex = Math.floor(Math.random() * currentIndex);
