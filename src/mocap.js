@@ -3,7 +3,7 @@ import * as Model from './model.js';
 import * as Core from './mocapCore.js';
 import {OrbitControls} from './lib/OrbitControls.js';
 import {createDiffVisualization, sampling} from "./mocapDiffs.js";
-import {VisualizationService} from "./ComparisonVizualization/VisualizationService.js";
+import {ContextOption, VisualizationService} from "./ComparisonVizualization/VisualizationService.js";
 
 let mainRenderer = null;
 const sceneWidth = 100;
@@ -95,23 +95,21 @@ class VisualizationFactory {
         return -1;
     }
 
-    visualizeSequenceDiffs(sequence1, sequence2, visualizationWidth = 1905, visualizationHeight = 200, mapWidth = 350, mapHeight = 350) {
+    visualizeSequenceDiffs(sequence1, sequence2, visualizationWidth = 1905, visualizationHeight = 200, mapWidth = 350, mapHeight = 350, contextOption = ContextOption.NO_CONTEXT, defaultContext = 0) {
         let drawStyle = new Core.MocapDrawStyle(this.model, this.boneRadius, this.jointRadius, this.headRadius, this.boneStyle,
             this.leftBoneStyle, this.rightBoneStyle, this.jointStyle, 1, this.noseStyle, this.noseRadius, this.opacity);
         let drawStyleBlur = new Core.MocapDrawStyle(this.model, this.boneRadius, this.jointRadius, this.headRadius, this.boneStyle,
             this.boneStyle, this.boneStyle, this.jointStyle, 1, this.boneStyle, this.noseRadius, this.blurFrameOpacity);
 
-        return this.visualizationService.createSequenceComparisonVisualization(sequence1, sequence2, visualizationWidth, visualizationHeight, drawStyle, drawStyleBlur, mapWidth, mapHeight);
-        //return createDiffVisualization(mainRenderer, sequence1, sequence2, visualizationWidth, visualizationHeight, drawStyle, drawStyleBlur, mapWidth, mapHeight);
+        return this.visualizationService.createSequenceComparisonVisualization(sequence1, sequence2, visualizationWidth, visualizationHeight, drawStyle, drawStyleBlur, mapWidth, mapHeight, contextOption, defaultContext);
     }
 
     sampling(sequences, count = 1) {
         this.visualizationService.sampleDataSet(sequences, count);
-        // let samples = 0;
-        // for (let i = 0; i < count; i ++) {
-        //     samples += sampling(sequences);
-        // }
-        // return (samples / count);
+    }
+
+    clearSampling() {
+        this.visualizationService.clearSampling();
     }
 }
 
