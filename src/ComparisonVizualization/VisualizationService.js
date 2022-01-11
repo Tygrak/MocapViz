@@ -2,6 +2,7 @@ import * as Core from "../mocapCore.js";
 import {VisualizationDrawer} from "./VizualizationDrawer.js";
 import {DTWCalculator} from "./DTWCalculator.js";
 import * as Model from "../model.js";
+import {saveAs} from '../lib/FileSaver.js';
 
 class VisualizationService {
     sampleCount = 100;
@@ -10,84 +11,128 @@ class VisualizationService {
     #longerProcessed;
     #shorterProcessed;
 
-    createSequenceComparisonVisualization(sequence1, sequence2, visualizationWidth, visualizationHeight, drawStyle, drawStyleBlur, mapWidth, mapHeight, lineCoefficient = 1, useContext = false) {
+    createSequenceComparisonVisualization(sequence1, sequence2, visualizationWidth, visualizationHeight, drawStyle, drawStyleBlur, mapWidth, mapHeight, contextOption, defaultContext, lineCoefficient = 1, ) {
+        let useContext = (contextOption !== ContextOption.NO_CONTEXT);
+        let contextVal = 0;
+        if (useContext !== false) {
+            if (contextOption === ContextOption.SAMPLED_CONTEXT) {
+                if (defaultContext > 0) {
+                    this.context.setValue(defaultContext);
+                }
+                contextVal = this.context.getValue();
+            } else if (contextOption === ContextOption.BUILT_CONTEXT) {
+                contextVal = this.context.getBuiltValue();
+            }
+        }
+
         let sortedSequences = VisualizationService.#sortSequences(sequence1, sequence2);
         let longerSeq = sortedSequences[0];
         let shorterSeq = sortedSequences[1];
 
         let jointsCount = Core.getSequenceJointsPerFrame(longerSeq);
-        let drawer = new VisualizationDrawer(visualizationWidth, visualizationHeight, drawStyle, jointsCount, drawStyleBlur, mapWidth, mapHeight, this.model);
+        this.drawer = new VisualizationDrawer(visualizationWidth, visualizationHeight, drawStyle, jointsCount, drawStyleBlur, mapWidth, mapHeight, this.model);
 
         // draw skeletons
         let yThird = visualizationHeight / (visualizationWidth / visualizationHeight * 6);
-        this.#longerProcessed = drawer.processSequenceForDrawing(longerSeq);
-        let longerPositions = drawer.drawSequenceIntoImage(this.#longerProcessed, yThird * 2);
-        this.#shorterProcessed = drawer.processSequenceForDrawing(shorterSeq);
-        let shorterPositions = drawer.drawSequenceIntoImage(this.#shorterProcessed, 0, longerSeq.length / shorterSeq.length);
+        this.#longerProcessed = this.drawer.processSequenceForDrawing(longerSeq);
+        let longerPositions = this.drawer.drawSequenceIntoImage(this.#longerProcessed, yThird * 2);
+        this.#shorterProcessed = this.drawer.processSequenceForDrawing(shorterSeq);
+        let shorterPositions = this.drawer.drawSequenceIntoImage(this.#shorterProcessed, 0, longerSeq.length / shorterSeq.length);
 
         // count DTW
         longerSeq = this.#parseSequence(longerSeq);
         shorterSeq = this.#parseSequence(shorterSeq);
-        let dtw;
+
         // if we want to use context, the value of distance will have only 105/255 of 1 the rest will be context
-        if (useContext) {
-            dtw = DTWCalculator.calculateDTW(longerSeq, shorterSeq, -1, this.context.getValue(), useContext);
-        } else {
-            dtw = DTWCalculator.calculateDTW(longerSeq, shorterSeq, -1, 0, useContext);
+        let dtw = DTWCalculator.calculateDTW(longerSeq, shorterSeq, -1, contextVal, useContext);
+
+        if (contextOption === ContextOption.BUILT_CONTEXT) {
+            this.context.addNewSample(dtw.Val);
         }
 
         // draw DTW
-        drawer.drawDTWValueToImage(dtw.Val);
+        this.drawer.drawDTWValueToImage(dtw.Val);
         console.log("DTW result: " + dtw.Val);
 
-        let dotCoords1 = drawer.drawDots(yThird * 2, longerPositions, this.#longerProcessed.frames, dtw.Map, dtw.Arr, dtw.ColorCoeff, dtw.ContextColorCoeff, dtw.LowestDistance);
-        let dotCoords2 = drawer.drawDots(yThird, shorterPositions, this.#shorterProcessed.frames, dtw.Map, dtw.Arr, dtw.ColorCoeff, dtw.ContextColorCoeff, dtw.LowestDistance, true);
+        let dotCoords1 = this.drawer.drawDots(yThird * 2, longerPositions, this.#longerProcessed.frames, dtw.Map, dtw.Arr, dtw.ColorCoeff, dtw.ContextColorCoeff, dtw.LowestDistance);
+        let dotCoords2 = this.drawer.drawDots(yThird, shorterPositions, this.#shorterProcessed.frames, dtw.Map, dtw.Arr, dtw.ColorCoeff, dtw.ContextColorCoeff, dtw.LowestDistance, true);
 
         // draw lines
-        drawer.drawLines(dotCoords1, dotCoords2, dtw.Map, dtw.Arr, lineCoefficient, dtw.ColorCoeff, dtw.ContextColorCoeff, dtw.LowestDistance);
+        this.drawer.drawLines(dotCoords1, dotCoords2, dtw.Map, dtw.Arr, lineCoefficient, dtw.ColorCoeff, dtw.ContextColorCoeff, dtw.LowestDistance);
 
-        drawer.setDetailView(dtw, this.#longerProcessed, this.#shorterProcessed);
+        this.drawer.setDetailView(dtw, this.#longerProcessed, this.#shorterProcessed);
 
         // draw body parts
         let dtws = this.#visualizeBodyParts(longerSeq, shorterSeq, dtw.ContextColorCoeff, useContext);
+        this.drawer.drawBars(dtws);
 
-        drawer.drawBars(dtws);
+        // timeAlignment
+        let timeAlignedLongerSeq = VisualizationService.#reduceArray(longerSeq, shorterSeq.length);
+        this.#timeAlignedVisualization(timeAlignedLongerSeq, shorterSeq, contextVal, useContext, visualizationWidth, visualizationHeight, lineCoefficient);
 
         // add maps
-        return drawer.putTogetherImage(this.#longerProcessed, this.#shorterProcessed);
+        return this.drawer.putTogetherImage(this.#longerProcessed, this.#shorterProcessed);
+    }
+
+    #timeAlignedVisualization(sequence1, sequence2, contextVal, useContext, visualizationWidth, visualizationHeight, lineCoefficient) {
+        let processed1 = this.#longerProcessed;
+        processed1.frames = VisualizationService.#reduceArray(this.#longerProcessed.frames, this.#shorterProcessed.frames.length);
+
+        let yThird = visualizationHeight / (visualizationWidth / visualizationHeight * 6);
+        let positions1 = this.drawer.drawSequenceIntoImage(processed1, yThird * 2, 1, this.drawer.timeAlignedRenderer);
+        let positions2 = this.drawer.drawSequenceIntoImage(this.#shorterProcessed, 0, sequence1.length / sequence2.length, this.drawer.timeAlignedRenderer);
+
+        let dtw = DTWCalculator.calculateDTW(sequence1, sequence2, -1, contextVal, useContext);
+        console.log("Special value: ");
+        console.log(dtw.Val);
+
+        let dotCoords1 = this.drawer.drawDots(yThird * 2, positions1, processed1.frames, dtw.Map, dtw.Arr, dtw.ColorCoeff, dtw.ContextColorCoeff, dtw.LowestDistance, false, this.drawer.timeAlignedRenderer);
+        let dotCoords2 = this.drawer.drawDots(yThird, positions2, this.#shorterProcessed.frames, dtw.Map, dtw.Arr, dtw.ColorCoeff, dtw.ContextColorCoeff, dtw.LowestDistance, true, this.drawer.timeAlignedRenderer);
+
+        // draw lines
+        this.drawer.drawLines(dotCoords1, dotCoords2, dtw.Map, dtw.Arr, lineCoefficient, dtw.ColorCoeff, dtw.ContextColorCoeff, dtw.LowestDistance, this.drawer.timeAlignedRenderer);
     }
 
     sampleDataSet(sequences, count) {
+        console.log("Starting!");
         let samples = 0;
         for (let i = 0; i < count; i ++) {
             samples += this.#doSampling(sequences);
         }
+        console.log("Finished");
         this.context = (samples / count);
-        console.log(this.context);
+        //save data
+        let blob = new Blob([this.context.toString()], { type: "text/plain;charset=utf-8" });
+        console.log("Downloading!");
+        saveAs(blob, "averageDtw.txt");
     }
 
-    static #timeAligning(longerSeq, shorterSeq) {
-        let ratioIndex = longerSeq.length / shorterSeq.length;
-        ratioIndex = Math.floor(ratioIndex);
+    clearSampling() {
+        this.context = 0;
+    }
 
+    static #reduceArray(longerSeq, desiredLength) {
         let newLongerSeq = [];
-        if (ratioIndex > 1) {
-            for (let i = 0; i < longerSeq.length; i += ratioIndex) {
-                newLongerSeq.push(longerSeq[i]);
+        let trimmedLength = longerSeq.length - 2;
+        let trimmedDesiredLength  = desiredLength - 2;
+
+        newLongerSeq[0] = longerSeq[0];
+
+        let i = 0;
+        let j = 0;
+        while (j < trimmedLength) {
+            let diff = (i + 1) * trimmedLength - (j + 1) * trimmedDesiredLength;
+
+            if (diff < trimmedLength / 2) {
+                i ++;
+                j ++;
+                newLongerSeq[i] = longerSeq[j];
+            } else {
+                j ++;
             }
-        } else {
-            newLongerSeq = longerSeq;
         }
 
-        let newLength = newLongerSeq.length;
-        ratioIndex = newLength / (newLength - shorterSeq.length);
-        ratioIndex = Math.floor(ratioIndex);
-
-        let i = newLongerSeq.length;
-
-        while (i--) {
-            (i + 1) % ratioIndex === 0 && newLongerSeq.splice(i, 1);
-        }
+        newLongerSeq[trimmedDesiredLength + 1] = longerSeq[trimmedLength + 1];
 
         return newLongerSeq;
     }
@@ -162,24 +207,6 @@ class VisualizationService {
         return frames.filter((f) => {return f.length > 0 && !isNaN(f[0].x) && !isNaN(f[0].y) && !isNaN(f[0].z)});
     }
 
-    static #findLargestDistance(path, dtwArr) {
-        let max = 0;
-        for (let i = 1; i < path.length; i ++) {
-            let newVal = dtwArr[path[i][0]][path[i][1]] - dtwArr[path[i - 1][0]][path[i - 1][1]];
-            max = (newVal > max) ? newVal : max;
-        }
-        return max;
-    }
-
-    static #findLowestDistance(path, dtwArr) {
-        let min = Number.POSITIVE_INFINITY;
-        for (let i = 1; i < path.length; i ++) {
-            let newVal = dtwArr[path[i][0]][path[i][1]] - dtwArr[path[i - 1][0]][path[i - 1][1]];
-            min = (newVal < min) ? newVal : min;
-        }
-        return min;
-    }
-
     static #shuffle(array) {
         let currentIndex = array.length
         let randomIndex;
@@ -198,7 +225,6 @@ class VisualizationService {
 
 class Context {
     #value;
-    #enabled = false;
     #values = [];
     #buildValue = 0;
 
@@ -206,24 +232,16 @@ class Context {
         this.#value = value;
     }
 
-    enable() {
-        this.#enabled = true;
-    }
-
-    disable() {
-        this.#enabled = false;
-    }
-
-    isEnabled() {
-        return this.#enabled;
-    }
-
-    setValue(value) {
-        this.#value = value;
+    setValue(val) {
+        this.#value = val;
     }
 
     getValue() {
         return this.#value;
+    }
+
+    getBuiltValue() {
+        return this.#buildValue;
     }
 
     addNewSample(sample) {
@@ -232,4 +250,10 @@ class Context {
     }
 }
 
-export {VisualizationService}
+const ContextOption = {
+    NO_CONTEXT: 1,
+    SAMPLED_CONTEXT: 2,
+    BUILT_CONTEXT: 3
+}
+
+export {VisualizationService, ContextOption}
