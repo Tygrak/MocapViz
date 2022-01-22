@@ -7,20 +7,44 @@
     </head>
     
     <body>
+
+        Data: <input type="file" id="dataFileInput" name="dataFileInput" accept=".data,.txt">
+
+        Samples: <input type="file" id="sampleFileInput" name="sampleFileInput" accept=".json">
+
+        <label for="context">Choose a context:</label>
+
+        <select name="context" id="context">
+            <option value="1">No context</option>
+            <option value="2">Sampled context</option>
+            <option value="3">Built context</option>
+        </select>
+
         <button id="dataLoadButton">Load Data</button>
-        <input type="file" id="dataFileInput" name="dataFileInput" accept=".data,.txt">
 
         <script type="module">
             import * as Mocap from '../src/mocap.js';
+            import * as VS from '../src/ComparisonVizualization/VisualizationService.js';
 
             const dataFileInput = document.getElementById("dataFileInput");
             const loadButton = document.getElementById("dataLoadButton");
+
+            const sampleFileInput = document.getElementById('sampleFileInput');
+            let context = document.getElementById('context');
             loadButton.onclick = load;
 
+            let jsonContent = "";
+
             function load() {
-                if (dataFileInput.files.length == 0) {
+                if (dataFileInput.files.length === 0) {
                     console.log("No file selected!");
                     return;
+                }
+
+                if (sampleFileInput.files.length !== 0) {
+                    const reader = new FileReader()
+                    reader.onload = handleFileLoad;
+                    reader.readAsText(sampleFileInput.files[0]);
                 }
                 Mocap.loadDataFromFile(dataFileInput.files[0], (sequences) => {
                     let factory = new Mocap.VisualizationFactory();
@@ -30,13 +54,18 @@
                     factory.leftBoneStyle = {r: 0, g: 180, b: 0, a: 1};
                     factory.opacity = 0.6;
                     factory.blurFrameOpacity = 0.17;
-                    // factory.sampling(sequences, 5);
+                    // factory.sampling(sequences, 1);
                     //console.log(sampleAverage);
                     //console.log(factory.getIndexOfSequenceById(sequences, "3405_91_539_126"));
-                    let visualizationElement = factory.visualizeSequenceDiffs(sequences[1918], sequences[1071]);
+                    console.log(context.value);
+                    let visualizationElement = factory.visualizeSequenceDiffs(sequences[1918], sequences[1236], 1905, 200, 350, 350, VS.ContextOption.NO_CONTEXT, jsonContent);
 
                     document.body.appendChild(visualizationElement);
                 });
+            }
+
+            function handleFileLoad(event) {
+                jsonContent =  event.target.result;
             }
         </script>
     </body>

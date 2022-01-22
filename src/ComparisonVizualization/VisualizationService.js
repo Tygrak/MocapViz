@@ -3,21 +3,25 @@ import {VisualizationDrawer} from "./VizualizationDrawer.js";
 import {DTWCalculator} from "./DTWCalculator.js";
 import * as Model from "../model.js";
 import {saveAs} from '../lib/FileSaver.js';
+import {modelBodyCounts, motionCategories} from "../model.js";
 
 class VisualizationService {
-    sampleCount = 100;
+    sampleCount = 10;
     context = new Context(0);
     model = Model.modelVicon;
     #longerProcessed;
     #shorterProcessed;
 
-    createSequenceComparisonVisualization(sequence1, sequence2, visualizationWidth, visualizationHeight, drawStyle, drawStyleBlur, mapWidth, mapHeight, contextOption, defaultContext, lineCoefficient = 1, ) {
+    createSequenceComparisonVisualization(sequence1, sequence2, visualizationWidth, visualizationHeight, drawStyle, drawStyleBlur, mapWidth, mapHeight, contextOption, defaultContext = "", lineCoefficient = 1, ) {
         let useContext = (contextOption !== ContextOption.NO_CONTEXT);
         let contextVal = 0;
+        let dtwA = 0;
         if (useContext !== false) {
             if (contextOption === ContextOption.SAMPLED_CONTEXT) {
-                if (defaultContext > 0) {
-                    this.context.setValue(defaultContext);
+                if (defaultContext.length !== 0) {
+                    let parsedContext = JSON.parse(defaultContext);
+                    this.context.setValue(parsedContext.distanceA);
+                    dtwA = parsedContext.dtwA;
                 }
                 contextVal = this.context.getValue();
             } else if (contextOption === ContextOption.BUILT_CONTEXT) {
@@ -25,9 +29,13 @@ class VisualizationService {
             }
         }
 
+
         let sortedSequences = VisualizationService.#sortSequences(sequence1, sequence2);
         let longerSeq = sortedSequences[0];
         let shorterSeq = sortedSequences[1];
+
+        let category1 = VisualizationService.#getCategory(longerSeq[0]);
+        let category2 = VisualizationService.#getCategory(shorterSeq[0]);
 
         let jointsCount = Core.getSequenceJointsPerFrame(longerSeq);
         this.drawer = new VisualizationDrawer(visualizationWidth, visualizationHeight, drawStyle, jointsCount, drawStyleBlur, mapWidth, mapHeight, this.model);
@@ -47,23 +55,24 @@ class VisualizationService {
         let dtw = DTWCalculator.calculateDTW(longerSeq, shorterSeq, -1, contextVal, useContext);
 
         if (contextOption === ContextOption.BUILT_CONTEXT) {
-            this.context.addNewSample(dtw.Val);
+            this.context.addNewSample(VisualizationService.#countDistanceAverage(dtw));
         }
 
         // draw DTW
-        this.drawer.drawDTWValueToImage(dtw.Val);
-        console.log("DTW result: " + dtw.Val);
+        this.drawer.drawDTWInfoToImage(dtw.Val, category1, category2, dtwA);
+        console.log("DTW result: ");
+        console.log(dtw);
 
-        let dotCoords1 = this.drawer.drawDots(yThird * 2, longerPositions, this.#longerProcessed.frames, dtw.Map, dtw.Arr, dtw.ColorCoeff, dtw.ContextColorCoeff, dtw.LowestDistance);
-        let dotCoords2 = this.drawer.drawDots(yThird, shorterPositions, this.#shorterProcessed.frames, dtw.Map, dtw.Arr, dtw.ColorCoeff, dtw.ContextColorCoeff, dtw.LowestDistance, true);
+        let dotCoords1 = this.drawer.drawDots(yThird * 2, longerPositions, this.#longerProcessed.frames, dtw);
+        let dotCoords2 = this.drawer.drawDots(yThird, shorterPositions, this.#shorterProcessed.frames, dtw, true);
 
         // draw lines
-        this.drawer.drawLines(dotCoords1, dotCoords2, dtw.Map, dtw.Arr, lineCoefficient, dtw.ColorCoeff, dtw.ContextColorCoeff, dtw.LowestDistance);
+        this.drawer.drawLines(dotCoords1, dotCoords2, lineCoefficient, dtw);
 
-        this.drawer.setDetailView(dtw, this.#longerProcessed, this.#shorterProcessed);
+        this.drawer.setDetailView(dtw, JSON.parse(JSON.stringify(this.#longerProcessed)), JSON.parse(JSON.stringify(this.#shorterProcessed)));
 
         // draw body parts
-        let dtws = this.#visualizeBodyParts(longerSeq, shorterSeq, dtw.ContextColorCoeff, useContext);
+        let dtws = this.#visualizeBodyParts(longerSeq, shorterSeq, dtw.DistanceAverage, useContext);
         this.drawer.drawBars(dtws);
 
         // timeAlignment
@@ -72,6 +81,28 @@ class VisualizationService {
 
         // add maps
         return this.drawer.putTogetherImage(this.#longerProcessed, this.#shorterProcessed);
+    }
+
+    sampleDataSet(sequences, count) {
+        let dtwSamples = 0;
+        let distanceSamples = 0;
+
+        for (let i = 0; i < count; i ++) {
+            let sample = this.#doSampling(sequences);
+            dtwSamples += sample[0];
+            distanceSamples += sample[1];
+        }
+        this.context = (distanceSamples / count);
+        let dtwA = dtwSamples;
+
+        //save data
+        let content = "{\n  \"distanceA\": " + this.context.toString() + ",\n  \"dtwA\": " + dtwA.toString() + "\n}";
+        let blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+        saveAs(blob, "sampling.json");
+    }
+
+    clearSampling() {
+        this.context = 0;
     }
 
     #timeAlignedVisualization(sequence1, sequence2, contextVal, useContext, visualizationWidth, visualizationHeight, lineCoefficient) {
@@ -83,32 +114,14 @@ class VisualizationService {
         let positions2 = this.drawer.drawSequenceIntoImage(this.#shorterProcessed, 0, sequence1.length / sequence2.length, this.drawer.timeAlignedRenderer);
 
         let dtw = DTWCalculator.calculateDTW(sequence1, sequence2, -1, contextVal, useContext);
-        console.log("Special value: ");
-        console.log(dtw.Val);
 
-        let dotCoords1 = this.drawer.drawDots(yThird * 2, positions1, processed1.frames, dtw.Map, dtw.Arr, dtw.ColorCoeff, dtw.ContextColorCoeff, dtw.LowestDistance, false, this.drawer.timeAlignedRenderer);
-        let dotCoords2 = this.drawer.drawDots(yThird, positions2, this.#shorterProcessed.frames, dtw.Map, dtw.Arr, dtw.ColorCoeff, dtw.ContextColorCoeff, dtw.LowestDistance, true, this.drawer.timeAlignedRenderer);
+        let dotCoords1 = this.drawer.drawDots(yThird * 2, positions1, processed1.frames, dtw, false, this.drawer.timeAlignedRenderer);
+        let dotCoords2 = this.drawer.drawDots(yThird, positions2, this.#shorterProcessed.frames, dtw, false, this.drawer.timeAlignedRenderer);
 
         // draw lines
-        this.drawer.drawLines(dotCoords1, dotCoords2, dtw.Map, dtw.Arr, lineCoefficient, dtw.ColorCoeff, dtw.ContextColorCoeff, dtw.LowestDistance, this.drawer.timeAlignedRenderer);
-    }
+        this.drawer.drawLines(dotCoords1, dotCoords2, lineCoefficient, dtw, this.drawer.timeAlignedRenderer);
 
-    sampleDataSet(sequences, count) {
-        console.log("Starting!");
-        let samples = 0;
-        for (let i = 0; i < count; i ++) {
-            samples += this.#doSampling(sequences);
-        }
-        console.log("Finished");
-        this.context = (samples / count);
-        //save data
-        let blob = new Blob([this.context.toString()], { type: "text/plain;charset=utf-8" });
-        console.log("Downloading!");
-        saveAs(blob, "averageDtw.txt");
-    }
-
-    clearSampling() {
-        this.context = 0;
+        this.drawer.drawTimeAlignmentBars(dtw.Map, sequence1.length);
     }
 
     static #reduceArray(longerSeq, desiredLength) {
@@ -178,19 +191,34 @@ class VisualizationService {
 
     #countDTWsAverage(samples) {
         let DTWs = [];
+        let poseDistances = [];
 
-        if (samples.length % 2 === 1) {
+        if (samples % 2 === 1) {
             samples.pop();
         }
 
         for (let i = 0; i < samples.length - 1; i += 2) {
             let seq1 = this.#parseSequence(samples[i]);
             let seq2 = this.#parseSequence(samples[i + 1]);
-            let dtwMatrix = DTWCalculator.countDTW(seq1, seq2, -1);
-            DTWs.push(dtwMatrix[dtwMatrix.length - 1][dtwMatrix[0].length - 1]);
+
+            let dtw = DTWCalculator.calculateDTW(seq1, seq2, -1, 0, false);
+            DTWs.push(dtw.Val);
+            poseDistances.push(VisualizationService.#countDistanceAverage(dtw));
         }
 
-        return VisualizationService.arrayAverage(DTWs);
+        let dtwAverage = VisualizationService.arrayAverage(DTWs);
+        let distanceAverage = VisualizationService.arrayAverage(poseDistances);
+        return [dtwAverage, distanceAverage];
+    }
+
+    static #countDistanceAverage(dtw) {
+        let valueDistance = dtw.Arr[dtw.Map[0][0]][dtw.Map[0][1]];
+
+        for (let i = 1; i < dtw.Map.length; i += 1) {
+            valueDistance += dtw.Arr[dtw.Map[i][0]][dtw.Map[i][1]] - dtw.Arr[dtw.Map[i - 1][0]][dtw.Map[i - 1][1]];
+        }
+
+        return valueDistance / dtw.Map.length;
     }
 
     static arrayAverage(array) {
@@ -220,6 +248,13 @@ class VisualizationService {
         }
 
         return array;
+    }
+
+    static #getCategory(sequenceInfo) {
+        let splitSequenceInfo = sequenceInfo.split(' ');
+        let splitNumInfo = splitSequenceInfo[splitSequenceInfo.length - 1].split('_');
+        let categoryNumber = splitNumInfo[1];
+        return motionCategories[categoryNumber];
     }
 }
 

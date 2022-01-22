@@ -6,8 +6,9 @@ import {
     resizeSkeleton
 } from "../mocap.js";
 import * as Core from "../mocapCore.js";
-import {rgbaToColorString, Vec3} from "../mocapCore.js";
+import {Vec3} from "../mocapCore.js";
 import * as THREE from "../lib/three.module.js";
+import {VisualizationService} from "./VisualizationService.js";
 
 class VisualizationDrawer {
     numKeyframes = 10;
@@ -15,6 +16,7 @@ class VisualizationDrawer {
     startDotXPosition = 1;
     circleRadius = 0.1;
     #bars = document.createElement("canvas");
+    #timeAlignedMapping = document.createElement("canvas");
     #detail = document.createElement("canvas");
     #detailRenderer;
 
@@ -62,18 +64,28 @@ class VisualizationDrawer {
         return drawSequence(renderer, frames, keyframes, 0, this.drawStyle, this.drawStyleBlur, figureScale, yShift, false, true, xCoefficient);
     }
 
-    drawDTWValueToImage(dtwValue) {
+    drawDTWInfoToImage(dtwValue, category1, category2, dtwAverageValue = 0) {
         let text = document.createElement("p");
-        text.textContent = "DTW value: " + dtwValue;
+        text.appendChild(document.createTextNode("DTW value: " + dtwValue));
+        text.appendChild(document.createElement("br"));
+        text.appendChild(document.createTextNode("Category1: " + category1));
+        text.appendChild(document.createElement("br"));
+        text.appendChild(document.createTextNode("Category2: " + category2));
+        text.appendChild(document.createElement("br"));
+
+        if (dtwAverageValue !== 0) {
+            text.appendChild(document.createTextNode("Average DTW value: " + dtwAverageValue));
+        }
+
         this.div.appendChild(text);
     }
 
-    drawDots(dotYShift, positions, frames, dtwMap, dtwArr, colorCoefficient, DTWcoeff, lowestDistance, shorter = false, defaultRenderer = null) {
+    drawDots(dotYShift, positions, frames, dtw, shorter = false, defaultRenderer = null) {
         let shift = positions[positions.length - 1] / frames.length;
         let xPosition = this.startDotXPosition;
         let dots = [];
-        for (let i = 1; i < frames.length; i++) {
-            let color = VisualizationDrawer.#getColorForIndex(i, dtwMap, dtwArr, colorCoefficient, DTWcoeff, shorter, lowestDistance);
+        for (let i = 0; i < frames.length; i++) {
+            let color = VisualizationDrawer.#getColorForIndex(i, dtw, shorter);
             this.#drawDotFrame(xPosition, dotYShift, this.circleRadius, color, defaultRenderer);
             dots.push(new Vec3(xPosition, dotYShift, 0));
             xPosition += shift;
@@ -81,39 +93,68 @@ class VisualizationDrawer {
         return dots;
     }
 
-    drawLines(dots1, dots2, path, dtwArr, lineCoefficient, colorCoefficient, DTWcoeff, lowestDistance, defaultRenderer = null) {
-        for (let i = 1; i < path.length; i += lineCoefficient) {
-            let color = VisualizationDrawer.#getColorForIndex(i, path, dtwArr, colorCoefficient, DTWcoeff, false, lowestDistance);
-            if (path[i - 1][0] >= dots1.length || path[i - 1][1] >= dots2.length) {
-                break;
-            }
-            this.#drawLine(dots1[path[i - 1][0]], dots2[path[i - 1][1]], color, defaultRenderer);
+    drawLines(dots1, dots2, lineCoefficient, dtw, defaultRenderer = null) {
+        for (let i = 0; i < dtw.Map.length; i += lineCoefficient) {
+            let color = VisualizationDrawer.#getColorForWarpingPathIndex(i, dtw);
+            this.#drawLine(dots1[dtw.Map[i].index1], dots2[dtw.Map[i].index2], color, defaultRenderer);
         }
     }
 
     drawBars(dtws) {
         let height = 18;
         let textSpace = 100;
-        let oneBarPieceWidth = 4;
+        let oneBarPieceWidth = 4.5;
 
         let dtw = dtws[0][0];
         const canvas = document.createElement("canvas");
-        canvas.width = dtw.Map.length * oneBarPieceWidth + textSpace;
+        canvas.width = dtw.Map.length * oneBarPieceWidth + textSpace + 10000;
         canvas.height = 20 * dtws.length;
         const ctx = canvas.getContext('2d');
         ctx.font = `${height}px Arial`;
 
-        for (let j = 0; j < dtws.length; j ++ ) {
+        for (let j = 0; j < dtws.length; j++) {
             ctx.fillStyle = "black";
             ctx.fillText(dtws[j][1], 0, j * height + height, textSpace);
-            for (let i = 1; i < dtws[j][0].Map.length; i ++) {
-                let color = VisualizationDrawer.#getColorForIndex(i, dtws[j][0].Map, dtws[j][0].Arr, dtws[j][0].ColorCoeff, dtws[j][0].ContextColorCoeff, false, dtws[j][0].LowestDistance)
+            for (let i = 0; i < dtws[j][0].Map.length; i++) {
+                let color = VisualizationDrawer.#getColorForWarpingPathIndex(i, dtws[j][0]);
                 ctx.fillStyle = VisualizationDrawer.#getRGBFromColor(color);
                 ctx.fillRect(i * oneBarPieceWidth + textSpace, j * height, oneBarPieceWidth, height);
             }
         }
 
         this.#bars = canvas;
+    }
+
+    drawTimeAlignmentBars(map, sequenceLength) {
+        console.log(map);
+        const canvas = document.createElement("canvas");
+        canvas.width = this.visualizationWidth;
+        canvas.height = this.visualizationHeight / 3 * 2;
+
+        const xShift = canvas.width / sequenceLength;
+
+        const ctx = canvas.getContext('2d');
+        let yPosition = this.visualizationHeight;
+        for (let i = 0; i < map.length; i ++) {
+            let x1 = map[i].index1 * xShift;
+            let x2 = map[i].index2 * xShift;
+
+            ctx.beginPath();
+            ctx.moveTo(x1, 0);
+            ctx.lineTo(x2, yPosition);
+
+            if (x1 === x2) {
+                ctx.strokeStyle = 'yellow';
+            } else if (x1 < x2) {
+                ctx.strokeStyle = 'red';
+            } else if (x1 > x2) {
+                ctx.strokeStyle = 'blue';
+            }
+            ctx.stroke();
+        }
+
+
+        this.#timeAlignedMapping = canvas;
     }
 
     setDetailView(dtw, processedLongerSeqFrames, processedShorterSeqFrames) {
@@ -127,8 +168,8 @@ class VisualizationDrawer {
         let figureScale = processedLongerSeqFrames.figureScale;
 
         let index = Math.floor(mouseEvent.pageX / oneFrameVal);
-        let longerSeqFrameIndex = dtw.Map[index][0];
-        let shorterSeqFrameIndex = dtw.Map[index][1];
+        let longerSeqFrameIndex = dtw.Map[index].index1;
+        let shorterSeqFrameIndex = dtw.Map[index].index2;
 
         let coreX = longerFrames[longerSeqFrameIndex][0].x;
         let longerSeqFrame = Core.moveOriginXBy(longerFrames[longerSeqFrameIndex], coreX);
@@ -148,6 +189,7 @@ class VisualizationDrawer {
         this.div.appendChild(this.image);
         this.div.appendChild(this.#detail);
         this.div.appendChild(this.timeAlignedCanvas);
+        this.div.appendChild(this.#timeAlignedMapping);
 
         this.image.src = this.mainRenderer.canvas.toDataURL("image/png");
         this.image.height = this.visualizationHeight;
@@ -176,8 +218,8 @@ class VisualizationDrawer {
         const material = new THREE.LineBasicMaterial({color: rgb});
 
         const points = [];
-        points.push( new THREE.Vector3( coord1.x, coord1.y, coord1.z));
-        points.push( new THREE.Vector3( coord2.x, coord2.y, coord2.z));
+        points.push(new THREE.Vector3(coord1.x, coord1.y, coord1.z));
+        points.push(new THREE.Vector3(coord2.x, coord2.y, coord2.z));
 
         const geometry = new THREE.BufferGeometry().setFromPoints(points);
         const line = new THREE.Line(geometry, material);
@@ -192,25 +234,43 @@ class VisualizationDrawer {
         return addMapToVisualization(frames, keyframes, figureScale, this.model, mapWidth, mapHeight);
     }
 
-    static #getColorForIndex(index, path, dtwArr, colorCoefficient, DTWcoeff, shorter, lowestDistance) {
-        let colorValue;
-        let i = (shorter) ? VisualizationDrawer.#getIndexForShorterSequence(path, index) : index;
-        if (i > 0) {
-            colorValue = dtwArr[path[i][0]][path[i][1]] - dtwArr[path[i - 1][0]][path[i - 1][1]];
-        } else {
-            colorValue = dtwArr[path[i][0]][path[i][1]];
-        }
-        colorValue -= lowestDistance;
-        return Math.floor((colorCoefficient * colorValue) + DTWcoeff);
+    static #getColorForWarpingPathIndex(index, dtw) {
+        let poseDistance = dtw.Map[index].poseDistance;
+        return VisualizationDrawer.#selectColorByPoseDistance(poseDistance, dtw);
     }
 
-    static #getIndexForShorterSequence(path, searchingValue) {
-        for (let i = 0; i < path.length; i ++) {
-            if (path[i][1] === searchingValue) {
-                return i;
-            }
+    static #getColorForIndex(index, dtw, shorter) {
+        let poseDistance = this.#getColorValueForIndex(index, dtw.Map, shorter);
+        return VisualizationDrawer.#selectColorByPoseDistance(poseDistance, dtw);
+    }
+
+    static #selectColorByPoseDistance(poseDistance, dtw) {
+        let contextValue;
+        if (dtw.DistanceAverage !== 0) {
+            let contextCoeff = poseDistance / dtw.DistanceAverage;
+            contextCoeff = (contextCoeff > dtw.MaxContextMultiple) ? dtw.MaxContextMultiple : contextCoeff;
+            contextCoeff = contextCoeff / dtw.MaxContextMultiple;
+            contextValue = dtw.ContextPart * contextCoeff;
+        } else {
+            contextValue = 0;
         }
-        return -1;
+        poseDistance -= dtw.LowestDistance;
+        return Math.floor((dtw.ColorCoeff * poseDistance) + contextValue);
+    }
+
+    static #getColorValueForIndex(index, warpingPath, shorter = false) {
+        let poseDistances = [];
+
+        let paths = warpingPath.filter(function (warpingEntity) {
+            if (shorter) {
+                return (warpingEntity.index2 === index);
+            }
+            return (warpingEntity.index1 === index);
+        });
+
+        paths.forEach(p => poseDistances.push(p.poseDistance));
+
+        return VisualizationService.arrayAverage(poseDistances);
     }
 
     static #getRGBFromColor(color) {
