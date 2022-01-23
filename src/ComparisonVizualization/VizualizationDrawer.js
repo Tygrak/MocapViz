@@ -35,7 +35,7 @@ class VisualizationDrawer {
         this.image = document.createElement("img");
         this.image.className = "drawItemVisualization";
 
-        this.#detailRenderer = initializeMocapRenderer(this.#detail, 600, 200, drawStyle, jointsCount, 10);
+        this.#detailRenderer = initializeMocapRenderer(this.#detail, visualizationWidth / 3.2, 200, drawStyle, jointsCount, 10);
 
         this.canvas = document.createElement("canvas");
         this.style = drawStyle;
@@ -168,7 +168,7 @@ class VisualizationDrawer {
         let oneFrameVal = this.visualizationWidth / dtw.Map.length;
         let figureScale = processedLongerSeqFrames.figureScale;
 
-        let index = Math.floor(mouseEvent.pageX / oneFrameVal);
+        let index = Math.floor((mouseEvent.pageX - 8) / oneFrameVal);
         let longerSeqFrameIndex = dtw.Map[index].index1;
         let shorterSeqFrameIndex = dtw.Map[index].index2;
 
@@ -193,23 +193,23 @@ class VisualizationDrawer {
 
     #drawPositions(colorPose) {
         if (this.#coloredPose.coord1 != null) {
-            this.#drawDetailDot(this.#coloredPose.coord1, 'white');
-            this.#drawDetailDot(this.#coloredPose.coord2, 'white');
+            this.#drawDetailDot(this.#coloredPose.coord1, 'white', 0.1);
+            this.#drawDetailDot(this.#coloredPose.coord2, 'white', -0.1);
             this.#drawDotFrame(this.#coloredPose.coord1.x, this.#coloredPose.coord1.y, this.circleRadius, this.#coloredPose.color1);
             this.#drawDotFrame(this.#coloredPose.coord2.x, this.#coloredPose.coord2.y, this.circleRadius, this.#coloredPose.color2);
         }
 
         this.#coloredPose = colorPose;
-        this.#drawDetailDot(colorPose.coord1, this.#detailPosePositionColor);
-        this.#drawDetailDot(colorPose.coord2, this.#detailPosePositionColor);
+        this.#drawDetailDot(colorPose.coord1, this.#detailPosePositionColor, 0.1);
+        this.#drawDetailDot(colorPose.coord2, this.#detailPosePositionColor, -0.1);
     }
 
-    #drawDetailDot(coord, color) {
+    #drawDetailDot(coord, color, yShitf = 0) {
         let scene = new THREE.Scene();
         const geometry = new THREE.CircleGeometry(2 * this.circleRadius, 32);
         const material = new THREE.MeshBasicMaterial({color: color});
         const circle = new THREE.Mesh(geometry, material);
-        circle.position.set(coord.x, coord.y, coord.z);
+        circle.position.set(coord.x, coord.y + yShitf, coord.z);
         scene.add(circle);
         this.mainRenderer.renderer.render(scene, this.mainRenderer.camera);
     }

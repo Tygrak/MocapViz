@@ -63,8 +63,8 @@ class VisualizationService {
         console.log("DTW result: ");
         console.log(dtw);
 
-        let dotCoords1 = this.drawer.drawDots(yThird * 2, longerPositions, this.#longerProcessed.frames, dtw);
-        let dotCoords2 = this.drawer.drawDots(yThird, shorterPositions, this.#shorterProcessed.frames, dtw, true);
+        let dotCoords1 = this.drawer.drawDots(yThird * 2 - 0.35, longerPositions, this.#longerProcessed.frames, dtw);
+        let dotCoords2 = this.drawer.drawDots(yThird + 0.15, shorterPositions, this.#shorterProcessed.frames, dtw, true);
 
         // draw lines
         this.drawer.drawLines(dotCoords1, dotCoords2, lineCoefficient, dtw);
@@ -115,8 +115,8 @@ class VisualizationService {
 
         let dtw = DTWCalculator.calculateDTW(sequence1, sequence2, -1, contextVal, useContext);
 
-        let dotCoords1 = this.drawer.drawDots(yThird * 2, positions1, processed1.frames, dtw, false, this.drawer.timeAlignedRenderer);
-        let dotCoords2 = this.drawer.drawDots(yThird, positions2, this.#shorterProcessed.frames, dtw, false, this.drawer.timeAlignedRenderer);
+        let dotCoords1 = this.drawer.drawDots(yThird * 2 - 0.35, positions1, processed1.frames, dtw, false, this.drawer.timeAlignedRenderer);
+        let dotCoords2 = this.drawer.drawDots(yThird + 0.15, positions2, this.#shorterProcessed.frames, dtw, false, this.drawer.timeAlignedRenderer);
 
         // draw lines
         this.drawer.drawLines(dotCoords1, dotCoords2, lineCoefficient, dtw, this.drawer.timeAlignedRenderer);
