@@ -3,7 +3,7 @@ import {VisualizationDrawer} from "./VizualizationDrawer.js";
 import {DTWCalculator} from "./DTWCalculator.js";
 import * as Model from "../model.js";
 import {saveAs} from '../lib/FileSaver.js';
-import {modelBodyCounts, motionCategories} from "../model.js";
+import {motionCategories} from "../model.js";
 
 class VisualizationService {
     sampleCount = 10;
@@ -69,7 +69,7 @@ class VisualizationService {
         // draw lines
         this.drawer.drawLines(dotCoords1, dotCoords2, lineCoefficient, dtw);
 
-        this.drawer.setDetailView(dtw, JSON.parse(JSON.stringify(this.#longerProcessed)), JSON.parse(JSON.stringify(this.#shorterProcessed)));
+        this.drawer.setDetailView(dtw, JSON.parse(JSON.stringify(this.#longerProcessed)), JSON.parse(JSON.stringify(this.#shorterProcessed)), dotCoords1, dotCoords2);
 
         // draw body parts
         let dtws = this.#visualizeBodyParts(longerSeq, shorterSeq, dtw.DistanceAverage, useContext);

@@ -19,6 +19,8 @@ class VisualizationDrawer {
     #timeAlignedMapping = document.createElement("canvas");
     #detail = document.createElement("canvas");
     #detailRenderer;
+    #detailPosePositionColor = 'rgb(30,144,255)';
+    #coloredPose = new ColoredPose();
 
     constructor(visualizationWidth, visualizationHeight, drawStyle, jointsCount, drawStyleBlur, mapWidth, mapHeight, model) {
         this.drawStyle = drawStyle;
@@ -85,7 +87,7 @@ class VisualizationDrawer {
         let xPosition = this.startDotXPosition;
         let dots = [];
         for (let i = 0; i < frames.length; i++) {
-            let color = VisualizationDrawer.#getColorForIndex(i, dtw, shorter);
+            let color = VisualizationDrawer.#getColorForSequenceIndex(i, dtw, shorter);
             this.#drawDotFrame(xPosition, dotYShift, this.circleRadius, color, defaultRenderer);
             dots.push(new Vec3(xPosition, dotYShift, 0));
             xPosition += shift;
@@ -126,7 +128,6 @@ class VisualizationDrawer {
     }
 
     drawTimeAlignmentBars(map, sequenceLength) {
-        console.log(map);
         const canvas = document.createElement("canvas");
         canvas.width = this.visualizationWidth;
         canvas.height = this.visualizationHeight / 3 * 2;
@@ -157,11 +158,11 @@ class VisualizationDrawer {
         this.#timeAlignedMapping = canvas;
     }
 
-    setDetailView(dtw, processedLongerSeqFrames, processedShorterSeqFrames) {
-        this.image.onmousemove = (event) => this.#onMouseMoveMapping(event, dtw, processedLongerSeqFrames, processedShorterSeqFrames);
+    setDetailView(dtw, processedLongerSeqFrames, processedShorterSeqFrames, dotCoords1, dotCoords2) {
+        this.canvas.onmousemove = (event) => this.#onMouseMoveMapping(event, dtw, processedLongerSeqFrames, processedShorterSeqFrames, dotCoords1, dotCoords2);
     }
 
-    #onMouseMoveMapping(mouseEvent, dtw, processedLongerSeqFrames, processedShorterSeqFrames) {
+    #onMouseMoveMapping(mouseEvent, dtw, processedLongerSeqFrames, processedShorterSeqFrames, dotCoords1, dotCoords2) {
         const longerFrames = processedLongerSeqFrames.frames;
         const shorterFrames = processedShorterSeqFrames.frames;
         let oneFrameVal = this.visualizationWidth / dtw.Map.length;
@@ -170,6 +171,14 @@ class VisualizationDrawer {
         let index = Math.floor(mouseEvent.pageX / oneFrameVal);
         let longerSeqFrameIndex = dtw.Map[index].index1;
         let shorterSeqFrameIndex = dtw.Map[index].index2;
+
+        let colorSeq1 = VisualizationDrawer.#getColorForSequenceIndex(dtw.Map[index].index1, dtw, false);
+        let colorSeq2 = VisualizationDrawer.#getColorForSequenceIndex(dtw.Map[index].index2, dtw, true);
+        let colorPose = new ColoredPose(dotCoords1[dtw.Map[index].index1],
+            dotCoords2[dtw.Map[index].index2],
+            colorSeq1,
+            colorSeq2);
+        this.#drawPositions(colorPose);
 
         let coreX = longerFrames[longerSeqFrameIndex][0].x;
         let longerSeqFrame = Core.moveOriginXBy(longerFrames[longerSeqFrameIndex], coreX);
@@ -182,19 +191,37 @@ class VisualizationDrawer {
         drawFrame(this.#detailRenderer, shorterSeqFrame, figureScale, 3, 0, this.drawStyle, false);
     }
 
+    #drawPositions(colorPose) {
+        if (this.#coloredPose.coord1 != null) {
+            this.#drawDetailDot(this.#coloredPose.coord1, 'white');
+            this.#drawDetailDot(this.#coloredPose.coord2, 'white');
+            this.#drawDotFrame(this.#coloredPose.coord1.x, this.#coloredPose.coord1.y, this.circleRadius, this.#coloredPose.color1);
+            this.#drawDotFrame(this.#coloredPose.coord2.x, this.#coloredPose.coord2.y, this.circleRadius, this.#coloredPose.color2);
+        }
+
+        this.#coloredPose = colorPose;
+        this.#drawDetailDot(colorPose.coord1, this.#detailPosePositionColor);
+        this.#drawDetailDot(colorPose.coord2, this.#detailPosePositionColor);
+    }
+
+    #drawDetailDot(coord, color) {
+        let scene = new THREE.Scene();
+        const geometry = new THREE.CircleGeometry(2 * this.circleRadius, 32);
+        const material = new THREE.MeshBasicMaterial({color: color});
+        const circle = new THREE.Mesh(geometry, material);
+        circle.position.set(coord.x, coord.y, coord.z);
+        scene.add(circle);
+        this.mainRenderer.renderer.render(scene, this.mainRenderer.camera);
+    }
+
     putTogetherImage(longerProcessed, shorterProcessed) {
         this.div.appendChild(this.#addMapToSequence(longerProcessed, this.mapWidth, this.mapHeight));
         this.div.appendChild(this.#addMapToSequence(shorterProcessed, this.mapWidth, this.mapHeight));
         this.div.appendChild(this.#bars);
-        this.div.appendChild(this.image);
+        this.div.appendChild(this.canvas);
         this.div.appendChild(this.#detail);
         this.div.appendChild(this.timeAlignedCanvas);
         this.div.appendChild(this.#timeAlignedMapping);
-
-        this.image.src = this.mainRenderer.canvas.toDataURL("image/png");
-        this.image.height = this.visualizationHeight;
-        this.image.width = this.visualizationWidth;
-        this.div.style.position = "relative";
 
         return this.div;
     }
@@ -206,7 +233,7 @@ class VisualizationDrawer {
         let rgb = VisualizationDrawer.#getRGBFromColor(color);
         const material = new THREE.MeshBasicMaterial({color: rgb});
         const circle = new THREE.Mesh(geometry, material);
-        circle.position.set(xPosition, 0.1 + yPosition, 0);
+        circle.position.set(xPosition, yPosition, 0);
         scene.add(circle);
         renderer.renderer.render(scene, renderer.camera);
     }
@@ -239,7 +266,7 @@ class VisualizationDrawer {
         return VisualizationDrawer.#selectColorByPoseDistance(poseDistance, dtw);
     }
 
-    static #getColorForIndex(index, dtw, shorter) {
+    static #getColorForSequenceIndex(index, dtw, shorter) {
         let poseDistance = this.#getColorValueForIndex(index, dtw.Map, shorter);
         return VisualizationDrawer.#selectColorByPoseDistance(poseDistance, dtw);
     }
@@ -275,6 +302,15 @@ class VisualizationDrawer {
 
     static #getRGBFromColor(color) {
         return `rgb(${color}, ${255 - color}, 0)`;
+    }
+}
+
+class ColoredPose {
+    constructor(coord1 = null, coord2 = null, color1 = null, color2 = null) {
+        this.coord1 = coord1;
+        this.coord2 = coord2;
+        this.color1 = color1;
+        this.color2 = color2;
     }
 }
 
