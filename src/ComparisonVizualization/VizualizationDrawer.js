@@ -135,23 +135,30 @@ class VisualizationDrawer {
         const xShift = canvas.width / sequenceLength;
 
         const ctx = canvas.getContext('2d');
-        let yPosition = this.visualizationHeight;
+        let yPosition = this.visualizationHeight / 2;
+        let lastIteration = new Vec3(-1,-1,0);
         for (let i = 0; i < map.length; i ++) {
-            let x1 = map[i].index1 * xShift;
-            let x2 = map[i].index2 * xShift;
+            let x1 = map[i].index1;
+            let x2 = map[i].index2;
 
             ctx.beginPath();
-            ctx.moveTo(x1, 0);
-            ctx.lineTo(x2, yPosition);
+            ctx.moveTo(x1 * xShift, 0);
+            ctx.lineTo(x2 * xShift, yPosition);
 
-            if (x1 === x2) {
-                ctx.strokeStyle = 'yellow';
-            } else if (x1 < x2) {
+            console.log(lastIteration);
+            if (lastIteration.x + 1 === x1 && lastIteration.y + 1 === x2) {
+                ctx.strokeStyle = 'rgb(204,204,0)';
+            } else if (lastIteration.x + 1 === x1 && lastIteration.y === x2) {
                 ctx.strokeStyle = 'red';
-            } else if (x1 > x2) {
+            } else if (lastIteration.x === x1 && lastIteration.y + 1 === x2) {
                 ctx.strokeStyle = 'blue';
+            } else {
+                ctx.strokeStyle = 'black';
             }
             ctx.stroke();
+
+            lastIteration.x = x1;
+            lastIteration.y = x2;
         }
 
 
