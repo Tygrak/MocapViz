@@ -13,7 +13,6 @@ import {VisualizationService} from "./VisualizationService.js";
 class VisualizationDrawer {
     numKeyframes = 10;
     sceneWidth = 100;
-    startDotXPosition = 1;
     circleRadius = 0.1;
     #bars = document.createElement("canvas");
     #timeAlignedMapping = document.createElement("canvas");
@@ -31,9 +30,12 @@ class VisualizationDrawer {
         this.mapHeight = mapHeight;
         this.model = model;
 
+        this.textSpace = 80;
+        this.textHeight = 16;
+        this.xDefaultShift = 1;
+        this.startDotXPosition = this.circleRadius;
+
         this.div = document.createElement("div");
-        this.image = document.createElement("img");
-        this.image.className = "drawItemVisualization";
 
         this.#detailRenderer = initializeMocapRenderer(this.#detail, visualizationWidth / 3.2, 200, drawStyle, jointsCount, 10);
 
@@ -102,25 +104,22 @@ class VisualizationDrawer {
         }
     }
 
-    drawBars(dtws) {
-        let height = 18;
-        let textSpace = 100;
-        let oneBarPieceWidth = 4.5;
-
-        let dtw = dtws[0][0];
+    drawBars(bodyParts) {
+        let bodyPart = bodyParts[0][0];
+        let oneBarPieceWidth = this.visualizationWidth / bodyPart.Map.length;
         const canvas = document.createElement("canvas");
-        canvas.width = dtw.Map.length * oneBarPieceWidth + textSpace + 10000;
-        canvas.height = 20 * dtws.length;
+        canvas.width = bodyPart.Map.length * oneBarPieceWidth + this.textSpace;
+        canvas.height = 20 * bodyParts.length;
         const ctx = canvas.getContext('2d');
-        ctx.font = `${height}px Arial`;
+        ctx.font = `${this.textHeight}px Arial`;
 
-        for (let j = 0; j < dtws.length; j++) {
+        for (let j = 0; j < bodyParts.length; j++) {
             ctx.fillStyle = "black";
-            ctx.fillText(dtws[j][1], 0, j * height + height, textSpace);
-            for (let i = 0; i < dtws[j][0].Map.length; i++) {
-                let color = VisualizationDrawer.#getColorForWarpingPathIndex(i, dtws[j][0]);
+            ctx.fillText(bodyParts[j][1], 0, j * this.textHeight + this.textHeight, this.textSpace);
+            for (let i = 0; i < bodyParts[j][0].Map.length; i++) {
+                let color = VisualizationDrawer.#getColorForWarpingPathIndex(i, bodyParts[j][0]);
                 ctx.fillStyle = VisualizationDrawer.#getRGBFromColor(color);
-                ctx.fillRect(i * oneBarPieceWidth + textSpace, j * height, oneBarPieceWidth, height);
+                ctx.fillRect(this.textSpace + i * oneBarPieceWidth, j * this.textHeight, oneBarPieceWidth, this.textHeight);
             }
         }
 
@@ -145,7 +144,6 @@ class VisualizationDrawer {
             ctx.moveTo(x1 * xShift, 0);
             ctx.lineTo(x2 * xShift, yPosition);
 
-            console.log(lastIteration);
             if (lastIteration.x + 1 === x1 && lastIteration.y + 1 === x2) {
                 ctx.strokeStyle = 'rgb(204,204,0)';
             } else if (lastIteration.x + 1 === x1 && lastIteration.y === x2) {
@@ -170,32 +168,71 @@ class VisualizationDrawer {
     }
 
     #onMouseMoveMapping(mouseEvent, dtw, processedLongerSeqFrames, processedShorterSeqFrames, dotCoords1, dotCoords2) {
+        let canvasCoords = this.canvas.getBoundingClientRect();
+        this.canvasMiddle = canvasCoords.top + (canvasCoords.bottom - canvasCoords.top) / 2 + window.scrollY;
+        // console.log("Page X: " + mouseEvent.pageX + "; Page Y: " + mouseEvent.pageY + "; CanvasMiddle: " + this.canvasMiddle);
+
         const longerFrames = processedLongerSeqFrames.frames;
         const shorterFrames = processedShorterSeqFrames.frames;
-        let oneFrameVal = this.visualizationWidth / dtw.Map.length;
+        let oneFrameVal = (canvasCoords.right - canvasCoords.left) / longerFrames.length - 0.12;
         let figureScale = processedLongerSeqFrames.figureScale;
 
-        let index = Math.floor((mouseEvent.pageX - 8) / oneFrameVal);
-        let longerSeqFrameIndex = dtw.Map[index].index1;
-        let shorterSeqFrameIndex = dtw.Map[index].index2;
+        // select index
+        let index = Math.floor((mouseEvent.pageX - canvasCoords.left) / oneFrameVal);
+        let warpingPathIndex;
+        if (mouseEvent.pageY <= this.canvasMiddle) {
+            warpingPathIndex = VisualizationDrawer.#findMapIndexByLongerSeq(index, dtw.Map);
+        } else {
+            if (index >= shorterFrames.length) {
+                index = shorterFrames.length - 1;
+            }
+            warpingPathIndex = VisualizationDrawer.#findMapIndexByShorterSeq(index, dtw.Map);
+        }
 
-        let colorSeq1 = VisualizationDrawer.#getColorForSequenceIndex(dtw.Map[index].index1, dtw, false);
-        let colorSeq2 = VisualizationDrawer.#getColorForSequenceIndex(dtw.Map[index].index2, dtw, true);
-        let colorPose = new ColoredPose(dotCoords1[dtw.Map[index].index1],
-            dotCoords2[dtw.Map[index].index2],
+        if (warpingPathIndex >= dtw.Map.length || warpingPathIndex === undefined) {
+            warpingPathIndex = dtw.Map.length - 1;
+        }
+
+        let longerSeqFrameIndex = dtw.Map[warpingPathIndex].index1;
+        let shorterSeqFrameIndex = dtw.Map[warpingPathIndex].index2;
+
+        // render and save dot coords with theirs colors
+        let colorSeq1 = VisualizationDrawer.#getColorForSequenceIndex(dtw.Map[warpingPathIndex].index1, dtw, false);
+        let colorSeq2 = VisualizationDrawer.#getColorForSequenceIndex(dtw.Map[warpingPathIndex].index2, dtw, true);
+        let colorPose = new ColoredPose(dotCoords1[dtw.Map[warpingPathIndex].index1],
+            dotCoords2[dtw.Map[warpingPathIndex].index2],
             colorSeq1,
             colorSeq2);
         this.#drawPositions(colorPose);
 
+        // draw details
         let coreX = longerFrames[longerSeqFrameIndex][0].x;
         let longerSeqFrame = Core.moveOriginXBy(longerFrames[longerSeqFrameIndex], coreX);
         resizeSkeleton(this.#detailRenderer.skeleton, this.drawStyle, figureScale);
-        drawFrame(this.#detailRenderer, longerSeqFrame, figureScale, 1, 0, this.drawStyle, true);
+        drawFrame(this.#detailRenderer, longerSeqFrame, figureScale, 2.5, 0, this.drawStyle, true);
 
         coreX = shorterFrames[shorterSeqFrameIndex][0].x;
         let shorterSeqFrame = Core.moveOriginXBy(shorterFrames[shorterSeqFrameIndex], coreX);
         resizeSkeleton(this.#detailRenderer.skeleton, this.drawStyle, figureScale);
-        drawFrame(this.#detailRenderer, shorterSeqFrame, figureScale, 3, 0, this.drawStyle, false);
+        drawFrame(this.#detailRenderer, shorterSeqFrame, figureScale, 6, 0, this.drawStyle, false);
+    }
+
+    static #findMapIndexByLongerSeq(longerSequenceIndex, warpingPath) {
+        for (let i = 0; i < warpingPath.length; i ++ ) {
+            if (warpingPath[i].index1 === longerSequenceIndex) {
+                return i;
+            }
+        }
+    }
+
+    static #findMapIndexByShorterSeq(shorterSequenceIndex, warpingPath) {
+        for (let i = 0; i < warpingPath.length; i ++ ) {
+            if (warpingPath[i].index2 === shorterSequenceIndex) {
+                return i;
+            }
+        }
+
+        return warpingPath.length - 1;
     }
 
     #drawPositions(colorPose) {
@@ -222,15 +259,76 @@ class VisualizationDrawer {
     }
 
     putTogetherImage(longerProcessed, shorterProcessed) {
-        this.div.appendChild(this.#addMapToSequence(longerProcessed, this.mapWidth, this.mapHeight));
-        this.div.appendChild(this.#addMapToSequence(shorterProcessed, this.mapWidth, this.mapHeight));
-        this.div.appendChild(this.#bars);
-        this.div.appendChild(this.canvas);
-        this.div.appendChild(this.#detail);
-        this.div.appendChild(this.timeAlignedCanvas);
-        this.div.appendChild(this.#timeAlignedMapping);
+        const marginBottom = "70";
+
+        let divRow1 = document.createElement('div');
+        divRow1.style.display = "flex";
+        divRow1.style.marginBottom = marginBottom;
+        divRow1.appendChild(this.#createLeftSideInfoCanvas("Super maps where you can see everything"));
+        divRow1.appendChild(this.#addMapToSequence(longerProcessed, this.mapWidth, this.mapHeight));
+        divRow1.appendChild(this.#addMapToSequence(shorterProcessed, this.mapWidth, this.mapHeight));
+        divRow1.appendChild(document.createElement('br'));
+        this.div.appendChild(divRow1);
+
+        let divRow2 = document.createElement('div');
+        divRow2.style.display = "flex";
+        divRow2.appendChild(this.#bars);
+        divRow2.appendChild(document.createElement('br'));
+        this.div.appendChild(divRow2);
+
+        let divRow3 = document.createElement('div');
+        divRow3.style.display = "flex";
+        divRow3.appendChild(this.#createLeftSideInfoCanvas("Super canvas where you can see everything"));
+        divRow3.appendChild(this.canvas);
+        divRow3.appendChild(document.createElement('br'));
+        this.div.appendChild(divRow3);
+
+        let divRow4 = document.createElement('div');
+        divRow4.style.display = "flex";
+        divRow4.style.marginBottom = marginBottom;
+        divRow4.appendChild(this.#createLeftSideInfoCanvas("Super detail where you can see everything"));
+        divRow4.appendChild(this.#detail);
+        divRow4.appendChild(document.createElement('br'));
+        this.div.appendChild(divRow4);
+
+        let divRow5 = document.createElement('div');
+        divRow5.style.display = "flex";
+        divRow5.style.marginBottom = marginBottom;
+        divRow5.appendChild(this.#createLeftSideInfoCanvas("Super time-aligning where you can see everything"));
+        divRow5.appendChild(this.timeAlignedCanvas);
+        divRow5.appendChild(document.createElement('br'));
+        this.div.appendChild(divRow5);
+
+        let divRow6 = document.createElement('div');
+        divRow6.style.display = "flex";
+        divRow6.appendChild(this.#createLeftSideInfoCanvas("Super time-aligning visualization where you can see everything"));
+        divRow6.appendChild(this.#timeAlignedMapping);
+        divRow6.appendChild(document.createElement('br'));
+        this.div.appendChild(divRow6);
 
         return this.div;
+    }
+
+    // #createLeftSideInfoCanvas(text) {
+    //     let infoCanvas = document.createElement("canvas");
+    //     infoCanvas.width = this.textSpace;
+    //     infoCanvas.height = this.visualizationHeight;
+    //     const ctx = infoCanvas.getContext('2d');
+    //     ctx.font = `${this.textHeight}px Arial`;
+    //     ctx.fillStyle = "black";
+    //     ctx.fillText(text, 0, this.textHeight, this.textSpace);
+    //     return infoCanvas;
+    // }
+
+    #createLeftSideInfoCanvas(text) {
+        let div = document.createElement("div");
+        let infoSpan = document.createElement("span");
+        infoSpan.style.width = this.textSpace;
+        infoSpan.style.height = this.visualizationHeight;
+        infoSpan.style.display = "inline-block";
+        infoSpan.innerHTML = text;
+        div.appendChild(infoSpan);
+        return div;
     }
 
     #drawDotFrame(xPosition, yPosition, circleRadius, color, defaultRenderer = null) {

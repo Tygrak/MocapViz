@@ -13,13 +13,24 @@ class DTWCalculator {
         return dtw;
     }
 
-    static dtwPerBodyPart(seq1, seq2, dtwCoeff, useContext, bodyPart, model) {
-        let indexes;
-        if (model === Model.modelVicon) {
-            indexes = DTWCalculator.getIndexesForBodyPartsVicon(bodyPart);
-        } else if (model === Model.modelKinect) {
-            indexes = DTWCalculator.getIndexesForBodyPartsKinect(bodyPart);
+    static dtwPerBodyPart(seq1, seq2, dtw, bodyPart, model, bodyPartAverage = 0) {
+        let indexes = DTWCalculator.#getIndexesPerBodyPart(bodyPart, model);
+        let mapValues = [];
+
+        for (let i = 0; i < dtw.Map.length; i ++) {
+            let j = dtw.Map[i].index1
+            let k = dtw.Map[i].index2;
+            mapValues.push(new WarpingPathEntity(j, k,
+                DTWCalculator.#getValueFromModelsPerBodyType(seq1[j], seq2[k], indexes),
+                0)
+            );
         }
+        return new DTW(0, [], mapValues, bodyPartAverage, dtw.useContext);
+    }
+
+    // independent body parts
+    static dtwPerBodyPartIndependent(seq1, seq2, dtwCoeff, useContext, bodyPart, model) {
+        let indexes = DTWCalculator.#getIndexesPerBodyPart(bodyPart, model);
 
         let arr = DTWCalculator.countDTW(seq1, seq2, indexes);
         return new DTW(
@@ -30,12 +41,26 @@ class DTWCalculator {
             useContext);
     }
 
+    static #getIndexesPerBodyPart(bodyPart, model) {
+        if (model === Model.modelVicon) {
+            return DTWCalculator.getIndexesForBodyPartsVicon(bodyPart);
+        } else if (model === Model.modelKinect) {
+            return DTWCalculator.getIndexesForBodyPartsKinect(bodyPart);
+        }
+
+        return null;
+    }
+
     static getIndexesForBodyPartsVicon(bodyPart) {
         let filteredBones = Model.bonesVicon.filter(function(b) {
            return b.type === bodyPart
         });
 
-        return filteredBones.map(b => b.a);
+        let set1 = new Set(filteredBones.map(fb => fb.a));
+        let set2 = new Set(filteredBones.map(fb => fb.b));
+
+        set2.forEach(set1.add, set1);
+        return set2;
     }
 
     static getIndexesForBodyPartsKinect(bodyPart) {
@@ -224,14 +249,15 @@ class DTW {
     RgbaValues = 255;
     MaxContextMultiple = 2;
 
-    constructor(val, arr, map, coeff, useContext = false) {
+    constructor(val, arr, map, distanceAverage, useContext = false) {
         this.Val = val;
         this.Arr = arr;
         this.Map = map;
-        this.DistanceAverage = coeff;
+        this.useContext = useContext;
+        this.DistanceAverage = distanceAverage;
         this.#setLargestDistance();
         this.#setLowestDistance();
-        this.#setColorCoeff(useContext);
+        this.#setColorCoeff();
     }
 
     static init(val, arr, map, useContext) {
@@ -256,8 +282,18 @@ class DTW {
         this.LowestDistance = min;
     }
 
-    #setColorCoeff(useContext) {
-        if (useContext) {
+    setLargestDistance(newLargestDistance) {
+        this.LargestDistance = newLargestDistance;
+        this.#setColorCoeff();
+    }
+
+    setLowestDistance(newLowestDistance) {
+        this.LowestDistance = newLowestDistance;
+        this.#setColorCoeff();
+    }
+
+    #setColorCoeff() {
+        if (this.useContext) {
             this.ColorCoeff = (this.RgbaValues - this.ContextPart) / (this.LargestDistance - this.LowestDistance);
         } else {
             this.ColorCoeff = this.RgbaValues / (this.LargestDistance - this.LowestDistance);

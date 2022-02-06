@@ -21,6 +21,7 @@
         </select>
 
         <button id="dataLoadButton">Load Data</button>
+        <button id="sampleDataButton">Sample Data</button>
 
         <script type="module">
             import * as Mocap from '../src/mocap.js';
@@ -28,10 +29,12 @@
 
             const dataFileInput = document.getElementById("dataFileInput");
             const loadButton = document.getElementById("dataLoadButton");
+            const sampleButton = document.getElementById("sampleDataButton");
 
             const sampleFileInput = document.getElementById('sampleFileInput');
             let context = document.getElementById('context');
             loadButton.onclick = load;
+            sampleButton.onclick = sample;
 
             let jsonContent = "";
 
@@ -46,6 +49,7 @@
                     reader.onload = handleFileLoad;
                     reader.readAsText(sampleFileInput.files[0]);
                 }
+
                 Mocap.loadDataFromFile(dataFileInput.files[0], (sequences) => {
                     let factory = new Mocap.VisualizationFactory();
                     factory.numKeyframes = 8;
@@ -55,11 +59,36 @@
                     factory.opacity = 0.6;
                     factory.blurFrameOpacity = 0.17;
                     // factory.sampling(sequences, 1);
-                    //console.log(sampleAverage);
-                    //console.log(factory.getIndexOfSequenceById(sequences, "3405_91_539_126"));
-                    let visualizationElement = factory.visualizeSequenceDiffs(sequences[1918], sequences[1236], 1500, 200, 200, 200, VS.ContextOption.NO_CONTEXT, jsonContent);
+                    // console.log(sampleAverage);
+                    // console.log(factory.getIndexOfSequenceById(sequences, "3405_91_539_126"));
+                    let visualizationElement = factory.visualizeSequenceDiffs(sequences[1918], sequences[1236], 1400, 200, 200, 200, VS.ContextOption.SAMPLED_CONTEXT, jsonContent);
 
                     document.body.appendChild(visualizationElement);
+                });
+            }
+
+            function sample() {
+                if (dataFileInput.files.length === 0) {
+                    console.log("No file selected!");
+                    return;
+                }
+
+                if (sampleFileInput.files.length !== 0) {
+                    const reader = new FileReader()
+                    reader.onload = handleFileLoad;
+                    reader.readAsText(sampleFileInput.files[0]);
+                }
+
+                Mocap.loadDataFromFile(dataFileInput.files[0], (sequences) => {
+                    let factory = new Mocap.VisualizationFactory();
+                    factory.numKeyframes = 8;
+                    factory.numZoomedKeyframes = 10;
+                    factory.keyframeSelectionAlgorithm = Mocap.KeyframeSelectionAlgorithmEnum.Equidistant;
+                    factory.leftBoneStyle = {r: 0, g: 180, b: 0, a: 1};
+                    factory.opacity = 0.6;
+                    factory.blurFrameOpacity = 0.17;
+
+                    factory.sampling(sequences, 1);
                 });
             }
 
