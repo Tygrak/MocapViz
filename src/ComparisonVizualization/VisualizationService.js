@@ -13,7 +13,7 @@ class VisualizationService {
     #shorterProcessed;
 
     createSequenceComparisonVisualization(sequence1, sequence2, visualizationWidth, visualizationHeight, drawStyle, drawStyleBlur, mapWidth, mapHeight, contextOption, defaultContext = "", lineCoefficient = 1) {
-        let useContext = (contextOption !== ContextOption.NO_CONTEXT);
+        let useContext = (contextOption != ContextOption.NO_CONTEXT);
         let contextVal = 0;
         let dtwA = 0;
         let bodyPartsAverage = new BodyPart(0,0,0,0,0);
@@ -31,7 +31,6 @@ class VisualizationService {
                 contextVal = this.context.getBuiltValue();
             }
         }
-
 
         let sortedSequences = VisualizationService.#sortSequences(sequence1, sequence2);
         let longerSeq = sortedSequences[0];

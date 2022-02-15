@@ -28,11 +28,16 @@
             import * as VS from '../src/ComparisonVizualization/VisualizationService.js';
 
             const dataFileInput = document.getElementById("dataFileInput");
+            const sampleFileInput = document.getElementById('sampleFileInput');
+
+            const contextSelect = document.getElementById("context");
             const loadButton = document.getElementById("dataLoadButton");
             const sampleButton = document.getElementById("sampleDataButton");
 
-            const sampleFileInput = document.getElementById('sampleFileInput');
+            let contextOption = VS.ContextOption.NO_CONTEXT;
+
             let context = document.getElementById('context');
+            contextSelect.onchange = setContext;
             loadButton.onclick = load;
             sampleButton.onclick = sample;
 
@@ -61,7 +66,8 @@
                     // factory.sampling(sequences, 1);
                     // console.log(sampleAverage);
                     // console.log(factory.getIndexOfSequenceById(sequences, "3405_91_539_126"));
-                    let visualizationElement = factory.visualizeSequenceDiffs(sequences[1918], sequences[1236], 1400, 200, 200, 200, VS.ContextOption.SAMPLED_CONTEXT, jsonContent);
+                    console.log(contextOption);
+                    let visualizationElement = factory.visualizeSequenceDiffs(sequences[1918], sequences[1236], 1400, 200, 200, 200, contextOption, jsonContent);
 
                     document.body.appendChild(visualizationElement);
                 });
@@ -92,8 +98,14 @@
                 });
             }
 
+            function setContext() {
+                //const contextSelect = document.getElementById("context");
+                contextOption = contextSelect.value;
+                console.log(contextOption);
+            }
+
             function handleFileLoad(event) {
-                jsonContent =  event.target.result;
+                jsonContent = event.target.result;
             }
         </script>
     </body>
