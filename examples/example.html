@@ -9,18 +9,28 @@
     <body>
 
         Data: <input type="file" id="dataFileInput" name="dataFileInput" accept=".data,.txt">
+        <br>
 
         Samples: <input type="file" id="sampleFileInput" name="sampleFileInput" accept=".json">
+        <br>
 
         <label for="context">Choose a context:</label>
-
         <select name="context" id="context">
             <option value="1">No context</option>
             <option value="2">Sampled context</option>
             <option value="3">Built context</option>
         </select>
+        <br>
 
         <button id="dataLoadButton">Load Data</button>
+
+
+        <br>
+        <br>
+        <br>
+        <br>
+        Data for sampling: <input type="file" id="sampleDataFileInput" name="sampleDataFileInput" accept=".data,.txt">
+        <br>
         <button id="sampleDataButton">Sample Data</button>
 
         <script type="module">
@@ -29,6 +39,7 @@
 
             const dataFileInput = document.getElementById("dataFileInput");
             const sampleFileInput = document.getElementById('sampleFileInput');
+            const sampleDataFileInput = document.getElementById("sampleDataFileInput");
 
             const contextSelect = document.getElementById("context");
             const loadButton = document.getElementById("dataLoadButton");
@@ -63,29 +74,20 @@
                     factory.leftBoneStyle = {r: 0, g: 180, b: 0, a: 1};
                     factory.opacity = 0.6;
                     factory.blurFrameOpacity = 0.17;
-                    // factory.sampling(sequences, 1);
-                    // console.log(sampleAverage);
-                    // console.log(factory.getIndexOfSequenceById(sequences, "3405_91_539_126"));
                     console.log(contextOption);
-                    let visualizationElement = factory.visualizeSequenceDiffs(sequences[1918], sequences[1236], 1400, 200, 200, 200, contextOption, jsonContent);
+                    let visualizationElement = factory.visualizeSequenceDiffs(sequences[1918], sequences[1236], 1400, 200, contextOption, jsonContent);
 
                     document.body.appendChild(visualizationElement);
                 });
             }
 
             function sample() {
-                if (dataFileInput.files.length === 0) {
+                if (sampleDataFileInput.files.length === 0) {
                     console.log("No file selected!");
                     return;
                 }
 
-                if (sampleFileInput.files.length !== 0) {
-                    const reader = new FileReader()
-                    reader.onload = handleFileLoad;
-                    reader.readAsText(sampleFileInput.files[0]);
-                }
-
-                Mocap.loadDataFromFile(dataFileInput.files[0], (sequences) => {
+                Mocap.loadDataFromFile(sampleDataFileInput.files[0], (sequences) => {
                     let factory = new Mocap.VisualizationFactory();
                     factory.numKeyframes = 8;
                     factory.numZoomedKeyframes = 10;
@@ -94,7 +96,7 @@
                     factory.opacity = 0.6;
                     factory.blurFrameOpacity = 0.17;
 
-                    factory.sampling(sequences, 1);
+                    factory.sampleData(sequences, 1);
                 });
             }
 

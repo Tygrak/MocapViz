@@ -140,63 +140,6 @@ class DTWCalculator {
     static #getVectorEuclideanDistance(v1, v2) {
         return Math.pow(v1.x - v2.x, 2) + Math.pow(v1.y - v2.y, 2) + Math.pow(v1.z - v2.z, 2);
     }
-
-    static countMatrix(arr) {
-        let len1 = arr.length;
-        let len2 = arr[0].length;
-        let pathArr = new Array(len1);
-        for (let i = 0; i < len1; i++) {
-            pathArr[i] = new Array(len2);
-        }
-        for (let i = 0; i < len1; i++) {
-            for (let j = 0; j < len2; j++) {
-                pathArr[i][j] = new PathArrEl(Number.POSITIVE_INFINITY, []);
-            }
-        }
-        pathArr[0][0] = new PathArrEl(0, [[0,0]]);
-        pathArr[1][1] = new PathArrEl(arr[1][1].cumulativeDistance, [[0,0], [1,1]]);
-        let queue = [ [1, 1] ];
-        while (queue.length !== 0) {
-            let coords = queue.shift();
-            let i = coords[0];
-            let j = coords[1];
-            // move right : depends on how you look at it
-            if (i + 1 !== len1 && pathArr[i + 1][j].value > pathArr[i][j].value + arr[i + 1][j].cumulativeDistance) {
-                queue.push([i + 1, j]);
-
-                let path = pathArr[i][j].path.slice();
-                path.push([i + 1, j]);
-                pathArr[i + 1][j] = new PathArrEl(pathArr[i][j].value + arr[i + 1][j].cumulativeDistance, path);
-            }
-
-            // move bottom right
-            if (i + 1 !== len1 && j + 1 !== len2 && pathArr[i + 1][j + 1].value > pathArr[i][j].value + arr[i + 1][j + 1].cumulativeDistance) {
-                queue.push([i + 1, j + 1]);
-
-                let path = pathArr[i][j].path.slice();
-                path.push([i + 1, j + 1]);
-                pathArr[i + 1][j + 1] = new PathArrEl(pathArr[i][j].value + arr[i + 1][j + 1].cumulativeDistance, path);
-            }
-
-            // move bottom
-            if (j + 1 !== len2 && pathArr[i][j + 1].value > pathArr[i][j].value + arr[i][j + 1].cumulativeDistance) {
-                queue.push([i, j + 1]);
-
-                let path = pathArr[i][j].path.slice();
-                path.push([i,j + 1]);
-                pathArr[i][j + 1] = new PathArrEl(pathArr[i][j].value + arr[i][j + 1].cumulativeDistance, path);
-            }
-        }
-
-        return pathArr[len1 - 1][len2 - 1].path;
-    }
-}
-
-class PathArrEl {
-    constructor(value, path) {
-        this.value = value;
-        this.path = path;
-    }
 }
 
 class DTWSquare {
