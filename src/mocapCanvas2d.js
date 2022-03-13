@@ -210,6 +210,5 @@ function drawFrame(canvas, frame, xShift, yShift, drawStyle) {
 
 export {createVisualizationElement, createZoomableVisualizationElement};
 export {loadDataFromString, loadDataFromFile, getSequenceLength, getSequenceCategory, getSequenceJointsPerFrame, KeyframeSelectionAlgorithmEnum} from './mocapCore.js';
-export {createDiffVisualization} from './mocapDiffs.js';
 export * from './model.js';
 export * from './asfAmcParser.js';

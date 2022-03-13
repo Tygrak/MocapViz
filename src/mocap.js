@@ -2,8 +2,10 @@ import * as THREE from './lib/three.module.js';
 import * as Model from './model.js';
 import * as Core from './mocapCore.js';
 import {OrbitControls} from './lib/OrbitControls.js';
-import {createDiffVisualization, sampling} from "./mocapDiffs.js";
 import {ContextOption, VisualizationService} from "./ComparisonVizualization/VisualizationService.js";
+import {VisualizationManager} from "./MotionsDifferenceVisualiser/Managers/VisualisationManager.js";
+import {modelKinect} from "./model.js";
+import {SampleManager} from "./MotionsDifferenceVisualiser/Managers/SampleManager.js";
 
 let mainRenderer = null;
 const sceneWidth = 100;
@@ -54,7 +56,7 @@ class VisualizationFactory {
         this.numKeyframes = 10;
         this.numBlurFrames = 10;
         this.numZoomedKeyframes = 12;
-        this.visualizationService = new VisualizationService();
+        this.visalusationManager = new VisualizationManager();
     }
 
     /**
@@ -95,21 +97,19 @@ class VisualizationFactory {
         return -1;
     }
 
-    visualizeSequenceDiffs(sequence1, sequence2, visualizationWidth = 1500, visualizationHeight = 200, mapWidth = 200, mapHeight = 200, contextOption = ContextOption.NO_CONTEXT, defaultContext = "") {
+    visualizeSequenceDiffs(sequence1, sequence2, visualizationWidth = 1500, visualizationHeight = 200,
+                           contextOption = ContextOption.NO_CONTEXT, defaultContext = "") {
         let drawStyle = new Core.MocapDrawStyle(this.model, this.boneRadius, this.jointRadius, this.headRadius, this.boneStyle,
             this.leftBoneStyle, this.rightBoneStyle, this.jointStyle, 1, this.noseStyle, this.noseRadius, this.opacity);
         let drawStyleBlur = new Core.MocapDrawStyle(this.model, this.boneRadius, this.jointRadius, this.headRadius, this.boneStyle,
             this.boneStyle, this.boneStyle, this.jointStyle, 1, this.boneStyle, this.noseRadius, this.blurFrameOpacity);
 
-        return this.visualizationService.createSequenceComparisonVisualization(sequence1, sequence2, visualizationWidth, visualizationHeight, drawStyle, drawStyleBlur, mapWidth, mapHeight, contextOption, defaultContext);
+        return this.visalusationManager.visualiseTwoMotionDifference(sequence1, sequence2, visualizationWidth, visualizationHeight,
+            drawStyle, drawStyleBlur, contextOption, defaultContext, 1);
     }
 
-    sampling(sequences, count = 1) {
-        this.visualizationService.sampleDataSet(sequences, count);
-    }
-
-    clearSampling() {
-        this.visualizationService.clearSampling();
+    sampleData(sequences, count = 1, model = modelKinect) {
+        SampleManager.sampleDataSet(sequences, count)
     }
 }
 
@@ -575,7 +575,6 @@ function createAnimationElement(sequence, model, visualizationWidth, visualizati
 
 export {VisualizationFactory, visualizeToCanvas, drawFrame, createVisualizationElement, createZoomableVisualizationElement, createAnimationElement, drawSequence, resizeSkeleton, findKeyframes, clearRenderer, initializeMocapRenderer, resizeMocapRenderer, addMapToVisualization};
 export {loadDataFromString, loadDataFromFile, getSequenceLength, getSequenceCategory, getSequenceJointsPerFrame, KeyframeSelectionAlgorithmEnum} from './mocapCore.js';
-export {createDiffVisualization} from './mocapDiffs.js';
 export * from './model.js';
 export * from './asfAmcParser.js';
 //export * from './mocapCanvas2d.js';

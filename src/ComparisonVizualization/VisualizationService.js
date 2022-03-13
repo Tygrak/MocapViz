@@ -18,7 +18,7 @@ class VisualizationService {
         let dtwA = 0;
         let bodyPartsAverage = new BodyPart(0,0,0,0,0);
         if (useContext !== false) {
-            if (contextOption === ContextOption.SAMPLED_CONTEXT) {
+            if (contextOption == ContextOption.SAMPLED_CONTEXT) {
                 if (defaultContext.length !== 0) {
                     let parsedContext = JSON.parse(defaultContext);
                     this.context.setValue(parsedContext.distanceA);
@@ -27,7 +27,7 @@ class VisualizationService {
                         parsedContext.bodyParts["rightHand"], parsedContext.bodyParts["leftFoot"], parsedContext.bodyParts["rightFoot"]);
                 }
                 contextVal = this.context.getValue();
-            } else if (contextOption === ContextOption.BUILT_CONTEXT) {
+            } else if (contextOption == ContextOption.BUILT_CONTEXT) {
                 contextVal = this.context.getBuiltValue();
             }
         }
@@ -56,7 +56,7 @@ class VisualizationService {
         // if we want to use context, the value of distance will have only 105/255 of 1 the rest will be context
         let dtw = DTWCalculator.calculateDTW(longerSeq, shorterSeq, -1, contextVal, useContext);
 
-        if (contextOption === ContextOption.BUILT_CONTEXT) {
+        if (contextOption == ContextOption.BUILT_CONTEXT) {
             this.context.addNewSample(VisualizationService.#countDistanceAverage(dtw));
         }
 
