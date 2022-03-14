@@ -1,7 +1,7 @@
 import {CategoryManager} from "../Managers/CategoryManager.js";
 
 class TextDescriptionRenderer {
-    static fillTextDescription(textElement, longerSequence, shorterSequence, dtwDistance, dtwDistanceAverage = 0) {
+    static render(textElement, longerSequence, shorterSequence, dtwDistance, dtwDistanceAverage = 0) {
         let category1 = CategoryManager.getSequenceCategory(longerSequence);
         let category2 = CategoryManager.getSequenceCategory(shorterSequence);
 

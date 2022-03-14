@@ -1,7 +1,7 @@
 import {Vec3} from "../../mocapCore.js";
 
 class TimeAlignedMappingRenderer {
-    static drawTimeAlignmentBars(warpingPath, sequenceLength, canvasWidth, canvasHeight) {
+    static drawTimeAlignedBars(warpingPath, sequenceLength, canvasWidth, canvasHeight) {
         const canvas = document.createElement("canvas");
         canvas.width = canvasWidth;
         canvas.height = canvasHeight / 3 * 2;

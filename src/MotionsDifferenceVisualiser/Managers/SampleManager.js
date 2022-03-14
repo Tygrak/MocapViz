@@ -91,8 +91,8 @@ class SampleManager {
         }
 
         for (let i = 0; i < samples.length - 1; i += 2) {
-            let sequence1 = SequenceManager.filterSequenceValues(samples[i]);
-            let sequence2 = SequenceManager.filterSequenceValues(samples[i + 1]);
+            let sequence1 = SequenceManager.getPoseCoordinatesPerSequence(samples[i]);
+            let sequence2 = SequenceManager.getPoseCoordinatesPerSequence(samples[i + 1]);
 
             let dtw = DTWManager.calculateDTW(sequence1, sequence2, -1, new Context(false));
             DTWs.push(dtw.distance);

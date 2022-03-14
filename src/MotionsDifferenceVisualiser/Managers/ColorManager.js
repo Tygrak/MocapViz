@@ -36,7 +36,7 @@ class ColorManager {
             let contextCoefficient = poseDistance / dtw.context.poseDistanceAverage;
             contextCoefficient = (contextCoefficient > dtw.maxContextMultiple) ? dtw.maxContextMultiple : contextCoefficient;
             contextCoefficient = contextCoefficient / dtw.maxContextMultiple;
-            contextValue = dtw.ContextPart * contextCoefficient;
+            contextValue = dtw.contextPart * contextCoefficient;
         } else {
             contextValue = 0;
         }

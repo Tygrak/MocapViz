@@ -1,7 +1,7 @@
 import {ColorManager} from "../Managers/ColorManager.js";
 
 class BodyPartsRenderer {
-    static renderBodyPartBars(canvas, dtwBodyParts, visualisationWidth, textSpace, textHeight) {
+    static render(canvas, dtwBodyParts, visualisationWidth, textSpace, textHeight) {
         let bodyPart = dtwBodyParts[0][0];
         let oneBarPieceWidth = visualisationWidth / bodyPart.warpingPath.length;
         canvas.width = bodyPart.warpingPath.length * oneBarPieceWidth + textSpace;
