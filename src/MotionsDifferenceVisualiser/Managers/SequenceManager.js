@@ -10,7 +10,7 @@ class SequenceManager {
         return sequences;
     }
 
-    static filterSequenceValues(sequence) {
+    static getPoseCoordinatesPerSequence(sequence) {
         let frames = sequence.map((frame) => {
             return frame.replace(" ", "").split(';').map((joint) => {
                 let xyz = joint.split(',');

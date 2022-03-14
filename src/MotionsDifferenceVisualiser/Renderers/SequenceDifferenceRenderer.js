@@ -5,7 +5,7 @@ import * as THREE from "../../lib/three.module.js";
 import {ColorManager} from "../Managers/ColorManager.js";
 
 class SequenceDifferenceRenderer {
-    static drawSequence(processedSequence, renderer, numKeyframes, sceneWidth, drawStyle, drawStyleBlur, yShift, xCoefficient = 1) {
+    static renderSequence(processedSequence, renderer, numKeyframes, sceneWidth, drawStyle, drawStyleBlur, yShift, xCoefficient = 1) {
         let figureScale = processedSequence.figureScale;
         let frames = processedSequence.frames;
         resizeSkeleton(renderer.skeleton, drawStyle, figureScale);
@@ -20,7 +20,7 @@ class SequenceDifferenceRenderer {
         return drawSequence(renderer, frames, keyframes, 0, drawStyle, drawStyleBlur, figureScale, yShift, false, true, xCoefficient);
     }
 
-    static drawDots(renderer, dotYShift, positions, frames, dtw, startXDotPosition, circleRadius, isShorterSequence = false) {
+    static renderDots(renderer, dotYShift, positions, frames, dtw, startXDotPosition, circleRadius, isShorterSequence = false) {
         let shift = positions[positions.length - 1] / frames.length;
         let xPosition = startXDotPosition;
         let dots = [];
@@ -33,7 +33,7 @@ class SequenceDifferenceRenderer {
         return dots;
     }
 
-    static drawLines(renderer, dots1, dots2, lineCoefficient, dtw) {
+    static renderLines(renderer, dots1, dots2, lineCoefficient, dtw) {
         for (let i = 0; i < dtw.warpingPath.length; i += lineCoefficient) {
             let color = ColorManager.getColorForWarpingPathIndex(i, dtw);
             SequenceDifferenceRenderer.#drawLine(renderer, dots1[dtw.warpingPath[i].index1], dots2[dtw.warpingPath[i].index2], color);

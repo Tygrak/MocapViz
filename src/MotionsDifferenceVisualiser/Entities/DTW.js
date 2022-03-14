@@ -12,7 +12,7 @@ class DTW {
     maxContextMultiple = 2;
 
     // value 0-255 which represents context importance during coloring
-    #contextPart = 150;
+    contextPart = 150;
     #rgbaValues = 255;
 
     constructor(distance, warpingPath, context) {
@@ -49,7 +49,7 @@ class DTW {
 
     #setColorCoeff() {
         if (this.context.useContext) {
-            this.colorCoefficient = (this.#rgbaValues - this.#contextPart) / (this.largestDistance - this.lowestDistance);
+            this.colorCoefficient = (this.#rgbaValues - this.contextPart) / (this.largestDistance - this.lowestDistance);
         } else {
             this.colorCoefficient = this.#rgbaValues / (this.largestDistance - this.lowestDistance);
         }

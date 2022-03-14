@@ -81,46 +81,51 @@ class MotionsDifferenceRenderer {
 
         this.#longerSequenceProcessed = this.#processSequenceForDrawing(this.#longerSequence);
         this.#shorterSequenceProcessed = this.#processSequenceForDrawing(this.#shorterSequence);
-        this.#longerSequenceFiltered = SequenceManager.filterSequenceValues(this.#longerSequence);
-        this.#shorterSequenceFiltered = SequenceManager.filterSequenceValues(this.#shorterSequence);
+        this.#longerSequenceFiltered = SequenceManager.getPoseCoordinatesPerSequence(this.#longerSequence);
+        this.#shorterSequenceFiltered = SequenceManager.getPoseCoordinatesPerSequence(this.#shorterSequence);
 
         this.#timeAlignedMappingCanvas.width = this.#visualizationWidth;
         this.#timeAlignedMappingCanvas.height = this.#visualizationHeight / 3 * 2;
     }
 
     fillTextDescription() {
-        TextDescriptionRenderer.fillTextDescription(this.#textDescription, this.#longerSequence, this.#shorterSequence,
+        TextDescriptionRenderer.render(this.#textDescription, this.#longerSequence, this.#shorterSequence,
             this.#dtw.distance, this.#dtw.context.dtwDistanceAverage);
+    }
+
+    fillMapCanvases() {
+        this.#longerSequenceMapCanvas = MapRenderer.renderMap(this.#longerSequenceProcessed, this.#MAP_WIDTH, this.#MAP_HEIGHT, this.#NUM_KEYFRAMES, this.#model);
+        this.#shorterSequenceMapCanvas = MapRenderer.renderMap(this.#shorterSequenceProcessed, this.#MAP_WIDTH, this.#MAP_HEIGHT, this.#NUM_KEYFRAMES, this.#model);
     }
 
     fillSequenceDifferenceCanvas() {
         let yThird = this.#visualizationHeight / (this.#visualizationWidth / this.#visualizationHeight * 6);
-        let longerPositions = SequenceDifferenceRenderer.drawSequence(this.#longerSequenceProcessed,
+        let longerPositions = SequenceDifferenceRenderer.renderSequence(this.#longerSequenceProcessed,
             this.#sequenceDifferenceRenderer, this.#NUM_KEYFRAMES, this.#SCENE_WIDTH, this.#drawStyle,
             this.#drawStyleBlur, yThird * 2);
-        let shorterPositions = SequenceDifferenceRenderer.drawSequence(this.#shorterSequenceProcessed,
+        let shorterPositions = SequenceDifferenceRenderer.renderSequence(this.#shorterSequenceProcessed,
             this.#sequenceDifferenceRenderer, this.#NUM_KEYFRAMES, this.#SCENE_WIDTH, this.#drawStyle,
             this.#drawStyleBlur, 0, this.#longerSequence.length / this.#shorterSequence.length);
 
-        console.log(this.#dtw);
-        console.log(this.#longerSequenceProcessed.frames);
-        console.log(this.#shorterSequenceProcessed.frames);
-
-        this.#longerSequenceDotCoordinates = SequenceDifferenceRenderer.drawDots(this.#sequenceDifferenceRenderer,
+        this.#longerSequenceDotCoordinates = SequenceDifferenceRenderer.renderDots(this.#sequenceDifferenceRenderer,
             yThird * 2 - 0.35, longerPositions, this.#longerSequenceProcessed.frames, this.#dtw, 
             this.#X_DOT_START_POSITION, this.#POSE_CIRCLE_RADIUS);
-        this.#shorterSequenceDotCoordinates = SequenceDifferenceRenderer.drawDots(this.#sequenceDifferenceRenderer,
+        this.#shorterSequenceDotCoordinates = SequenceDifferenceRenderer.renderDots(this.#sequenceDifferenceRenderer,
             yThird + 0.15, shorterPositions, this.#shorterSequenceProcessed.frames, this.#dtw,
             this.#X_DOT_START_POSITION, this.#POSE_CIRCLE_RADIUS, true);
 
-        console.log(this.#longerSequenceDotCoordinates);
-        console.log(this.#shorterSequenceDotCoordinates);
-
-        SequenceDifferenceRenderer.drawLines(this.#sequenceDifferenceRenderer, this.#longerSequenceDotCoordinates,
+        SequenceDifferenceRenderer.renderLines(this.#sequenceDifferenceRenderer, this.#longerSequenceDotCoordinates,
             this.#shorterSequenceDotCoordinates, this.#lineCoefficient, this.#dtw);
     }
 
-    setSequenceDifferenceDetail() {
+    fillBodyPartsCanvas() {
+        let dtwBodyParts = BodyPartManager.getBodyPartsPerModel(this.#longerSequenceFiltered, this.#shorterSequenceFiltered,
+            this.#dtw, this.#model)
+        BodyPartsRenderer.render(this.#bodyPartsCanvas, dtwBodyParts, this.#visualizationWidth,
+            this.#TEXT_SPACE, this.#TEXT_HEIGHT);
+    }
+
+    setPoseDetail() {
         let poseDetailRenderer = new PoseDetailRenderer(this.#sequenceDetailRenderer, this.#sequenceDifferenceRenderer,
             this.#dtw, JSON.parse(JSON.stringify(this.#longerSequenceProcessed)),
                 JSON.parse(JSON.stringify(this.#shorterSequenceProcessed)), this.#longerSequenceDotCoordinates,
@@ -129,45 +134,33 @@ class MotionsDifferenceRenderer {
         this.#sequenceDifferenceCanvas.onmousemove = (event) => poseDetailRenderer.onMouseMoveMapping(event);
     }
 
-    fillBodyPartsCanvas() {
-        let dtwBodyParts = BodyPartManager.getBodyPartsPerModel(this.#longerSequenceFiltered, this.#shorterSequenceFiltered,
-            this.#dtw, this.#model)
-        BodyPartsRenderer.renderBodyPartBars(this.#bodyPartsCanvas, dtwBodyParts, this.#visualizationWidth,
-            this.#TEXT_SPACE, this.#TEXT_HEIGHT);
-    }
-
     fillTimeAlignedSequenceDifferenceCanvas() {
         let reducedLongerSequence = SequenceManager.reduceSequenceLength(this.#longerSequenceFiltered, this.#shorterSequenceFiltered.length);
         let reducedLongerSequenceProcessed = this.#longerSequenceProcessed;
         reducedLongerSequenceProcessed.frames = SequenceManager.reduceSequenceLength(this.#longerSequenceProcessed.frames, this.#shorterSequenceProcessed.frames.length);
 
         let yThird = this.#visualizationHeight / (this.#visualizationWidth / this.#visualizationHeight * 6);
-        let positions1 = SequenceDifferenceRenderer.drawSequence(reducedLongerSequenceProcessed,
+        let positions1 = SequenceDifferenceRenderer.renderSequence(reducedLongerSequenceProcessed,
             this.#timeAlignedSequenceDifferenceRenderer, this.#NUM_KEYFRAMES, this.#SCENE_WIDTH, this.#drawStyle,
             this.#drawStyleBlur, yThird * 2);
-        let positions2 = SequenceDifferenceRenderer.drawSequence(this.#shorterSequenceProcessed,
+        let positions2 = SequenceDifferenceRenderer.renderSequence(this.#shorterSequenceProcessed,
             this.#timeAlignedSequenceDifferenceRenderer, this.#NUM_KEYFRAMES, this.#SCENE_WIDTH, this.#drawStyle,
             this.#drawStyleBlur, 0, reducedLongerSequence.length / this.#shorterSequenceFiltered.length);
 
         let reducedDtw = DTWManager.calculateDTW(reducedLongerSequence, this.#shorterSequenceFiltered, -1, this.#dtw.context);
 
-        let longerSequenceDotCoordinates = SequenceDifferenceRenderer.drawDots(this.#timeAlignedSequenceDifferenceRenderer,
+        let longerSequenceDotCoordinates = SequenceDifferenceRenderer.renderDots(this.#timeAlignedSequenceDifferenceRenderer,
             yThird * 2 - 0.35, positions1, reducedLongerSequenceProcessed.frames, reducedDtw,
             this.#X_DOT_START_POSITION, this.#POSE_CIRCLE_RADIUS);
-        let shorterSequenceDotCoordinates = SequenceDifferenceRenderer.drawDots(this.#timeAlignedSequenceDifferenceRenderer,
+        let shorterSequenceDotCoordinates = SequenceDifferenceRenderer.renderDots(this.#timeAlignedSequenceDifferenceRenderer,
             yThird + 0.15, positions2, this.#shorterSequenceProcessed.frames, reducedDtw,
             this.#X_DOT_START_POSITION, this.#POSE_CIRCLE_RADIUS, true);
 
-        SequenceDifferenceRenderer.drawLines(this.#timeAlignedSequenceDifferenceRenderer, longerSequenceDotCoordinates,
+        SequenceDifferenceRenderer.renderLines(this.#timeAlignedSequenceDifferenceRenderer, longerSequenceDotCoordinates,
             shorterSequenceDotCoordinates, this.#lineCoefficient, reducedDtw);
 
-        this.#timeAlignedMappingCanvas = TimeAlignedMappingRenderer.drawTimeAlignmentBars(reducedDtw.warpingPath,
+        this.#timeAlignedMappingCanvas = TimeAlignedMappingRenderer.drawTimeAlignedBars(reducedDtw.warpingPath,
             reducedLongerSequence.length, this.#visualizationWidth, this.#visualizationHeight);
-    }
-
-    fillMapsCanvases() {
-        this.#longerSequenceMapCanvas = MapRenderer.drawMap(this.#longerSequenceProcessed, this.#MAP_WIDTH, this.#MAP_HEIGHT, this.#NUM_KEYFRAMES, this.#model);
-        this.#shorterSequenceMapCanvas = MapRenderer.drawMap(this.#shorterSequenceProcessed, this.#MAP_WIDTH, this.#MAP_HEIGHT, this.#NUM_KEYFRAMES, this.#model);
     }
 
     renderImage() {

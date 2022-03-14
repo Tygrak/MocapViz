@@ -25,8 +25,8 @@ class VisualizationManager {
         let longerSequence = sortedSequences[0];
         let shorterSequence = sortedSequences[1];
 
-        let filteredLongerSequence = SequenceManager.filterSequenceValues(longerSequence);
-        let filteredShorterSequence = SequenceManager.filterSequenceValues(shorterSequence);
+        let filteredLongerSequence = SequenceManager.getPoseCoordinatesPerSequence(longerSequence);
+        let filteredShorterSequence = SequenceManager.getPoseCoordinatesPerSequence(shorterSequence);
 
         let dtw = DTWManager.calculateDTW(filteredLongerSequence, filteredShorterSequence, -1, this.context);
 
@@ -35,10 +35,10 @@ class VisualizationManager {
             visualizationHeight, drawStyle, drawStyleBlur, jointsCount, this.model, lineCoefficient);
 
         drawer.fillTextDescription();
-        drawer.fillMapsCanvases();
+        drawer.fillMapCanvases();
         drawer.fillBodyPartsCanvas();
         drawer.fillSequenceDifferenceCanvas();
-        drawer.setSequenceDifferenceDetail();
+        drawer.setPoseDetail();
         drawer.fillTimeAlignedSequenceDifferenceCanvas();
 
         return drawer.renderImage();
