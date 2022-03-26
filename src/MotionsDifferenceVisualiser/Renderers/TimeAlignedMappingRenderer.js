@@ -4,12 +4,12 @@ class TimeAlignedMappingRenderer {
     static drawTimeAlignedBars(warpingPath, sequenceLength, canvasWidth, canvasHeight) {
         const canvas = document.createElement("canvas");
         canvas.width = canvasWidth;
-        canvas.height = canvasHeight / 3 * 2;
+        canvas.height = canvasHeight;
 
-        const xShift = canvas.width / sequenceLength;
+        const xShift = (canvasWidth - canvasWidth / 35) / sequenceLength;
 
         const ctx = canvas.getContext('2d');
-        let yPosition = canvasHeight / 2;
+        let yPosition = canvasHeight / 3;
         let lastIteration = new Vec3(-1,-1,0);
         for (let i = 0; i < warpingPath.length; i ++) {
             let x1 = warpingPath[i].index1;

@@ -121,7 +121,7 @@ class MotionsDifferenceRenderer {
     fillBodyPartsCanvas() {
         let dtwBodyParts = BodyPartManager.getBodyPartsPerModel(this.#longerSequenceFiltered, this.#shorterSequenceFiltered,
             this.#dtw, this.#model)
-        BodyPartsRenderer.render(this.#bodyPartsCanvas, dtwBodyParts, this.#visualizationWidth,
+        BodyPartsRenderer.render(this.#bodyPartsCanvas, dtwBodyParts, this.#longerSequenceFiltered.length, this.#visualizationWidth,
             this.#TEXT_SPACE, this.#TEXT_HEIGHT);
     }
 

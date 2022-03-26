@@ -1,4 +1,4 @@
-import {BodyParts} from "../Entities/BodyParts.js"
+import {BodyParts} from "./BodyParts.js"
 
 class Context {
     useContext = false;

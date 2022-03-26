@@ -97,8 +97,8 @@ class VisualizationFactory {
         return -1;
     }
 
-    visualizeSequenceDiffs(sequence1, sequence2, visualizationWidth = 1500, visualizationHeight = 200,
-                           contextOption = ContextOption.NO_CONTEXT, defaultContext = "") {
+    visualizeSequenceDifferences(sequence1, sequence2, visualizationWidth = 1500, visualizationHeight = 200,
+                                 contextOption = ContextOption.NO_CONTEXT, defaultContext = "") {
         let drawStyle = new Core.MocapDrawStyle(this.model, this.boneRadius, this.jointRadius, this.headRadius, this.boneStyle,
             this.leftBoneStyle, this.rightBoneStyle, this.jointStyle, 1, this.noseStyle, this.noseRadius, this.opacity);
         let drawStyleBlur = new Core.MocapDrawStyle(this.model, this.boneRadius, this.jointRadius, this.headRadius, this.boneStyle,

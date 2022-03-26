@@ -1,7 +1,7 @@
 import {SampleManager} from "./SampleManager.js";
 
 class ColorManager {
-    static getColorForSequenceIndex(index, dtw, isShorterSequence) {
+    static getColorForSequenceIndex(index, dtw, isShorterSequence = false) {
         let poseDistance = ColorManager.#getPoseDistanceAverageForIndex(index, dtw.warpingPath, isShorterSequence);
         return ColorManager.#selectColorByPoseDistance(poseDistance, dtw);
     }
