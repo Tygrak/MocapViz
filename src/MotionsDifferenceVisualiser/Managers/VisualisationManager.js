@@ -16,8 +16,8 @@ class VisualizationManager {
         this.model = model;
     }
 
-    visualiseTwoMotionDifference(sequence1, sequence2, visualizationWidth, visualizationHeight, drawStyle, drawStyleBlur,
-                                 contextOption, contextJson = "", lineCoefficient = 1)
+    visualiseTwoMotionDifference(sequence1, sequence2, visualizationWidth, drawStyle, drawStyleBlur,
+                                 contextOption, contextJson = "")
     {
         this.context = ContextManager.getContext(this.context, contextOption, contextJson);
 
@@ -32,7 +32,7 @@ class VisualizationManager {
 
         let jointsCount = Core.getSequenceJointsPerFrame(longerSequence);
         let drawer = new MotionsDifferenceRenderer(longerSequence, shorterSequence, dtw, visualizationWidth,
-            visualizationHeight, drawStyle, drawStyleBlur, jointsCount, this.model, lineCoefficient);
+            drawStyle, drawStyleBlur, jointsCount, this.model);
 
         drawer.fillTextDescription();
         drawer.fillMapCanvases();

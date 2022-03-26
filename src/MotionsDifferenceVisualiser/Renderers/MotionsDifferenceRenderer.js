@@ -30,6 +30,8 @@ class MotionsDifferenceRenderer {
     #MAP_WIDTH = 200;
     #MAP_HEIGHT = 200;
     #VISUALISATION_MARGIN_BOTTOM = "70";
+    #VISUALIZATION_HEIGHT = 200;
+    #LINE_COEFFICIENT = 1;
 
     #longerSequence = [];
     #longerSequenceProcessed = [];
@@ -41,11 +43,9 @@ class MotionsDifferenceRenderer {
     #shorterSequenceDotCoordinates = [];
     #dtw = null;
     #visualizationWidth = 0;
-    #visualizationHeight = 0;
     #drawStyle = null;
     #drawStyleBlur = null;
     #jointsCount = 0;
-    #lineCoefficient = 1;
     #model = Model.modelVicon;
 
     #textDescription = document.createElement("p");
@@ -61,23 +61,21 @@ class MotionsDifferenceRenderer {
     #sequenceDetailRenderer = null;
     #timeAlignedSequenceDifferenceRenderer = null;
 
-    constructor(longerSequence, shorterSequence, dtw, visualizationWidth, visualizationHeight, drawStyle, drawStyleBlur, 
-                jointsCount, model, lineCoefficient) {
+    constructor(longerSequence, shorterSequence, dtw, visualizationWidth, drawStyle, drawStyleBlur,
+                jointsCount, model) {
         this.#longerSequence = longerSequence;
         this.#shorterSequence = shorterSequence;
         this.#dtw = dtw;
         this.#visualizationWidth = visualizationWidth;
-        this.#visualizationHeight = visualizationHeight;
         this.#drawStyle = drawStyle;
         this.#drawStyle.figureScale = this.#FIGURE_SCALE;
         this.#drawStyleBlur = drawStyleBlur;
         this.#jointsCount = jointsCount;
         this.#model = model;
-        this.#lineCoefficient = lineCoefficient;
 
-        this.#sequenceDifferenceRenderer = initializeMocapRenderer(this.#sequenceDifferenceCanvas , visualizationWidth, visualizationHeight, drawStyle, jointsCount);
+        this.#sequenceDifferenceRenderer = initializeMocapRenderer(this.#sequenceDifferenceCanvas , visualizationWidth, this.#VISUALIZATION_HEIGHT, drawStyle, jointsCount);
         this.#sequenceDetailRenderer = initializeMocapRenderer(this.#detailCanvas, visualizationWidth / 3.2, 200, drawStyle, jointsCount, this.#DETAIL_SCENE_WIDTH);
-        this.#timeAlignedSequenceDifferenceRenderer = initializeMocapRenderer(this.#timeAlignedSequenceDifferenceCanvas, visualizationWidth, visualizationHeight, drawStyle, jointsCount);
+        this.#timeAlignedSequenceDifferenceRenderer = initializeMocapRenderer(this.#timeAlignedSequenceDifferenceCanvas, visualizationWidth, this.#VISUALIZATION_HEIGHT, drawStyle, jointsCount);
 
         this.#longerSequenceProcessed = this.#processSequenceForDrawing(this.#longerSequence);
         this.#shorterSequenceProcessed = this.#processSequenceForDrawing(this.#shorterSequence);
@@ -85,7 +83,7 @@ class MotionsDifferenceRenderer {
         this.#shorterSequenceFiltered = SequenceManager.getPoseCoordinatesPerSequence(this.#shorterSequence);
 
         this.#timeAlignedMappingCanvas.width = this.#visualizationWidth;
-        this.#timeAlignedMappingCanvas.height = this.#visualizationHeight / 3 * 2;
+        this.#timeAlignedMappingCanvas.height = this.#VISUALIZATION_HEIGHT / 3 * 2;
     }
 
     fillTextDescription() {
@@ -99,7 +97,7 @@ class MotionsDifferenceRenderer {
     }
 
     fillSequenceDifferenceCanvas() {
-        let yThird = this.#visualizationHeight / (this.#visualizationWidth / this.#visualizationHeight * 6);
+        let yThird = this.#VISUALIZATION_HEIGHT / (this.#visualizationWidth / this.#VISUALIZATION_HEIGHT * 6);
         let longerPositions = SequenceDifferenceRenderer.renderSequence(this.#longerSequenceProcessed,
             this.#sequenceDifferenceRenderer, this.#NUM_KEYFRAMES, this.#SCENE_WIDTH, this.#drawStyle,
             this.#drawStyleBlur, yThird * 2);
@@ -115,7 +113,7 @@ class MotionsDifferenceRenderer {
             this.#X_DOT_START_POSITION, this.#POSE_CIRCLE_RADIUS, true);
 
         SequenceDifferenceRenderer.renderLines(this.#sequenceDifferenceRenderer, this.#longerSequenceDotCoordinates,
-            this.#shorterSequenceDotCoordinates, this.#lineCoefficient, this.#dtw);
+            this.#shorterSequenceDotCoordinates, this.#LINE_COEFFICIENT, this.#dtw);
     }
 
     fillBodyPartsCanvas() {
@@ -139,7 +137,7 @@ class MotionsDifferenceRenderer {
         let reducedLongerSequenceProcessed = this.#longerSequenceProcessed;
         reducedLongerSequenceProcessed.frames = SequenceManager.reduceSequenceLength(this.#longerSequenceProcessed.frames, this.#shorterSequenceProcessed.frames.length);
 
-        let yThird = this.#visualizationHeight / (this.#visualizationWidth / this.#visualizationHeight * 6);
+        let yThird = this.#VISUALIZATION_HEIGHT / (this.#visualizationWidth / this.#VISUALIZATION_HEIGHT * 6);
         let positions1 = SequenceDifferenceRenderer.renderSequence(reducedLongerSequenceProcessed,
             this.#timeAlignedSequenceDifferenceRenderer, this.#NUM_KEYFRAMES, this.#SCENE_WIDTH, this.#drawStyle,
             this.#drawStyleBlur, yThird * 2);
@@ -157,10 +155,10 @@ class MotionsDifferenceRenderer {
             this.#X_DOT_START_POSITION, this.#POSE_CIRCLE_RADIUS, true);
 
         SequenceDifferenceRenderer.renderLines(this.#timeAlignedSequenceDifferenceRenderer, longerSequenceDotCoordinates,
-            shorterSequenceDotCoordinates, this.#lineCoefficient, reducedDtw);
+            shorterSequenceDotCoordinates, this.#LINE_COEFFICIENT, reducedDtw);
 
         this.#timeAlignedMappingCanvas = TimeAlignedMappingRenderer.drawTimeAlignedBars(reducedDtw.warpingPath,
-            reducedLongerSequence.length, this.#visualizationWidth, this.#visualizationHeight);
+            reducedLongerSequence.length, this.#visualizationWidth, this.#VISUALIZATION_HEIGHT);
     }
 
     renderImage() {
@@ -198,7 +196,7 @@ class MotionsDifferenceRenderer {
         let div = document.createElement("div");
         let infoSpan = document.createElement("span");
         infoSpan.style.width = this.#TEXT_SPACE.toString();
-        infoSpan.style.height = this.#visualizationHeight.toString();
+        infoSpan.style.height = this.#VISUALIZATION_HEIGHT.toString();
         infoSpan.style.display = "inline-block";
         infoSpan.innerHTML = text;
         div.appendChild(infoSpan);
@@ -207,7 +205,7 @@ class MotionsDifferenceRenderer {
 
     #processSequenceForDrawing(sequence) {
         return Core.processSequence(sequence, this.#NUM_KEYFRAMES, this.#SCENE_WIDTH, this.#visualizationWidth,
-            this.#visualizationHeight / 3, this.#drawStyle, true, false);
+            this.#VISUALIZATION_HEIGHT / 3, this.#drawStyle, true, false);
     }
 }
 
