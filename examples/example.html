@@ -23,6 +23,8 @@
         <br>
 
         <button id="dataLoadButton">Load Data</button>
+        <button id="downloadContext">Download built context</button>
+        <button id="clearContext">Clear context</button>
 
 
         <br>
@@ -44,6 +46,8 @@
             const contextSelect = document.getElementById("context");
             const loadButton = document.getElementById("dataLoadButton");
             const sampleButton = document.getElementById("sampleDataButton");
+            const downloadContextButton = document.getElementById("downloadContext");
+            const clearContextButton = document.getElementById("clearContext");
 
             let contextOption = VS.ContextOption.NO_CONTEXT;
 
@@ -51,6 +55,8 @@
             contextSelect.onchange = setContext;
             loadButton.onclick = load;
             sampleButton.onclick = sample;
+            downloadContextButton.onclick = downloadContext;
+            clearContextButton.onclick = clearContext;
 
             let jsonContent = "";
 
@@ -90,6 +96,14 @@
                 Mocap.loadDataFromFile(sampleDataFileInput.files[0], (sequences) => {
                     factory.sampleData(sequences, 1);
                 });
+            }
+
+            function downloadContext() {
+                factory.downloadBuiltContext();
+            }
+
+            function clearContext() {
+                factory.clearContext();
             }
 
             function setContext() {

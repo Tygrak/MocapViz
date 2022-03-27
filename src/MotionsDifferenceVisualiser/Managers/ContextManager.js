@@ -6,7 +6,7 @@ import {SampleManager} from "./SampleManager.js";
 class ContextManager {
     static getContext(context, contextOption, contextJson, samples, model) {
         if (ContextManager.#useContext(contextOption)) {
-            context.enableContext();
+            context.enable();
             if (contextOption == ContextOption.SAMPLED_CONTEXT) {
                 if (contextJson.length !== 0) {
                     return ContextManager.#parseContextJson(contextJson, context);
@@ -16,7 +16,7 @@ class ContextManager {
             }
             else if (contextOption == ContextOption.BUILD_CONTEXT) {
                 let sample = SampleManager.countDTWsAverage(samples, model);
-                context.buildContext();
+                context.build();
                 context.addContextToBuild(sample[1], sample[0], new BodyParts(
                     sample[2][0], sample[2][1], sample[2][2], sample[2][3], sample[2][4]));
                 console.log(context);
@@ -26,7 +26,7 @@ class ContextManager {
             throw new WrongContextTypeException("Given context option is not supported");
         }
 
-        context.disableContext();
+        context.disable();
         return context;
     }
 

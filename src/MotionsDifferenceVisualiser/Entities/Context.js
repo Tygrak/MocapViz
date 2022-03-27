@@ -22,11 +22,11 @@ class Context {
         this.bodyPartsDistanceAverage = bodyPartsDistanceAverage;
     }
 
-    disableContext() {
+    disable() {
         this.useContext = false;
     }
 
-    enableContext() {
+    enable() {
         this.useContext = true;
     }
 
@@ -42,7 +42,7 @@ class Context {
         this.#buildingBodyPartsDistanceAverage.push(bodyPartsDistance);
     }
 
-    buildContext() {
+    build() {
         if (this.#buildingPoseDistanceAverage.length === 0 ||
             this.#buildingDtwDistanceAverage.length === 0 ||
             this.#buildingBodyPartsDistanceAverage.length === 0) {

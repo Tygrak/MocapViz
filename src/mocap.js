@@ -6,6 +6,7 @@ import {ContextOption, VisualizationService} from "./ComparisonVizualization/Vis
 import {VisualizationManager} from "./MotionsDifferenceVisualiser/Managers/VisualisationManager.js";
 import {modelKinect} from "./model.js";
 import {SampleManager} from "./MotionsDifferenceVisualiser/Managers/SampleManager.js";
+import {ContextManager} from "./MotionsDifferenceVisualiser/Managers/ContextManager.js";
 
 let mainRenderer = null;
 const sceneWidth = 100;
@@ -110,6 +111,20 @@ class VisualizationFactory {
 
     sampleData(sequences, count = 1, model = modelKinect) {
         SampleManager.sampleDataSet(sequences, count)
+    }
+
+    downloadBuiltContext() {
+        let context = this.visalusationManager.context;
+        context.build();
+        let content = ContextManager.createContextFile(context.poseDistanceAverage, context.dtwDistanceAverage,
+            context.bodyPartsDistanceAverage.torso, context.bodyPartsDistanceAverage.leftHand,
+            context.bodyPartsDistanceAverage.rightHand, context.bodyPartsDistanceAverage.leftLeg,
+            context.bodyPartsDistanceAverage.rightLeg);
+        SampleManager.downloadSampleFile(content);
+    }
+
+    clearContext() {
+        this.visalusationManager.clearContext();
     }
 }
 

@@ -46,6 +46,10 @@ class VisualizationManager {
 
         return drawer.renderImage();
     }
+
+    clearContext() {
+        this.context = new Context();
+    }
 }
 
 export {VisualizationManager};

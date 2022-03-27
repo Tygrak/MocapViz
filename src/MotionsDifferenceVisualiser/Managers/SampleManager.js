@@ -42,7 +42,12 @@ class SampleManager {
 
         //save data
         let content = ContextManager.createContextFile(distanceA, dtwA, torso, leftHand, rightHand, leftFoot, rightFoot);
+        SampleManager.downloadSampleFile(content);
+    }
+
+    static downloadSampleFile(content) {
         let blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+        alert("Context is downloading on your machine");
         saveAs(blob, "sampling.json");
     }
 
