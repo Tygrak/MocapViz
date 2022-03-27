@@ -104,7 +104,7 @@ class VisualizationFactory {
         let drawStyleBlur = new Core.MocapDrawStyle(this.model, this.boneRadius, this.jointRadius, this.headRadius, this.boneStyle,
             this.boneStyle, this.boneStyle, this.jointStyle, 1, this.boneStyle, this.noseRadius, this.blurFrameOpacity);
 
-        return this.visalusationManager.visualiseTwoMotionDifference(sequence1, sequence2, visualizationWidth,
+        return this.visalusationManager.visualiseTwoMotionDifference(sequence1, sequence2, visualizationWidth, Model.modelKinect,
             drawStyle, drawStyleBlur, contextOption, defaultContext);
     }
 

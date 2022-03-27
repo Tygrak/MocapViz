@@ -20,11 +20,11 @@ class TimeAlignedMappingRenderer {
             ctx.lineTo(x2 * xShift, yPosition);
 
             if (lastIteration.x + 1 === x1 && lastIteration.y + 1 === x2) {
-                ctx.strokeStyle = 'rgb(204,204,0)';
+                ctx.strokeStyle = 'rgb(200, 200, 10)';
             } else if (lastIteration.x + 1 === x1 && lastIteration.y === x2) {
-                ctx.strokeStyle = 'red';
+                ctx.strokeStyle = 'rgb(200, 20, 30)';
             } else if (lastIteration.x === x1 && lastIteration.y + 1 === x2) {
-                ctx.strokeStyle = 'blue';
+                ctx.strokeStyle = 'rgb(40, 50, 130)';
             } else {
                 ctx.strokeStyle = 'black';
             }

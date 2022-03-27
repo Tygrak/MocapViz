@@ -3,6 +3,7 @@ import {SequenceManager} from "./SequenceManager.js";
 import {DTWManager} from "./DTWManager.js";
 import * as Model from "../../model.js";
 import {Context} from "../Entities/Context.js";
+import {ContextManager} from "./ContextManager.js";
 
 class SampleManager {
     static sampleCount = 10;
@@ -31,8 +32,8 @@ class SampleManager {
             rightFoot += sample[2][4];
         }
 
-        let dtwA = (dtwSamples / count);
         let distanceA = distanceSamples / count;
+        let dtwA = (dtwSamples / count);
         torso = torso / count;
         leftHand = leftHand / count;
         rightHand = rightHand / count;
@@ -40,13 +41,7 @@ class SampleManager {
         rightFoot = rightFoot / count;
 
         //save data
-        let content = "{\n  \"distanceA\": " + distanceA.toString() + ",\n  " +
-            "\"dtwA\": " + dtwA.toString() + ",\n  " +
-            "\"bodyParts\": " + "{\"torso\": " + torso.toString() + ", " +
-            "\"leftHand\": " + leftHand.toString() + ", " +
-            "\"rightHand\": " + rightHand.toString() + ", " +
-            "\"leftFoot\": " + leftFoot.toString() + ", " +
-            "\"rightFoot\": " + rightFoot.toString() + "}\n" +"}";
+        let content = ContextManager.createContextFile(distanceA, dtwA, torso, leftHand, rightHand, leftFoot, rightFoot);
         let blob = new Blob([content], { type: "text/plain;charset=utf-8" });
         saveAs(blob, "sampling.json");
     }
@@ -63,7 +58,7 @@ class SampleManager {
         }
 
         let shuffledSamples = SampleManager.#shuffleSamples(samples);
-        return SampleManager.#countDTWsAverage(shuffledSamples, model)
+        return SampleManager.countDTWsAverage(shuffledSamples, model)
     }
 
     static #shuffleSamples(samples) {
@@ -81,7 +76,7 @@ class SampleManager {
         return samples;
     }
 
-    static #countDTWsAverage(samples, model) {
+    static countDTWsAverage(samples, model) {
         let DTWs = [];
         let poseDistances = [];
         let bodyParts = [[], [], [], [], []];

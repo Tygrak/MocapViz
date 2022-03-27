@@ -5,21 +5,24 @@ import * as Model from "../../model.js";
 import {DTWManager} from "./DTWManager.js";
 import {MotionsDifferenceRenderer} from "../Renderers/MotionsDifferenceRenderer.js";
 import {Context} from "../Entities/Context.js"
+import {modelKinect} from "../../model.js";
 
 class VisualizationManager {
     model;
 
-    context = new Context();
+    context;
     drawer;
 
-    constructor(model = Model.modelVicon) {
+    constructor(model = Model.modelKinect) {
         this.model = model;
+        this.context = new Context();
     }
 
-    visualiseTwoMotionDifference(sequence1, sequence2, visualizationWidth, drawStyle, drawStyleBlur,
+    visualiseTwoMotionDifference(sequence1, sequence2, visualizationWidth, model, drawStyle, drawStyleBlur,
                                  contextOption, contextJson = "")
     {
-        this.context = ContextManager.getContext(this.context, contextOption, contextJson);
+        this.context = ContextManager.getContext(this.context, contextOption, contextJson, [sequence1, sequence2], model);
+        this.model = modelKinect;
 
         let sortedSequences = SequenceManager.sortSequencesByLength([sequence1, sequence2]);
         let longerSequence = sortedSequences[0];

@@ -54,6 +54,14 @@
 
             let jsonContent = "";
 
+            let factory = new Mocap.VisualizationFactory();
+            factory.numKeyframes = 8;
+            factory.numZoomedKeyframes = 10;
+            factory.keyframeSelectionAlgorithm = Mocap.KeyframeSelectionAlgorithmEnum.Equidistant;
+            factory.leftBoneStyle = {r: 0, g: 180, b: 0, a: 1};
+            factory.opacity = 0.6;
+            factory.blurFrameOpacity = 0.17;
+
             function load() {
                 if (dataFileInput.files.length === 0) {
                     console.log("No file selected!");
@@ -67,14 +75,6 @@
                 }
 
                 Mocap.loadDataFromFile(dataFileInput.files[0], (sequences) => {
-                    let factory = new Mocap.VisualizationFactory();
-                    factory.numKeyframes = 8;
-                    factory.numZoomedKeyframes = 10;
-                    factory.keyframeSelectionAlgorithm = Mocap.KeyframeSelectionAlgorithmEnum.Equidistant;
-                    factory.leftBoneStyle = {r: 0, g: 180, b: 0, a: 1};
-                    factory.opacity = 0.6;
-                    factory.blurFrameOpacity = 0.17;
-                    console.log(contextOption);
                     let visualizationElement = factory.visualizeSequenceDifferences(sequences[1918], sequences[1236], 1400, contextOption, jsonContent);
 
                     document.body.appendChild(visualizationElement);
@@ -88,14 +88,6 @@
                 }
 
                 Mocap.loadDataFromFile(sampleDataFileInput.files[0], (sequences) => {
-                    let factory = new Mocap.VisualizationFactory();
-                    factory.numKeyframes = 8;
-                    factory.numZoomedKeyframes = 10;
-                    factory.keyframeSelectionAlgorithm = Mocap.KeyframeSelectionAlgorithmEnum.Equidistant;
-                    factory.leftBoneStyle = {r: 0, g: 180, b: 0, a: 1};
-                    factory.opacity = 0.6;
-                    factory.blurFrameOpacity = 0.17;
-
                     factory.sampleData(sequences, 1);
                 });
             }

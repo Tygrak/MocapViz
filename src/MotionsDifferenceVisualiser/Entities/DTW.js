@@ -18,7 +18,7 @@ class DTW {
     constructor(distance, warpingPath, context) {
         this.distance = distance;
         this.warpingPath = warpingPath;
-        this.context = context
+        this.context = context;
         this.#setLargestAndLowestDistance();
         this.#setColorCoeff();
     }
