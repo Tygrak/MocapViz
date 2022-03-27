@@ -7,6 +7,7 @@ import {VisualizationManager} from "./MotionsDifferenceVisualiser/Managers/Visua
 import {modelKinect} from "./model.js";
 import {SampleManager} from "./MotionsDifferenceVisualiser/Managers/SampleManager.js";
 import {ContextManager} from "./MotionsDifferenceVisualiser/Managers/ContextManager.js";
+import {VisualizationParts} from "./MotionsDifferenceVisualiser/Entities/VisualizationParts.js";
 
 let mainRenderer = null;
 const sceneWidth = 100;
@@ -99,14 +100,15 @@ class VisualizationFactory {
     }
 
     visualizeSequenceDifferences(sequence1, sequence2, visualizationWidth = 1500,
-                                 contextOption = ContextOption.NO_CONTEXT, defaultContext = "") {
+                                 contextOption = ContextOption.NO_CONTEXT, defaultContext = "",
+                                 visualizationParts = new VisualizationParts()) {
         let drawStyle = new Core.MocapDrawStyle(this.model, this.boneRadius, this.jointRadius, this.headRadius, this.boneStyle,
             this.leftBoneStyle, this.rightBoneStyle, this.jointStyle, 1, this.noseStyle, this.noseRadius, this.opacity);
         let drawStyleBlur = new Core.MocapDrawStyle(this.model, this.boneRadius, this.jointRadius, this.headRadius, this.boneStyle,
             this.boneStyle, this.boneStyle, this.jointStyle, 1, this.boneStyle, this.noseRadius, this.blurFrameOpacity);
 
         return this.visalusationManager.visualiseTwoMotionDifference(sequence1, sequence2, visualizationWidth, Model.modelKinect,
-            drawStyle, drawStyleBlur, contextOption, defaultContext);
+            drawStyle, drawStyleBlur, contextOption, defaultContext, visualizationParts);
     }
 
     sampleData(sequences, count = 1, model = modelKinect) {

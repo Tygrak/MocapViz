@@ -2,9 +2,8 @@ import {ColorManager} from "../Managers/ColorManager.js";
 
 class BodyPartsRenderer {
     static render(canvas, dtwBodyParts, sequenceLength, visualisationWidth, textSpace, textHeight) {
-        let oneBarPieceWidth = visualisationWidth / sequenceLength;
-        canvas.width = sequenceLength * oneBarPieceWidth + textSpace;
-        //canvas.height = 20 * dtwBodyParts.length;
+        canvas.width = visualisationWidth + textSpace;
+        let oneBarPieceWidth = (visualisationWidth - visualisationWidth / 35) / sequenceLength;
         const ctx = canvas.getContext('2d');
         ctx.font = `${textHeight}px Arial`;
 

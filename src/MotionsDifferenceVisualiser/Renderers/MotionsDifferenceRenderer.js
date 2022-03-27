@@ -46,7 +46,8 @@ class MotionsDifferenceRenderer {
     #drawStyle = null;
     #drawStyleBlur = null;
     #jointsCount = 0;
-    #model = Model.modelVicon;
+    #model = Model.modelKinect;
+    #visualizationParts = null;
 
     #textDescription = document.createElement("p");
     #longerSequenceMapCanvas = document.createElement("canvas");
@@ -61,8 +62,8 @@ class MotionsDifferenceRenderer {
     #sequenceDetailRenderer = null;
     #timeAlignedSequenceDifferenceRenderer = null;
 
-    constructor(longerSequence, shorterSequence, dtw, visualizationWidth, drawStyle, drawStyleBlur,
-                jointsCount, model) {
+    constructor(longerSequence, shorterSequence, dtw, visualizationWidth, drawStyle, drawStyleBlur, jointsCount, model,
+                visualizationParts) {
         this.#longerSequence = longerSequence;
         this.#shorterSequence = shorterSequence;
         this.#dtw = dtw;
@@ -72,6 +73,7 @@ class MotionsDifferenceRenderer {
         this.#drawStyleBlur = drawStyleBlur;
         this.#jointsCount = jointsCount;
         this.#model = model;
+        this.#visualizationParts = visualizationParts;
 
         this.#sequenceDifferenceRenderer = initializeMocapRenderer(this.#sequenceDifferenceCanvas , visualizationWidth, this.#VISUALIZATION_HEIGHT, drawStyle, jointsCount);
         this.#sequenceDetailRenderer = initializeMocapRenderer(this.#detailCanvas, visualizationWidth / 3.2, 200, drawStyle, jointsCount, this.#DETAIL_SCENE_WIDTH);
@@ -164,13 +166,26 @@ class MotionsDifferenceRenderer {
     renderImage() {
         let div = document.createElement("div");
 
-        this.#renderCanvas(div, [this.#textDescription]);
-        this.#renderCanvas(div, [this.#longerSequenceMapCanvas, this.#shorterSequenceMapCanvas], true, mapDescription);
-        this.#renderCanvas(div, [this.#bodyPartsCanvas]);
-        this.#renderCanvas(div, [this.#sequenceDifferenceCanvas], false, sequenceDifferenceDescription);
-        this.#renderCanvas(div, [this.#detailCanvas], true, detailDescription);
-        this.#renderCanvas(div, [this.#timeAlignedSequenceDifferenceCanvas], true, timeAlignedSequenceDifferenceDescription);
-        this.#renderCanvas(div, [this.#timeAlignedMappingCanvas], false, timeAlignedMapping);
+        if (this.#visualizationParts.description)
+            this.#renderCanvas(div, [this.#textDescription]);
+
+        if (this.#visualizationParts.maps)
+            this.#renderCanvas(div, [this.#longerSequenceMapCanvas, this.#shorterSequenceMapCanvas], true, mapDescription);
+
+        if (this.#visualizationParts.bodyParts)
+            this.#renderCanvas(div, [this.#bodyPartsCanvas]);
+
+        if (this.#visualizationParts.sequenceDifference)
+            this.#renderCanvas(div, [this.#sequenceDifferenceCanvas], false, sequenceDifferenceDescription);
+
+        if (this.#visualizationParts.sequenceDifference && this.#visualizationParts.poseDetail)
+            this.#renderCanvas(div, [this.#detailCanvas], true, detailDescription);
+
+        if (this.#visualizationParts.timeAlignedSequenceDifference)
+            this.#renderCanvas(div, [this.#timeAlignedSequenceDifferenceCanvas], true, timeAlignedSequenceDifferenceDescription);
+
+        if (this.#visualizationParts.timeAlignedMapping)
+            this.#renderCanvas(div, [this.#timeAlignedMappingCanvas], false, timeAlignedMapping);
 
         return div;
     }

@@ -6,10 +6,10 @@ import {DTWManager} from "./DTWManager.js";
 import {MotionsDifferenceRenderer} from "../Renderers/MotionsDifferenceRenderer.js";
 import {Context} from "../Entities/Context.js"
 import {modelKinect} from "../../model.js";
+import {VisualizationParts} from "../Entities/VisualizationParts.js";
 
 class VisualizationManager {
     model;
-
     context;
     drawer;
 
@@ -19,8 +19,7 @@ class VisualizationManager {
     }
 
     visualiseTwoMotionDifference(sequence1, sequence2, visualizationWidth, model, drawStyle, drawStyleBlur,
-                                 contextOption, contextJson = "")
-    {
+                                 contextOption, contextJson = "", visualizationParts = new VisualizationParts()) {
         this.context = ContextManager.getContext(this.context, contextOption, contextJson, [sequence1, sequence2], model);
         this.model = modelKinect;
 
@@ -35,14 +34,20 @@ class VisualizationManager {
 
         let jointsCount = Core.getSequenceJointsPerFrame(longerSequence);
         let drawer = new MotionsDifferenceRenderer(longerSequence, shorterSequence, dtw, visualizationWidth,
-            drawStyle, drawStyleBlur, jointsCount, this.model);
+            drawStyle, drawStyleBlur, jointsCount, this.model, visualizationParts);
 
-        drawer.fillTextDescription();
-        drawer.fillMapCanvases();
-        drawer.fillBodyPartsCanvas();
-        drawer.fillSequenceDifferenceCanvas();
-        drawer.setPoseDetail();
-        drawer.fillTimeAlignedSequenceDifferenceCanvas();
+        if (visualizationParts.description) drawer.fillTextDescription();
+
+        if (visualizationParts.maps) drawer.fillMapCanvases();
+
+        if (visualizationParts.bodyParts) drawer.fillBodyPartsCanvas();
+
+        if (visualizationParts.sequenceDifference) drawer.fillSequenceDifferenceCanvas();
+
+        if (visualizationParts.poseDetail && visualizationParts.sequenceDifference) drawer.setPoseDetail();
+
+        if (visualizationParts.timeAlignedSequenceDifference || visualizationParts.timeAlignedMapping)
+            drawer.fillTimeAlignedSequenceDifferenceCanvas();
 
         return drawer.renderImage();
     }
