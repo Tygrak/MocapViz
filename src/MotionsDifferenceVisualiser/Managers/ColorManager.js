@@ -31,17 +31,12 @@ class ColorManager {
     }
 
     static #selectColorByPoseDistance(poseDistance, dtw) {
-        let contextValue;
-        if (dtw.context.useContext) {
-            let contextCoefficient = poseDistance / dtw.context.poseDistanceAverage;
-            contextCoefficient = (contextCoefficient > dtw.maxContextMultiple) ? dtw.maxContextMultiple : contextCoefficient;
-            contextCoefficient = contextCoefficient / dtw.maxContextMultiple;
-            contextValue = dtw.contextPart * contextCoefficient;
-        } else {
-            contextValue = 0;
-        }
-        poseDistance -= dtw.lowestDistance;
-        return Math.floor((dtw.colorCoefficient * poseDistance) + contextValue);
+        let colorCoefficient = (poseDistance - dtw.lowestDistance) / (dtw.largestDistance - dtw.lowestDistance);
+
+        if (colorCoefficient > 1) colorCoefficient = 1;
+        if (colorCoefficient < 0) colorCoefficient = 0;
+
+        return Math.floor(colorCoefficient * 255);
     }
 }
 

@@ -118,10 +118,8 @@ class VisualizationFactory {
     downloadBuiltContext() {
         let context = this.visalusationManager.context;
         context.build();
-        let content = ContextManager.createContextFile(context.poseDistanceAverage, context.dtwDistanceAverage,
-            context.bodyPartsDistanceAverage.torso, context.bodyPartsDistanceAverage.leftHand,
-            context.bodyPartsDistanceAverage.rightHand, context.bodyPartsDistanceAverage.leftLeg,
-            context.bodyPartsDistanceAverage.rightLeg);
+        let content = ContextManager.createContextFile(context.poseDistanceAverage, context.lowestDistanceAverage,
+            context.largestDistanceAverage, context.dtwDistanceAverage, context.bodyPartsDistanceAverage);
         SampleManager.downloadSampleFile(content);
     }
 

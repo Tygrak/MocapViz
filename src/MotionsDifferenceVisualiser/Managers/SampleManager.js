@@ -4,6 +4,7 @@ import {DTWManager} from "./DTWManager.js";
 import * as Model from "../../model.js";
 import {Context} from "../Entities/Context.js";
 import {ContextManager} from "./ContextManager.js";
+import {BodyParts} from "../Entities/BodyParts.js";
 
 class SampleManager {
     static sampleCount = 10;
@@ -15,6 +16,8 @@ class SampleManager {
     static sampleDataSet(sequences, count, model = Model.modelKinect, sampleCount = SampleManager.sampleCount) {
         let dtwSamples = 0;
         let distanceSamples = 0;
+        let lowestDistanceSamples = 0;
+        let largestDistanceSamples = 0;
         let torso = 0;
         let leftHand = 0;
         let rightHand = 0;
@@ -23,17 +26,21 @@ class SampleManager {
 
         for (let i = 0; i < count; i ++) {
             let sample = SampleManager.#doSampling(sequences, sampleCount, model);
-            dtwSamples += sample[0];
-            distanceSamples += sample[1];
-            torso += sample[2][0];
-            leftHand += sample[2][1];
-            rightHand += sample[2][2];
-            leftFoot += sample[2][3];
-            rightFoot += sample[2][4];
+            distanceSamples += sample[0];
+            lowestDistanceSamples += sample[1];
+            largestDistanceSamples += sample[2];
+            dtwSamples += sample[3];
+            torso += sample[4][0];
+            leftHand += sample[4][1];
+            rightHand += sample[4][2];
+            leftFoot += sample[4][3];
+            rightFoot += sample[4][4];
         }
 
         let distanceA = distanceSamples / count;
-        let dtwA = (dtwSamples / count);
+        let dtwA = dtwSamples / count;
+        let lowestDistanceA = lowestDistanceSamples / count;
+        let largestDistanceA = largestDistanceSamples / count;
         torso = torso / count;
         leftHand = leftHand / count;
         rightHand = rightHand / count;
@@ -41,7 +48,8 @@ class SampleManager {
         rightFoot = rightFoot / count;
 
         //save data
-        let content = ContextManager.createContextFile(distanceA, dtwA, torso, leftHand, rightHand, leftFoot, rightFoot);
+        let content = ContextManager.createContextFile(distanceA, lowestDistanceA, largestDistanceA,  dtwA,
+            new BodyParts(torso, leftHand, rightHand, leftFoot, rightFoot));
         SampleManager.downloadSampleFile(content);
     }
 
@@ -84,6 +92,8 @@ class SampleManager {
     static countDTWsAverage(samples, model) {
         let DTWs = [];
         let poseDistances = [];
+        let lowestDistances = [];
+        let largestDistances = [];
         let bodyParts = [[], [], [], [], []];
 
         if (samples % 2 === 1) {
@@ -97,14 +107,18 @@ class SampleManager {
             let dtw = DTWManager.calculateDTW(sequence1, sequence2, -1, new Context(false));
             DTWs.push(dtw.distance);
             poseDistances.push(SampleManager.#countDistanceAverage(dtw));
+            lowestDistances.push(dtw.lowestDistance);
+            largestDistances.push(dtw.largestDistance);
             bodyParts = this.#addBodyPartsDistanceAverage(sequence1, sequence2, dtw, bodyParts, model);
         }
 
         let dtwAverage = SampleManager.arrayAverage(DTWs);
         let distanceAverage = SampleManager.arrayAverage(poseDistances);
+        let lowestDistanceAverage = SampleManager.arrayAverage(lowestDistances);
+        let largestDistanceAverage = SampleManager.arrayAverage(largestDistances);
         let bodyPartsAverage = [];
         bodyParts.forEach(bp => bodyPartsAverage.push(SampleManager.arrayAverage(bp)));
-        return [dtwAverage, distanceAverage, bodyPartsAverage];
+        return [distanceAverage, lowestDistanceAverage, largestDistanceAverage, dtwAverage, bodyPartsAverage];
     }
 
     static #countDistanceAverage(dtw) {

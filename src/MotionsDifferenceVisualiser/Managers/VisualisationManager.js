@@ -37,15 +37,10 @@ class VisualizationManager {
             drawStyle, drawStyleBlur, jointsCount, this.model, visualizationParts);
 
         if (visualizationParts.description) drawer.fillTextDescription();
-
         if (visualizationParts.maps) drawer.fillMapCanvases();
-
         if (visualizationParts.bodyParts) drawer.fillBodyPartsCanvas();
-
         if (visualizationParts.sequenceDifference) drawer.fillSequenceDifferenceCanvas();
-
         if (visualizationParts.poseDetail && visualizationParts.sequenceDifference) drawer.setPoseDetail();
-
         if (visualizationParts.timeAlignedSequenceDifference || visualizationParts.timeAlignedMapping)
             drawer.fillTimeAlignedSequenceDifferenceCanvas();
 

@@ -5,10 +5,14 @@ class Context {
     useContext = false;
 
     poseDistanceAverage = 0;
+    lowestDistanceAverage = 0;
+    largestDistanceAverage = 0;
     dtwDistanceAverage = 0;
     bodyPartsDistanceAverage = new BodyParts(null, null, null, null, null);
 
     #buildingPoseDistanceAverage = [];
+    #buildingLowestDistanceAverage = [];
+    #buildingLargestDistanceAverage = [];
     #buildingDtwDistanceAverage = [];
     #buildingBodyPartsDistanceAverage = [];
 
@@ -16,8 +20,10 @@ class Context {
         this.useContext = useContext;
     }
 
-    setValues(poseDistanceAverage, dtwDistanceAverage, bodyPartsDistanceAverage) {
+    setValues(poseDistanceAverage, lowestDistanceAverage, largestDistanceAverage, dtwDistanceAverage, bodyPartsDistanceAverage) {
         this.poseDistanceAverage = poseDistanceAverage;
+        this.lowestDistanceAverage = lowestDistanceAverage;
+        this.largestDistanceAverage = largestDistanceAverage;
         this.dtwDistanceAverage = dtwDistanceAverage;
         this.bodyPartsDistanceAverage = bodyPartsDistanceAverage;
     }
@@ -32,12 +38,16 @@ class Context {
 
     clearBuiltContext() {
         this.#buildingPoseDistanceAverage = [];
+        this.#buildingLowestDistanceAverage = [];
+        this.#buildingLargestDistanceAverage = [];
         this.#buildingDtwDistanceAverage = [];
         this.#buildingBodyPartsDistanceAverage = [];
     }
 
-    addContextToBuild(poseDistance, dtwDistance, bodyPartsDistance) {
+    addContextToBuild(poseDistance, lowestDistance, largestDistance, dtwDistance, bodyPartsDistance) {
         this.#buildingPoseDistanceAverage.push(poseDistance);
+        this.#buildingLowestDistanceAverage.push(lowestDistance);
+        this.#buildingLargestDistanceAverage.push(largestDistance);
         this.#buildingDtwDistanceAverage.push(dtwDistance);
         this.#buildingBodyPartsDistanceAverage.push(bodyPartsDistance);
     }
@@ -49,8 +59,9 @@ class Context {
             this.useContext = false;
         } else {
             this.poseDistanceAverage = SampleManager.arrayAverage(this.#buildingPoseDistanceAverage);
+            this.lowestDistanceAverage = SampleManager.arrayAverage(this.#buildingLowestDistanceAverage);
+            this.largestDistanceAverage = SampleManager.arrayAverage(this.#buildingLargestDistanceAverage);
             this.dtwDistanceAverage = SampleManager.arrayAverage(this.#buildingDtwDistanceAverage);
-
 
             let torso = [];
             let leftHand = [];

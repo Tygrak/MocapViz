@@ -17,9 +17,8 @@ class ContextManager {
             else if (contextOption == ContextOption.BUILD_CONTEXT) {
                 let sample = SampleManager.countDTWsAverage(samples, model);
                 context.build();
-                context.addContextToBuild(sample[1], sample[0], new BodyParts(
+                context.addContextToBuild(sample[0], sample[1], sample[2], sample[3], new BodyParts(
                     sample[2][0], sample[2][1], sample[2][2], sample[2][3], sample[2][4]));
-                console.log(context);
                 return context;
             }
 
@@ -30,24 +29,28 @@ class ContextManager {
         return context;
     }
 
-    static createContextFile(distanceA, dtwA, torso, leftHand, rightHand, leftFoot, rightFoot) {
+    static createContextFile(distanceA, lowestDistanceA, largestDistanceA, dtwA, bodyParts) {
         return "{\n  \"distanceA\": " + distanceA.toString() + ",\n  " +
+            "\"lowestDistanceA\": " + lowestDistanceA.toString() + ",\n  " +
+            "\"largestDistanceA\": " + largestDistanceA.toString() + ",\n  " +
             "\"dtwA\": " + dtwA.toString() + ",\n  " +
-            "\"bodyParts\": " + "{\"torso\": " + torso.toString() + ", " +
-            "\"leftHand\": " + leftHand.toString() + ", " +
-            "\"rightHand\": " + rightHand.toString() + ", " +
-            "\"leftFoot\": " + leftFoot.toString() + ", " +
-            "\"rightFoot\": " + rightFoot.toString() + "}\n" +"}";
+            "\"bodyParts\": " + "{\"torso\": " + bodyParts.torso.toString() + ", " +
+            "\"leftHand\": " + bodyParts.leftHand.toString() + ", " +
+            "\"rightHand\": " + bodyParts.rightHand.toString() + ", " +
+            "\"leftFoot\": " + bodyParts.leftLeg.toString() + ", " +
+            "\"rightFoot\": " + bodyParts.rightLeg.toString() + "}\n" +"}";
     }
 
     static #parseContextJson(contextJson, context) {
         let parsedContext = JSON.parse(contextJson);
         let poseDistanceAverage = parsedContext.distanceA;
+        let lowestDistanceAverage = parsedContext.lowestDistanceA;
+        let largestDistanceAverage = parsedContext.largestDistanceA;
         let dtwDistanceAverage = parsedContext.dtwA;
         let bodyPartsDistanceAverage = new BodyParts(parsedContext.bodyParts["torso"], parsedContext.bodyParts["leftHand"],
             parsedContext.bodyParts["rightHand"], parsedContext.bodyParts["leftFoot"], parsedContext.bodyParts["rightFoot"]);
 
-        context.setValues(poseDistanceAverage, dtwDistanceAverage, bodyPartsDistanceAverage);
+        context.setValues(poseDistanceAverage, lowestDistanceAverage, largestDistanceAverage, dtwDistanceAverage, bodyPartsDistanceAverage);
         return context;
     }
 
