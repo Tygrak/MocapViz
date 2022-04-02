@@ -10,11 +10,11 @@ class Context {
     dtwDistanceAverage = 0;
     bodyPartsDistanceAverage = new BodyParts(null, null, null, null, null);
 
-    #buildingPoseDistanceAverage = [];
-    #buildingLowestDistanceAverage = [];
-    #buildingLargestDistanceAverage = [];
-    #buildingDtwDistanceAverage = [];
-    #buildingBodyPartsDistanceAverage = [];
+    #buildingPose = [];
+    #buildingLowest = [];
+    #buildingLargest = [];
+    #buildingDtw = [];
+    #buildingBodyParts = [];
 
     constructor(useContext = true) {
         this.useContext = useContext;
@@ -37,54 +37,38 @@ class Context {
     }
 
     clearBuiltContext() {
-        this.#buildingPoseDistanceAverage = [];
-        this.#buildingLowestDistanceAverage = [];
-        this.#buildingLargestDistanceAverage = [];
-        this.#buildingDtwDistanceAverage = [];
-        this.#buildingBodyPartsDistanceAverage = [];
+        this.#buildingPose = [];
+        this.#buildingLowest = [];
+        this.#buildingLargest = [];
+        this.#buildingDtw = [];
+        this.#buildingBodyParts = [];
     }
 
     addContextToBuild(poseDistance, lowestDistance, largestDistance, dtwDistance, bodyPartsDistance) {
-        this.#buildingPoseDistanceAverage.push(poseDistance);
-        this.#buildingLowestDistanceAverage.push(lowestDistance);
-        this.#buildingLargestDistanceAverage.push(largestDistance);
-        this.#buildingDtwDistanceAverage.push(dtwDistance);
-        this.#buildingBodyPartsDistanceAverage.push(bodyPartsDistance);
+        this.#buildingPose.push(poseDistance);
+        this.#buildingLowest.push(lowestDistance);
+        this.#buildingLargest.push(largestDistance);
+        this.#buildingDtw.push(dtwDistance);
+        this.#buildingBodyParts.push(bodyPartsDistance);
     }
 
     build() {
-        if (this.#buildingPoseDistanceAverage.length === 0 ||
-            this.#buildingDtwDistanceAverage.length === 0 ||
-            this.#buildingBodyPartsDistanceAverage.length === 0) {
+        if (this.#buildingPose.length === 0 ||
+            this.#buildingDtw.length === 0 ||
+            this.#buildingBodyParts.length === 0) {
             this.useContext = false;
         } else {
-            this.poseDistanceAverage = SampleManager.arrayAverage(this.#buildingPoseDistanceAverage);
-            this.lowestDistanceAverage = SampleManager.arrayAverage(this.#buildingLowestDistanceAverage);
-            this.largestDistanceAverage = SampleManager.arrayAverage(this.#buildingLargestDistanceAverage);
-            this.dtwDistanceAverage = SampleManager.arrayAverage(this.#buildingDtwDistanceAverage);
-
-            let torso = [];
-            let leftHand = [];
-            let rightHand = [];
-            let leftLeg = [];
-            let rightLeg = [];
-            this.#buildingBodyPartsDistanceAverage.forEach(
-                bp => {
-                    torso.push(bp.torso);
-                    leftHand.push(bp.leftHand);
-                    rightHand.push(bp.rightHand);
-                    leftLeg.push(bp.leftLeg);
-                    rightLeg.push(bp.rightLeg);
-                }
+            this.poseDistanceAverage = SampleManager.arrayAverage(this.#buildingPose);
+            this.lowestDistanceAverage = SampleManager.arrayAverage(this.#buildingLowest);
+            this.largestDistanceAverage = SampleManager.arrayAverage(this.#buildingLargest);
+            this.dtwDistanceAverage = SampleManager.arrayAverage(this.#buildingDtw);
+            this.bodyPartsDistanceAverage = SampleManager.calculateBodyPartsAverage(
+                this.#buildingBodyParts.map(bp => bp.torso),
+                this.#buildingBodyParts.map(bp => bp.leftHand),
+                this.#buildingBodyParts.map(bp => bp.rightHand),
+                this.#buildingBodyParts.map(bp => bp.leftLeg),
+                this.#buildingBodyParts.map(bp => bp.rightLeg)
             );
-
-            this.bodyPartsDistanceAverage = new BodyParts(
-                SampleManager.arrayAverage(torso),
-                SampleManager.arrayAverage(leftHand),
-                SampleManager.arrayAverage(rightHand),
-                SampleManager.arrayAverage(leftLeg),
-                SampleManager.arrayAverage(rightLeg)
-            )
         }
     }
 }

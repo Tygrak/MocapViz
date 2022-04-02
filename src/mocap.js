@@ -2,12 +2,12 @@ import * as THREE from './lib/three.module.js';
 import * as Model from './model.js';
 import * as Core from './mocapCore.js';
 import {OrbitControls} from './lib/OrbitControls.js';
-import {ContextOption, VisualizationService} from "./ComparisonVizualization/VisualizationService.js";
+import {ContextOption} from "./ComparisonVizualization/VisualizationService.js";
 import {VisualizationManager} from "./MotionsDifferenceVisualiser/Managers/VisualisationManager.js";
-import {modelKinect} from "./model.js";
 import {SampleManager} from "./MotionsDifferenceVisualiser/Managers/SampleManager.js";
 import {ContextManager} from "./MotionsDifferenceVisualiser/Managers/ContextManager.js";
 import {VisualizationParts} from "./MotionsDifferenceVisualiser/Entities/VisualizationParts.js";
+import {modelKinect} from "./model.js";
 
 let mainRenderer = null;
 const sceneWidth = 100;
@@ -101,18 +101,18 @@ class VisualizationFactory {
 
     visualizeSequenceDifferences(sequence1, sequence2, visualizationWidth = 1500,
                                  contextOption = ContextOption.NO_CONTEXT, defaultContext = "",
-                                 visualizationParts = new VisualizationParts()) {
+                                 visualizationParts = new VisualizationParts(), model = modelKinect) {
         let drawStyle = new Core.MocapDrawStyle(this.model, this.boneRadius, this.jointRadius, this.headRadius, this.boneStyle,
             this.leftBoneStyle, this.rightBoneStyle, this.jointStyle, 1, this.noseStyle, this.noseRadius, this.opacity);
         let drawStyleBlur = new Core.MocapDrawStyle(this.model, this.boneRadius, this.jointRadius, this.headRadius, this.boneStyle,
             this.boneStyle, this.boneStyle, this.jointStyle, 1, this.boneStyle, this.noseRadius, this.blurFrameOpacity);
 
-        return this.visalusationManager.visualiseTwoMotionDifference(sequence1, sequence2, visualizationWidth, Model.modelKinect,
+        return this.visalusationManager.visualiseTwoMotionDifference(sequence1, sequence2, visualizationWidth, model,
             drawStyle, drawStyleBlur, contextOption, defaultContext, visualizationParts);
     }
 
-    sampleData(sequences, count = 1, model = modelKinect) {
-        SampleManager.sampleDataSet(sequences, count)
+    sampleData(sequences, sampleCount, model) {
+        SampleManager.sampleDataSet(sequences, sampleCount, model)
     }
 
     downloadBuiltContext() {

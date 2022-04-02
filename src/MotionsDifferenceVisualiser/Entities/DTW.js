@@ -14,8 +14,8 @@ class DTW {
 
     #setLargestAndLowestDistance() {
         if (this.context.useContext) {
-            this.lowestDistance = context.lowestDistanceAverage
-            this.largestDistance = context.largestDistanceAverage
+            this.lowestDistance = this.context.lowestDistanceAverage
+            this.largestDistance = this.context.largestDistanceAverage
         } else {
             let maximalPoseDistance = 0;
             let minimalPoseDistance = Number.POSITIVE_INFINITY;

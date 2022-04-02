@@ -2,9 +2,10 @@ import {ContextOption} from "../Entities/ContextOption.js";
 import {WrongContextTypeException} from "../Exceptions/WrongContextTypeException.js";
 import {BodyParts} from "../Entities/BodyParts.js";
 import {SampleManager} from "./SampleManager.js";
+import {JsonContext} from "../Entities/JsonContext.js";
 
 class ContextManager {
-    static getContext(context, contextOption, contextJson, samples, model) {
+    static getContext(context, contextOption, contextJson, sequenceTuple, model) {
         if (ContextManager.#useContext(contextOption)) {
             context.enable();
             if (contextOption == ContextOption.SAMPLED_CONTEXT) {
@@ -15,10 +16,10 @@ class ContextManager {
                 return context;
             }
             else if (contextOption == ContextOption.BUILD_CONTEXT) {
-                let sample = SampleManager.countDTWsAverage(samples, model);
+                let samples = SampleManager.countDTWsAverage([sequenceTuple], model);
                 context.build();
-                context.addContextToBuild(sample[0], sample[1], sample[2], sample[3], new BodyParts(
-                    sample[2][0], sample[2][1], sample[2][2], sample[2][3], sample[2][4]));
+                context.addContextToBuild(samples[0], samples[1], samples[2], samples[3], new BodyParts(
+                    samples[4].torso, samples[4].leftHand, samples[4].rightHand, samples[4].leftLeg, samples[4].rightLeg));
                 return context;
             }
 
@@ -29,28 +30,15 @@ class ContextManager {
         return context;
     }
 
-    static createContextFile(distanceA, lowestDistanceA, largestDistanceA, dtwA, bodyParts) {
-        return "{\n  \"distanceA\": " + distanceA.toString() + ",\n  " +
-            "\"lowestDistanceA\": " + lowestDistanceA.toString() + ",\n  " +
-            "\"largestDistanceA\": " + largestDistanceA.toString() + ",\n  " +
-            "\"dtwA\": " + dtwA.toString() + ",\n  " +
-            "\"bodyParts\": " + "{\"torso\": " + bodyParts.torso.toString() + ", " +
-            "\"leftHand\": " + bodyParts.leftHand.toString() + ", " +
-            "\"rightHand\": " + bodyParts.rightHand.toString() + ", " +
-            "\"leftFoot\": " + bodyParts.leftLeg.toString() + ", " +
-            "\"rightFoot\": " + bodyParts.rightLeg.toString() + "}\n" +"}";
+    static createContextFile(distanceAverage, lowestDistanceAverage, largestDistanceAverage, dtwAverage, bodyPartsAverage) {
+        let jsonData = new JsonContext(distanceAverage, lowestDistanceAverage, largestDistanceAverage, dtwAverage, bodyPartsAverage);
+        return JSON.stringify(jsonData);
     }
 
     static #parseContextJson(contextJson, context) {
         let parsedContext = JSON.parse(contextJson);
-        let poseDistanceAverage = parsedContext.distanceA;
-        let lowestDistanceAverage = parsedContext.lowestDistanceA;
-        let largestDistanceAverage = parsedContext.largestDistanceA;
-        let dtwDistanceAverage = parsedContext.dtwA;
-        let bodyPartsDistanceAverage = new BodyParts(parsedContext.bodyParts["torso"], parsedContext.bodyParts["leftHand"],
-            parsedContext.bodyParts["rightHand"], parsedContext.bodyParts["leftFoot"], parsedContext.bodyParts["rightFoot"]);
-
-        context.setValues(poseDistanceAverage, lowestDistanceAverage, largestDistanceAverage, dtwDistanceAverage, bodyPartsDistanceAverage);
+        context.setValues(parsedContext.poseDistance, parsedContext.lowestDistance, parsedContext.largestDistance,
+            parsedContext.dtwDistance, parsedContext.bodyParts);
         return context;
     }
 

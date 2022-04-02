@@ -37,6 +37,7 @@
 
         <script type="module">
             import * as Mocap from '../src/mocap.js';
+            import {modelVicon} from "../src/model.js";
             import * as VS from '../src/ComparisonVizualization/VisualizationService.js';
             import {VisualizationParts} from "../src/MotionsDifferenceVisualiser/Entities/VisualizationParts.js";
 
@@ -82,25 +83,26 @@
                 }
 
                 Mocap.loadDataFromFile(dataFileInput.files[0], (sequences) => {
-                    // let vp = new VisualizationParts(true, true, true, true, true, true, true);
-                    let vp = new VisualizationParts(false, false, false, false, false, false, false);
-                    // let visualizationElement = factory.visualizeSequenceDifferences(sequences[1918], sequences[1236], 1400, contextOption, jsonContent, vp);
-                    // document.body.appendChild(visualizationElement);
+                    let vp = new VisualizationParts(true, true, true, true, true, true, true);
+                    let model = modelVicon;
+                    // let vp = new VisualizationParts(false, false, false, false, false, false, false);
+                    let visualizationElement1 = factory.visualizeSequenceDifferences(sequences[1918], sequences[1236], 1400, contextOption, jsonContent, vp, model);
+                    document.body.appendChild(visualizationElement1);
 
-                    // visualizationElement = factory.visualizeSequenceDifferences(sequences[1], sequences[2], 1400, contextOption, jsonContent, vp);
-                    // document.body.appendChild(visualizationElement);
-
-                    // visualizationElement = factory.visualizeSequenceDifferences(sequences[155], sequences[244], 1400, contextOption, jsonContent, vp);
-                    // document.body.appendChild(visualizationElement);
-
-                    let visualizationElement = factory.visualizeSequenceDifferences(sequences[435], sequences[257], 1400, contextOption, jsonContent, vp);
+                    let visualizationElement = factory.visualizeSequenceDifferences(sequences[1], sequences[2], 1400, contextOption, jsonContent, vp, model);
                     document.body.appendChild(visualizationElement);
 
-                    // visualizationElement = factory.visualizeSequenceDifferences(sequences[57], sequences[867], 1400, contextOption, jsonContent, vp);
-                    // document.body.appendChild(visualizationElement);
+                    visualizationElement = factory.visualizeSequenceDifferences(sequences[155], sequences[244], 1400, contextOption, jsonContent, vp, model);
+                    document.body.appendChild(visualizationElement);
 
-                    // visualizationElement = factory.visualizeSequenceDifferences(sequences[1918], sequences[1236], 1400, contextOption, jsonContent, vp);
-                    // document.body.appendChild(visualizationElement);
+                    visualizationElement = factory.visualizeSequenceDifferences(sequences[435], sequences[257], 1400, contextOption, jsonContent, vp, model);
+                    document.body.appendChild(visualizationElement);
+
+                    visualizationElement = factory.visualizeSequenceDifferences(sequences[57], sequences[867], 1400, contextOption, jsonContent, vp, model);
+                    document.body.appendChild(visualizationElement);
+
+                    visualizationElement = factory.visualizeSequenceDifferences(sequences[1918], sequences[1236], 1400, contextOption, jsonContent, vp, model);
+                    document.body.appendChild(visualizationElement);
 
                     document.body.appendChild(visualizationElement);
                 });
@@ -113,7 +115,7 @@
                 }
 
                 Mocap.loadDataFromFile(sampleDataFileInput.files[0], (sequences) => {
-                    factory.sampleData(sequences, 1);
+                    factory.sampleData(sequences, 500, modelVicon);
                 });
             }
 
@@ -126,7 +128,6 @@
             }
 
             function setContext() {
-                //const contextSelect = document.getElementById("context");
                 contextOption = contextSelect.value;
                 console.log(contextOption);
             }

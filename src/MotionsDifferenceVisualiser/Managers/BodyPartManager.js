@@ -1,5 +1,6 @@
 import * as Model from "../../model.js";
 import {DTWManager} from "./DTWManager.js";
+import {Context} from "../Entities/Context.js";
 
 class BodyPartManager {
     static getIndexesPerBodyPart(bodyPart, model) {
@@ -14,18 +15,52 @@ class BodyPartManager {
 
     static getBodyPartsPerModel(longerSeq, shorterSeq, dtw, model) {
         let dtwBodyParts = [];
-        dtwBodyParts.push([DTWManager.calculateDtwPerBodyPart(longerSeq, shorterSeq, dtw, Model.BoneType.torso, model,
-            dtw.context), "Torso"]);
-        dtwBodyParts.push([DTWManager.calculateDtwPerBodyPart(longerSeq, shorterSeq, dtw, Model.BoneType.leftHand, model,
-            dtw.context), "Left hand"]);
-        dtwBodyParts.push([DTWManager.calculateDtwPerBodyPart(longerSeq, shorterSeq, dtw, Model.BoneType.rightHand, model,
-            dtw.context), "Right hand"]);
-        dtwBodyParts.push([DTWManager.calculateDtwPerBodyPart(longerSeq, shorterSeq, dtw, Model.BoneType.leftLeg, model,
-            dtw.context), "Left leg"]);
-        dtwBodyParts.push([DTWManager.calculateDtwPerBodyPart(longerSeq, shorterSeq, dtw, Model.BoneType.rightLeg, model,
-            dtw.context), "Right leg"]);
+        dtwBodyParts.push(BodyPartManager.#calculateDtwPerBodyPart(
+            longerSeq, shorterSeq, dtw, model, Model.BoneType.torso, "Torso"));
+        dtwBodyParts.push(BodyPartManager.#calculateDtwPerBodyPart(
+            longerSeq, shorterSeq, dtw, model, Model.BoneType.leftHand, "Left hand"));
+        dtwBodyParts.push(BodyPartManager.#calculateDtwPerBodyPart(
+            longerSeq, shorterSeq, dtw, model, Model.BoneType.rightHand, "Right hand"));
+        dtwBodyParts.push(BodyPartManager.#calculateDtwPerBodyPart(
+            longerSeq, shorterSeq, dtw, model, Model.BoneType.leftLeg, "Left leg"));
+        dtwBodyParts.push(BodyPartManager.#calculateDtwPerBodyPart(
+            longerSeq, shorterSeq, dtw, model, Model.BoneType.rightLeg, "Right leg"));
 
         return dtwBodyParts;
+    }
+
+    static #calculateDtwPerBodyPart(longerSeq, shorterSeq, dtw, model, bodyPart, text) {
+        let context = BodyPartManager.#getBodyPartContext(dtw.context, bodyPart);
+        return [DTWManager.calculateDtwPerBodyPart(longerSeq, shorterSeq, dtw, bodyPart, model, context), text];
+    }
+
+    static #getBodyPartContext(dtwContext, bodyPart) {
+        if (!dtwContext.useContext) {
+            return new Context(false);
+        }
+
+        let context = new Context(true);
+        let bodyPartContext;
+        switch (bodyPart) {
+            case Model.BoneType.torso:
+                bodyPartContext = dtwContext.bodyPartsDistanceAverage.torso;
+                break;
+            case Model.BoneType.leftHand:
+                bodyPartContext = dtwContext.bodyPartsDistanceAverage.leftHand;
+                break;
+            case Model.BoneType.rightHand:
+                bodyPartContext = dtwContext.bodyPartsDistanceAverage.rightHand;
+                break;
+            case Model.BoneType.leftLeg:
+                bodyPartContext = dtwContext.bodyPartsDistanceAverage.leftLeg;
+                break;
+            case Model.BoneType.rightLeg:
+                bodyPartContext = dtwContext.bodyPartsDistanceAverage.rightLeg;
+                break;
+        }
+
+        context.setValues(bodyPartContext.poseDistance, bodyPartContext.lowestDistance, bodyPartContext.largestDistance, null, null);
+        return context
     }
 
     static #getIndexesPerBodyPartModel(bodyPart, model) {
@@ -33,11 +68,7 @@ class BodyPartManager {
             return b.type === bodyPart
         });
 
-        let set1 = new Set(filteredBones.map(fb => fb.a));
-        let set2 = new Set(filteredBones.map(fb => fb.b));
-
-        set2.forEach(set1.add, set1);
-        return set2;
+        return new Set(filteredBones.map(fb => fb.b));
     }
 }
 

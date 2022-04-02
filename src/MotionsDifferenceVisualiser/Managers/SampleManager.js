@@ -5,50 +5,26 @@ import * as Model from "../../model.js";
 import {Context} from "../Entities/Context.js";
 import {ContextManager} from "./ContextManager.js";
 import {BodyParts} from "../Entities/BodyParts.js";
+import {BodyPartContext} from "../Entities/BodyPartContext.js";
 
 class SampleManager {
-    static sampleCount = 10;
-
     static arrayAverage(array) {
         return array.reduce((a, b) => a + b, 0) / array.length;
     }
 
-    static sampleDataSet(sequences, count, model = Model.modelKinect, sampleCount = SampleManager.sampleCount) {
-        let dtwSamples = 0;
-        let distanceSamples = 0;
-        let lowestDistanceSamples = 0;
-        let largestDistanceSamples = 0;
-        let torso = 0;
-        let leftHand = 0;
-        let rightHand = 0;
-        let leftFoot = 0;
-        let rightFoot = 0;
+    static sampleDataSet(sequences, sampleCount, model) {
+        let samples = SampleManager.#doSampling(sequences, sampleCount, model);
+        let poseDistance = samples[0];
+        let lowestDistance = samples[1];
+        let largestDistance = samples[2];
+        let dtwDistance = samples[3];
+        let torso = samples[4].torso;
+        let leftHand = samples[4].leftHand;
+        let rightHand = samples[4].rightHand;
+        let leftFoot = samples[4].leftLeg;
+        let rightFoot = samples[4].rightLeg;
 
-        for (let i = 0; i < count; i ++) {
-            let sample = SampleManager.#doSampling(sequences, sampleCount, model);
-            distanceSamples += sample[0];
-            lowestDistanceSamples += sample[1];
-            largestDistanceSamples += sample[2];
-            dtwSamples += sample[3];
-            torso += sample[4][0];
-            leftHand += sample[4][1];
-            rightHand += sample[4][2];
-            leftFoot += sample[4][3];
-            rightFoot += sample[4][4];
-        }
-
-        let distanceA = distanceSamples / count;
-        let dtwA = dtwSamples / count;
-        let lowestDistanceA = lowestDistanceSamples / count;
-        let largestDistanceA = largestDistanceSamples / count;
-        torso = torso / count;
-        leftHand = leftHand / count;
-        rightHand = rightHand / count;
-        leftFoot = leftFoot / count;
-        rightFoot = rightFoot / count;
-
-        //save data
-        let content = ContextManager.createContextFile(distanceA, lowestDistanceA, largestDistanceA,  dtwA,
+        let content = ContextManager.createContextFile(poseDistance, lowestDistance, largestDistance,  dtwDistance,
             new BodyParts(torso, leftHand, rightHand, leftFoot, rightFoot));
         SampleManager.downloadSampleFile(content);
     }
@@ -60,18 +36,19 @@ class SampleManager {
     }
 
     static #doSampling(sequences, sampleCount, model) {
-        let coeff = Math.ceil(sequences.length / (sampleCount * 2));
-        if (coeff < 1) {
-            coeff = 1;
-        }
-
+        let maxIndex = sequences.length;
         let samples = [];
-        for (let i = 0; i < sequences.length; i += coeff) {
-            samples.push(sequences[i]);
+        for (let i = 0; i < sampleCount; i ++) {
+            samples.push(SampleManager.#selectTwoSamples(sequences, maxIndex));
         }
 
-        let shuffledSamples = SampleManager.#shuffleSamples(samples);
-        return SampleManager.countDTWsAverage(shuffledSamples, model)
+        return SampleManager.countDTWsAverage(samples, model)
+    }
+
+    static #selectTwoSamples(sequences, maxIndex) {
+        let index1 = Math.floor(Math.random() * maxIndex);
+        let index2 = Math.floor(Math.random() * maxIndex);
+        return [sequences[index1], sequences[index2]];
     }
 
     static #shuffleSamples(samples) {
@@ -96,65 +73,74 @@ class SampleManager {
         let largestDistances = [];
         let bodyParts = [[], [], [], [], []];
 
-        if (samples % 2 === 1) {
-            samples.pop();
-        }
-
-        for (let i = 0; i < samples.length - 1; i += 2) {
-            let sequence1 = SequenceManager.getPoseCoordinatesPerSequence(samples[i]);
-            let sequence2 = SequenceManager.getPoseCoordinatesPerSequence(samples[i + 1]);
+        samples.forEach(sample => {
+            let sequence1 = SequenceManager.getPoseCoordinatesPerSequence(sample[0]);
+            let sequence2 = SequenceManager.getPoseCoordinatesPerSequence(sample[1]);
 
             let dtw = DTWManager.calculateDTW(sequence1, sequence2, -1, new Context(false));
             DTWs.push(dtw.distance);
-            poseDistances.push(SampleManager.#countDistanceAverage(dtw));
+            poseDistances.push(SampleManager.#calculateDistanceAverage(dtw.warpingPath));
             lowestDistances.push(dtw.lowestDistance);
             largestDistances.push(dtw.largestDistance);
-            bodyParts = this.#addBodyPartsDistanceAverage(sequence1, sequence2, dtw, bodyParts, model);
-        }
+            bodyParts = SampleManager.#addBodyPartsDistanceAverage(sequence1, sequence2, dtw, bodyParts, model);
+        });
 
         let dtwAverage = SampleManager.arrayAverage(DTWs);
         let distanceAverage = SampleManager.arrayAverage(poseDistances);
         let lowestDistanceAverage = SampleManager.arrayAverage(lowestDistances);
         let largestDistanceAverage = SampleManager.arrayAverage(largestDistances);
-        let bodyPartsAverage = [];
-        bodyParts.forEach(bp => bodyPartsAverage.push(SampleManager.arrayAverage(bp)));
+        let bodyPartsAverage = SampleManager.calculateBodyPartsAverage(bodyParts[0], bodyParts[1], bodyParts[2], bodyParts[3], bodyParts[4])
+
         return [distanceAverage, lowestDistanceAverage, largestDistanceAverage, dtwAverage, bodyPartsAverage];
     }
 
-    static #countDistanceAverage(dtw) {
-        let valueDistance = dtw.warpingPath[0].poseDistance;
-
-        for (let i = 1; i < dtw.warpingPath.length; i += 1) {
-            valueDistance += dtw.warpingPath[i].poseDistance;
-        }
-
-        return valueDistance / dtw.warpingPath.length;
-    }
-
     static #addBodyPartsDistanceAverage(seq1, seq2, dtw, bodyParts, model) {
-        let context = new Context(false);
-        const torsoWarpingPath = DTWManager.calculateDtwPerBodyPart(seq1, seq2, dtw, Model.BoneType.torso, model, context).warpingPath;
-        bodyParts[0].push(SampleManager.#extractPoseAverageFromWarpingPath(torsoWarpingPath));
-
-        const leftHandWarpingPath = DTWManager.calculateDtwPerBodyPart(seq1, seq2, dtw, Model.BoneType.leftHand, model, context).warpingPath;
-        bodyParts[1].push(SampleManager.#extractPoseAverageFromWarpingPath(leftHandWarpingPath));
-
-        const rightHandWarpingPath = DTWManager.calculateDtwPerBodyPart(seq1, seq2, dtw, Model.BoneType.rightHand, model, context).warpingPath;
-        bodyParts[2].push(SampleManager.#extractPoseAverageFromWarpingPath(rightHandWarpingPath));
-
-        const leftLegWarpingPath = DTWManager.calculateDtwPerBodyPart(seq1, seq2, dtw, Model.BoneType.leftLeg, model, context).warpingPath;
-        bodyParts[3].push(SampleManager.#extractPoseAverageFromWarpingPath(leftLegWarpingPath));
-
-        const rightLegWarpingPath = DTWManager.calculateDtwPerBodyPart(seq1, seq2, dtw, Model.BoneType.rightLeg, model, context).warpingPath;
-        bodyParts[4].push(SampleManager.#extractPoseAverageFromWarpingPath(rightLegWarpingPath));
-
+        bodyParts[0].push(SampleManager.#calculateDtwPerBodyPart(seq1, seq2, dtw, Model.BoneType.torso, model));
+        bodyParts[1].push(SampleManager.#calculateDtwPerBodyPart(seq1, seq2, dtw, Model.BoneType.leftHand, model));
+        bodyParts[2].push(SampleManager.#calculateDtwPerBodyPart(seq1, seq2, dtw, Model.BoneType.rightHand, model));
+        bodyParts[3].push(SampleManager.#calculateDtwPerBodyPart(seq1, seq2, dtw, Model.BoneType.leftLeg, model));
+        bodyParts[4].push(SampleManager.#calculateDtwPerBodyPart(seq1, seq2, dtw, Model.BoneType.rightLeg, model));
         return bodyParts;
     }
 
-    static #extractPoseAverageFromWarpingPath(warpingPath) {
-        let poses = [];
-        warpingPath.forEach(wp => poses.push(wp.poseDistance));
-        return SampleManager.arrayAverage(poses);
+    static #calculateDtwPerBodyPart(seq1, seq2, dtw, bodyPart, model) {
+        let context = new Context(false);
+        let bodyPartDtw = DTWManager.calculateDtwPerBodyPart(seq1, seq2, dtw, bodyPart, model, context);
+        let poseDistance = SampleManager.#calculateDistanceAverage(bodyPartDtw.warpingPath);
+        return new BodyPartContext(poseDistance, bodyPartDtw.lowestDistance, bodyPartDtw.largestDistance);
+    }
+
+    static calculateBodyPartsAverage(torsos, leftHands, rightHands, leftLegs, rightLegs) {
+        return new BodyParts(
+            SampleManager.#calculateBodyPartAverage(torsos),
+            SampleManager.#calculateBodyPartAverage(leftHands),
+            SampleManager.#calculateBodyPartAverage(rightHands),
+            SampleManager.#calculateBodyPartAverage(leftLegs),
+            SampleManager.#calculateBodyPartAverage(rightLegs)
+        )
+    }
+
+    static #calculateBodyPartAverage(bodyPartArray) {
+        let poseDistances = [];
+        let lowestDistances = [];
+        let largestDistances = [];
+
+        bodyPartArray.forEach(bp => {
+            poseDistances.push(bp.poseDistance);
+            lowestDistances.push(bp.lowestDistance);
+            largestDistances.push(bp.largestDistance);
+        });
+
+        return new BodyPartContext(
+            SampleManager.arrayAverage(poseDistances),
+            SampleManager.arrayAverage(lowestDistances),
+            SampleManager.arrayAverage(largestDistances));
+    }
+
+    static #calculateDistanceAverage(warpingPath) {
+        let poseDistances = [];
+        warpingPath.forEach(wp => poseDistances.push(wp.poseDistance));
+        return SampleManager.arrayAverage(poseDistances);
     }
 }
 

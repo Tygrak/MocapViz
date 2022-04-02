@@ -46,7 +46,7 @@ class MotionsDifferenceRenderer {
     #drawStyle = null;
     #drawStyleBlur = null;
     #jointsCount = 0;
-    #model = Model.modelKinect;
+    #model = null;
     #visualizationParts = null;
 
     #textDescription = document.createElement("p");
