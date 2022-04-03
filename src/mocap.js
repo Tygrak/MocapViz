@@ -120,7 +120,7 @@ class VisualizationFactory {
         context.build();
         let content = ContextManager.createContextFile(context.poseDistanceAverage, context.lowestDistanceAverage,
             context.largestDistanceAverage, context.dtwDistanceAverage, context.bodyPartsDistanceAverage);
-        SampleManager.downloadSampleFile(content);
+        SampleManager.downloadFile(content);
     }
 
     clearContext() {

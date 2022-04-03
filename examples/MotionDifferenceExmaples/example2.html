@@ -1,0 +1,40 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        <link rel="stylesheet" href="style.css">
+        <title>Motion Difference Demo 2</title>
+    </head>
+    <body>
+        Sequence 1: <input type="file" id="sequence1FileInput" name="sequence1FileInput" accept=".data,.txt">
+        <br>
+        Sequence 2: <input type="file" id="sequence2FileInput" name="sequence2FileInput" accept=".data,.txt">
+        <br>
+
+        Samples: <input type="file" id="sampleFileInput" name="sampleFileInput" accept=".json">
+        <br>
+
+        <label for="context">Choose a context:</label>
+        <select name="context" id="context">
+            <option value="1">No context</option>
+            <option value="2">Sampled context</option>
+            <option value="3">Built context</option>
+        </select>
+        <br>
+
+        <div class="buttons">
+            <button id="dataLoadButton">Load Data</button>
+            <button id="downloadContext">Download built context</button>
+            <button id="clearContext">Clear context</button>
+        </div>
+
+        Data for sampling: <input type="file" id="sampleDataFileInput" name="sampleDataFileInput" accept=".data,.txt">
+        <br>
+        <div class="buttons">
+            <button id="sampleDataButton">Sample Data</button>
+        </div>
+
+        <div id="loader"></div>
+
+        <script type="module" src="script2.js"></script>
+    </body>
+</html>

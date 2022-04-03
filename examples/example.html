@@ -1,67 +1,28 @@
 <html>
-    <head>
-        <meta charset="utf-8" />
-        <title>
-            Mocap Vizualization Test
-        </title>     
-    </head>
-    
-    <body>
+<head>
+    <meta charset="utf-8" />
+    <title>
+        Mocap Vizualization Test
+    </title>
+</head>
 
-        Data: <input type="file" id="dataFileInput" name="dataFileInput" accept=".data,.txt">
-        <br>
+<body>
+<button id="dataLoadButton">Load Data</button>
+<input type="file" id="dataFileInput" name="dataFileInput" accept=".data,.txt">
 
-        Samples: <input type="file" id="sampleFileInput" name="sampleFileInput" accept=".json">
-        <br>
+<script type="module">
+    import * as Mocap from '../src/mocap.js';
 
-        <label for="context">Choose a context:</label>
-        <select name="context" id="context">
-            <option value="1">No context</option>
-            <option value="2">Sampled context</option>
-            <option value="3">Built context</option>
-        </select>
-        <br>
+    const dataFileInput = document.getElementById("dataFileInput");
+    const loadButton = document.getElementById("dataLoadButton");
+    loadButton.onclick = load;
 
-        <button id="dataLoadButton">Load Data</button>
-        <button id="downloadContext">Download built context</button>
-        <button id="clearContext">Clear context</button>
-
-
-        <br>
-        <br>
-        <br>
-        <br>
-        Data for sampling: <input type="file" id="sampleDataFileInput" name="sampleDataFileInput" accept=".data,.txt">
-        <br>
-        <button id="sampleDataButton">Sample Data</button>
-
-        <script type="module">
-            import * as Mocap from '../src/mocap.js';
-            import {modelVicon} from "../src/model.js";
-            import * as VS from '../src/ComparisonVizualization/VisualizationService.js';
-            import {VisualizationParts} from "../src/MotionsDifferenceVisualiser/Entities/VisualizationParts.js";
-
-            const dataFileInput = document.getElementById("dataFileInput");
-            const sampleFileInput = document.getElementById('sampleFileInput');
-            const sampleDataFileInput = document.getElementById("sampleDataFileInput");
-
-            const contextSelect = document.getElementById("context");
-            const loadButton = document.getElementById("dataLoadButton");
-            const sampleButton = document.getElementById("sampleDataButton");
-            const downloadContextButton = document.getElementById("downloadContext");
-            const clearContextButton = document.getElementById("clearContext");
-
-            let contextOption = VS.ContextOption.NO_CONTEXT;
-
-            let context = document.getElementById('context');
-            contextSelect.onchange = setContext;
-            loadButton.onclick = load;
-            sampleButton.onclick = sample;
-            downloadContextButton.onclick = downloadContext;
-            clearContextButton.onclick = clearContext;
-
-            let jsonContent = "";
-
+    function load() {
+        if (dataFileInput.files.length == 0) {
+            console.log("No file selected!");
+            return;
+        }
+        Mocap.loadDataFromFile(dataFileInput.files[0], (sequences) => {
             let factory = new Mocap.VisualizationFactory();
             factory.numKeyframes = 8;
             factory.numZoomedKeyframes = 10;
@@ -69,72 +30,10 @@
             factory.leftBoneStyle = {r: 0, g: 180, b: 0, a: 1};
             factory.opacity = 0.6;
             factory.blurFrameOpacity = 0.17;
-
-            function load() {
-                if (dataFileInput.files.length === 0) {
-                    console.log("No file selected!");
-                    return;
-                }
-
-                if (sampleFileInput.files.length !== 0) {
-                    const reader = new FileReader()
-                    reader.onload = handleFileLoad;
-                    reader.readAsText(sampleFileInput.files[0]);
-                }
-
-                Mocap.loadDataFromFile(dataFileInput.files[0], (sequences) => {
-                    let vp = new VisualizationParts(true, true, true, true, true, true, true);
-                    let model = modelVicon;
-                    // let vp = new VisualizationParts(false, false, false, false, false, false, false);
-                    let visualizationElement1 = factory.visualizeSequenceDifferences(sequences[1918], sequences[1236], 1400, contextOption, jsonContent, vp, model);
-                    document.body.appendChild(visualizationElement1);
-
-                    let visualizationElement = factory.visualizeSequenceDifferences(sequences[1], sequences[2], 1400, contextOption, jsonContent, vp, model);
-                    document.body.appendChild(visualizationElement);
-
-                    visualizationElement = factory.visualizeSequenceDifferences(sequences[155], sequences[244], 1400, contextOption, jsonContent, vp, model);
-                    document.body.appendChild(visualizationElement);
-
-                    visualizationElement = factory.visualizeSequenceDifferences(sequences[435], sequences[257], 1400, contextOption, jsonContent, vp, model);
-                    document.body.appendChild(visualizationElement);
-
-                    visualizationElement = factory.visualizeSequenceDifferences(sequences[57], sequences[867], 1400, contextOption, jsonContent, vp, model);
-                    document.body.appendChild(visualizationElement);
-
-                    visualizationElement = factory.visualizeSequenceDifferences(sequences[1918], sequences[1236], 1400, contextOption, jsonContent, vp, model);
-                    document.body.appendChild(visualizationElement);
-
-                    document.body.appendChild(visualizationElement);
-                });
-            }
-
-            function sample() {
-                if (sampleDataFileInput.files.length === 0) {
-                    console.log("No file selected!");
-                    return;
-                }
-
-                Mocap.loadDataFromFile(sampleDataFileInput.files[0], (sequences) => {
-                    factory.sampleData(sequences, 500, modelVicon);
-                });
-            }
-
-            function downloadContext() {
-                factory.downloadBuiltContext();
-            }
-
-            function clearContext() {
-                factory.clearContext();
-            }
-
-            function setContext() {
-                contextOption = contextSelect.value;
-                console.log(contextOption);
-            }
-
-            function handleFileLoad(event) {
-                jsonContent = event.target.result;
-            }
-        </script>
-    </body>
+            let visualizationElement = factory.createVisualization(sequences[0], 850, 250, 250, 250);
+            document.body.appendChild(visualizationElement);
+        });
+    }
+</script>
+</body>
 </html>

@@ -26,10 +26,10 @@ class SampleManager {
 
         let content = ContextManager.createContextFile(poseDistance, lowestDistance, largestDistance,  dtwDistance,
             new BodyParts(torso, leftHand, rightHand, leftFoot, rightFoot));
-        SampleManager.downloadSampleFile(content);
+        SampleManager.downloadFile(content);
     }
 
-    static downloadSampleFile(content) {
+    static downloadFile(content) {
         let blob = new Blob([content], { type: "text/plain;charset=utf-8" });
         alert("Context is downloading on your machine");
         saveAs(blob, "sampling.json");
@@ -49,21 +49,6 @@ class SampleManager {
         let index1 = Math.floor(Math.random() * maxIndex);
         let index2 = Math.floor(Math.random() * maxIndex);
         return [sequences[index1], sequences[index2]];
-    }
-
-    static #shuffleSamples(samples) {
-        let currentIndex = samples.length
-        let randomIndex;
-
-        while (currentIndex !== 0) {
-            randomIndex = Math.floor(Math.random() * currentIndex);
-            currentIndex--;
-
-            [samples[currentIndex], samples[randomIndex]] = [
-                samples[randomIndex], samples[currentIndex]];
-        }
-
-        return samples;
     }
 
     static countDTWsAverage(samples, model) {
