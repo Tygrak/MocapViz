@@ -8,5 +8,7 @@ const timeAlignedSequenceDifferenceDescription = "Super time-aligning where you 
 
 const timeAlignedMapping = "Super time-aligning where you can see everything";
 
+const descriptionBoxSize = "20";
+
 export {mapDescription, sequenceDifferenceDescription, detailDescription, timeAlignedSequenceDifferenceDescription,
-    timeAlignedMapping};
+    timeAlignedMapping, descriptionBoxSize};

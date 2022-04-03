@@ -90,7 +90,7 @@ class MotionsDifferenceRenderer {
 
     fillTextDescription() {
         TextDescriptionRenderer.render(this.#textDescription, this.#longerSequence, this.#shorterSequence,
-            this.#dtw.distance, this.#dtw.context.dtwDistanceAverage);
+            this.#dtw.distance, this.#drawStyle, this.#dtw.context.dtwDistanceAverage);
     }
 
     fillMapCanvases() {

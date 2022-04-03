@@ -102,7 +102,7 @@ class SampleManager {
             SampleManager.#calculateBodyPartAverage(rightHands),
             SampleManager.#calculateBodyPartAverage(leftLegs),
             SampleManager.#calculateBodyPartAverage(rightLegs)
-        )
+        );
     }
 
     static #calculateBodyPartAverage(bodyPartArray) {
