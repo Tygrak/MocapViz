@@ -4,6 +4,8 @@ import {ColorManager} from "../Managers/ColorManager.js";
 import {SequenceDifferenceRenderer} from "./SequenceDifferenceRenderer.js";
 import {ColoredPose} from "../Entities/ColoredPose.js";
 import {SequenceManager} from "../Managers/SequenceManager.js";
+import {infoTableId} from "../Config/Config.js";
+import {DTWManager} from "../Managers/DTWManager.js";
 
 class PoseDetailRenderer {
     #FIRST_DETAIL_X_SHIFT = 2.5;
@@ -13,22 +15,28 @@ class PoseDetailRenderer {
     #sequenceDetailRenderer = null;
     #sequenceDifferenceRenderer = null;
     #dtw = null;
-    #processedLongerSequenceFrames = null;
-    #processedShorterSequenceFrames = null;
+    #bodyPartsDtw = null;
+    #processedLongerSequence = null;
+    #processedShorterSequence = null;
+    #longerSequencePoses = null;
+    #shorterSequencePoses = null;
     #longerSequenceDotCoordinates = null;
     #shorterSequenceDotCoordinates = null;
     #drawStyle = null;
     #circleRadius = 0.1;
     #circleDetailColor = null;
 
-    constructor(detailRenderer, sequenceDifferenceRenderer, dtw, processedLongerSequenceFrames,
-                processedShorterSequenceFrames, longerSequenceDotCoordinates, shorterSequenceDotCoordinates,
-                drawStyle, circleRadius, circleDetailColor) {
+    constructor(detailRenderer, sequenceDifferenceRenderer, dtw, bodyPartsDtw, processedLongerSequence,
+                processedShorterSequence, longerSequencePoses, shorterSequencePoses, longerSequenceDotCoordinates,
+                shorterSequenceDotCoordinates, drawStyle, circleRadius, circleDetailColor) {
         this.#sequenceDetailRenderer = detailRenderer;
         this.#sequenceDifferenceRenderer = sequenceDifferenceRenderer;
         this.#dtw = dtw;
-        this.#processedLongerSequenceFrames = processedLongerSequenceFrames;
-        this.#processedShorterSequenceFrames = processedShorterSequenceFrames;
+        this.#bodyPartsDtw = bodyPartsDtw;
+        this.#processedLongerSequence = processedLongerSequence;
+        this.#processedShorterSequence = processedShorterSequence;
+        this.#longerSequencePoses = longerSequencePoses;
+        this.#shorterSequencePoses = shorterSequencePoses;
         this.#longerSequenceDotCoordinates = longerSequenceDotCoordinates;
         this.#shorterSequenceDotCoordinates = shorterSequenceDotCoordinates;
         this.#drawStyle = drawStyle;
@@ -37,8 +45,8 @@ class PoseDetailRenderer {
     }
 
     onMouseMoveMapping(mouseEvent) {
-        let longerSequenceFrames = this.#processedLongerSequenceFrames.frames;
-        let shorterSequenceFrames = this.#processedShorterSequenceFrames.frames;
+        let longerSequenceFrames = this.#processedLongerSequence.frames;
+        let shorterSequenceFrames = this.#processedShorterSequence.frames;
 
         // select index
         let warpingPathIndex = this.#selectWarpingPathIndex(mouseEvent, longerSequenceFrames, shorterSequenceFrames);
@@ -46,10 +54,13 @@ class PoseDetailRenderer {
         // render and save dot coords with theirs colors
         this.#renderDetailDots(warpingPathIndex);
 
+        // update info table
+        this.#updateTable(warpingPathIndex, longerSequenceFrames, shorterSequenceFrames);
+
         // draw details
         let longerSequenceFrameIndex = this.#dtw.warpingPath[warpingPathIndex].index1;
         let shorterSequenceFrameIndex = this.#dtw.warpingPath[warpingPathIndex].index2;
-        let figureScale = this.#processedLongerSequenceFrames.figureScale;
+        let figureScale = this.#processedLongerSequence.figureScale;
 
         let coreX = longerSequenceFrames[longerSequenceFrameIndex][0].x;
         let longerSequenceFrame = Core.moveOriginXBy(longerSequenceFrames[longerSequenceFrameIndex], coreX);
@@ -72,14 +83,18 @@ class PoseDetailRenderer {
 
         let index = Math.floor((mouseEvent.pageX - canvasBounding.left) / oneFrameValue);
         let warpingPathIndex;
-        if (mouseEvent.pageY <= canvasMiddle) {
-            warpingPathIndex = SequenceManager.findWarpingPathIndexByLongerSeq(index, this.#dtw.warpingPath);
-        } else {
-            if (index >= shorterSequenceFrames.length) {
-                index = shorterSequenceFrames.length - 1;
+
+        try {
+            if (mouseEvent.pageY <= canvasMiddle) {
+                warpingPathIndex = SequenceManager.findWarpingPathIndexByLongerSeq(index, this.#dtw.warpingPath);
+            } else {
+                if (index >= shorterSequenceFrames.length) {
+                    index = shorterSequenceFrames.length - 1;
+                }
+                warpingPathIndex = SequenceManager.findWarpingPathIndexByShorterSeq(index, this.#dtw.warpingPath);
             }
-            warpingPathIndex = SequenceManager.findWarpingPathIndexByShorterSeq(index, this.#dtw.warpingPath);
-        }
+        } catch (SequenceIndexNotFound) {}
+
 
         if (warpingPathIndex >= this.#dtw.warpingPath.length || warpingPathIndex === undefined) {
             warpingPathIndex = this.#dtw.warpingPath.length - 1;
@@ -120,6 +135,32 @@ class PoseDetailRenderer {
             coloredPose2.coordination.y - 0.1, 2 * this.#circleRadius, this.#circleDetailColor);
     }
 
+    #updateTable(index) {
+        let table = document.getElementById(infoTableId);
+
+        if (this.#bodyPartsDtw !== null) {
+            for (let i = 0; i < this.#bodyPartsDtw.length; i ++) {
+                let dtw = this.#bodyPartsDtw[i][0];
+                let distance = dtw.warpingPath[index].poseDistance.toFixed(2);
+
+                let cell = table.rows[i + 1].cells[2];
+                cell.innerHTML = distance;
+            }
+        }
+
+        let distance = this.#dtw.warpingPath[index].poseDistance.toFixed(2);
+        let cell = table.rows[5].cells[2];
+        cell.innerHTML = distance;
+
+        let index1 = this.#dtw.warpingPath[index].index1;
+        let index2 = this.#dtw.warpingPath[index].index2;
+        // let calculatedDistance = DTWManager.calculateDistance(this.#longerSequencePoses[index1],
+        //     this.#shorterSequencePoses[index2]).toFixed(2);
+        console.log("Index1: ");
+        console.log(this.#longerSequencePoses[index1]);
+        console.log("Index2: ");
+        console.log(this.#shorterSequencePoses[index2]);
+    }
 }
 
 export {PoseDetailRenderer};

@@ -14,7 +14,7 @@ import {
     detailDescription,
     mapDescription,
     sequenceDifferenceDescription, timeAlignedMapping,
-    timeAlignedSequenceDifferenceDescription
+    timeAlignedSequenceDifferenceDescription, infoTableId, descriptionBoxSize
 } from "../Config/Config.js";
 
 class MotionsDifferenceRenderer {
@@ -35,11 +35,11 @@ class MotionsDifferenceRenderer {
 
     #longerSequence = [];
     #longerSequenceProcessed = [];
-    #longerSequenceFiltered = [];
+    #longerSequencePoses = [];
     #longerSequenceDotCoordinates = [];
     #shorterSequence = [];
     #shorterSequenceProcessed = [];
-    #shorterSequenceFiltered = [];
+    #shorterSequencePoses = [];
     #shorterSequenceDotCoordinates = [];
     #dtw = null;
     #visualizationWidth = 0;
@@ -48,6 +48,7 @@ class MotionsDifferenceRenderer {
     #jointsCount = 0;
     #model = null;
     #visualizationParts = null;
+    #dtwBodyParts = null;
 
     #textDescription = document.createElement("p");
     #longerSequenceMapCanvas = document.createElement("canvas");
@@ -55,6 +56,7 @@ class MotionsDifferenceRenderer {
     #bodyPartsCanvas = document.createElement("canvas");
     #sequenceDifferenceCanvas = document.createElement("canvas");
     #detailCanvas = document.createElement("canvas");
+    #infoTable = document.createElement("div");
     #timeAlignedSequenceDifferenceCanvas = document.createElement("canvas");
     #timeAlignedMappingCanvas = document.createElement("canvas");
 
@@ -81,8 +83,8 @@ class MotionsDifferenceRenderer {
 
         this.#longerSequenceProcessed = this.#processSequenceForDrawing(this.#longerSequence);
         this.#shorterSequenceProcessed = this.#processSequenceForDrawing(this.#shorterSequence);
-        this.#longerSequenceFiltered = SequenceManager.getPoseCoordinatesPerSequence(this.#longerSequence);
-        this.#shorterSequenceFiltered = SequenceManager.getPoseCoordinatesPerSequence(this.#shorterSequence);
+        this.#longerSequencePoses = SequenceManager.getPoseCoordinatesPerSequence(this.#longerSequence);
+        this.#shorterSequencePoses = SequenceManager.getPoseCoordinatesPerSequence(this.#shorterSequence);
 
         this.#timeAlignedMappingCanvas.width = this.#visualizationWidth;
         this.#timeAlignedMappingCanvas.height = this.#VISUALIZATION_HEIGHT / 3 * 2;
@@ -119,23 +121,23 @@ class MotionsDifferenceRenderer {
     }
 
     fillBodyPartsCanvas() {
-        let dtwBodyParts = BodyPartManager.getBodyPartsPerModel(this.#longerSequenceFiltered, this.#shorterSequenceFiltered,
+        this.#dtwBodyParts = BodyPartManager.getBodyPartsPerModel(this.#longerSequencePoses, this.#shorterSequencePoses,
             this.#dtw, this.#model)
-        BodyPartsRenderer.render(this.#bodyPartsCanvas, dtwBodyParts, this.#longerSequenceFiltered.length, this.#visualizationWidth,
+        BodyPartsRenderer.render(this.#bodyPartsCanvas, this.#dtwBodyParts, this.#longerSequencePoses.length, this.#visualizationWidth,
             this.#TEXT_SPACE, this.#TEXT_HEIGHT);
     }
 
     setPoseDetail() {
-        let poseDetailRenderer = new PoseDetailRenderer(this.#sequenceDetailRenderer, this.#sequenceDifferenceRenderer,
-            this.#dtw, JSON.parse(JSON.stringify(this.#longerSequenceProcessed)),
-                JSON.parse(JSON.stringify(this.#shorterSequenceProcessed)), this.#longerSequenceDotCoordinates,
-            this.#shorterSequenceDotCoordinates, this.#drawStyle, this.#POSE_CIRCLE_RADIUS, this.#DETAIL_POSE_POSITION_COLOR);
+        this.#createTable(this.#infoTable);
+        let poseDetailRenderer = new PoseDetailRenderer(this.#sequenceDetailRenderer, this.#sequenceDifferenceRenderer, this.#dtw, this.#dtwBodyParts,
+            JSON.parse(JSON.stringify(this.#longerSequenceProcessed)), JSON.parse(JSON.stringify(this.#shorterSequenceProcessed)), this.#longerSequencePoses, this.#shorterSequencePoses,
+            this.#longerSequenceDotCoordinates, this.#shorterSequenceDotCoordinates, this.#drawStyle, this.#POSE_CIRCLE_RADIUS, this.#DETAIL_POSE_POSITION_COLOR);
 
         this.#sequenceDifferenceCanvas.onmousemove = (event) => poseDetailRenderer.onMouseMoveMapping(event);
     }
 
     fillTimeAlignedSequenceDifferenceCanvas() {
-        let reducedLongerSequence = SequenceManager.reduceSequenceLength(this.#longerSequenceFiltered, this.#shorterSequenceFiltered.length);
+        let reducedLongerSequence = SequenceManager.reduceSequenceLength(this.#longerSequencePoses, this.#shorterSequencePoses.length);
         let reducedLongerSequenceProcessed = this.#longerSequenceProcessed;
         reducedLongerSequenceProcessed.frames = SequenceManager.reduceSequenceLength(this.#longerSequenceProcessed.frames, this.#shorterSequenceProcessed.frames.length);
 
@@ -145,9 +147,9 @@ class MotionsDifferenceRenderer {
             this.#drawStyleBlur, yThird * 2);
         let positions2 = SequenceDifferenceRenderer.renderSequence(this.#shorterSequenceProcessed,
             this.#timeAlignedSequenceDifferenceRenderer, this.#NUM_KEYFRAMES, this.#SCENE_WIDTH, this.#drawStyle,
-            this.#drawStyleBlur, 0, reducedLongerSequence.length / this.#shorterSequenceFiltered.length);
+            this.#drawStyleBlur, 0, reducedLongerSequence.length / this.#shorterSequencePoses.length);
 
-        let reducedDtw = DTWManager.calculateDTW(reducedLongerSequence, this.#shorterSequenceFiltered, -1, this.#dtw.context);
+        let reducedDtw = DTWManager.calculateDTW(reducedLongerSequence, this.#shorterSequencePoses, -1, this.#dtw.context);
 
         let longerSequenceDotCoordinates = SequenceDifferenceRenderer.renderDots(this.#timeAlignedSequenceDifferenceRenderer,
             yThird * 2 - 0.35, positions1, reducedLongerSequenceProcessed.frames, reducedDtw,
@@ -179,7 +181,7 @@ class MotionsDifferenceRenderer {
             this.#renderCanvas(div, [this.#sequenceDifferenceCanvas], false, sequenceDifferenceDescription);
 
         if (this.#visualizationParts.sequenceDifference && this.#visualizationParts.poseDetail)
-            this.#renderCanvas(div, [this.#detailCanvas], true, detailDescription);
+            this.#renderCanvas(div, [this.#detailCanvas, this.#infoTable], true, detailDescription)
 
         if (this.#visualizationParts.timeAlignedSequenceDifference)
             this.#renderCanvas(div, [this.#timeAlignedSequenceDifferenceCanvas], true, timeAlignedSequenceDifferenceDescription);
@@ -190,7 +192,7 @@ class MotionsDifferenceRenderer {
         return div;
     }
 
-    #renderCanvas(mainDiv, canvases, marginBottom = false, description = null) {
+    #renderCanvas(mainDiv, elements, marginBottom = false, description = null) {
         let divRow = document.createElement('div');
         divRow.style.display = "flex";
 
@@ -202,7 +204,7 @@ class MotionsDifferenceRenderer {
             divRow.appendChild(this.#createLeftSideInfo(description));
         }
 
-        canvases.forEach(canvas => divRow.appendChild(canvas));
+        elements.forEach(canvas => divRow.appendChild(canvas));
         divRow.appendChild(document.createElement('br'));
         mainDiv.appendChild(divRow);
     }
@@ -222,6 +224,68 @@ class MotionsDifferenceRenderer {
         return Core.processSequence(sequence, this.#NUM_KEYFRAMES, this.#SCENE_WIDTH, this.#visualizationWidth,
             this.#VISUALIZATION_HEIGHT / 3, this.#drawStyle, true, false);
     }
+
+    #createTable(infoTable) {
+        let table = document.createElement('table');
+        let thead = document.createElement('thead');
+        let tbody = document.createElement('tbody');
+
+        let row1 = document.createElement('tr');
+        let heading1 = document.createElement('th');
+        heading1.innerHTML = "Body part";
+        let heading2 = document.createElement('th');
+        heading2.innerHTML = "Color";
+        let heading3 = document.createElement('th');
+        heading3.innerHTML = "Distance";
+
+        row1.appendChild(heading1);
+        row1.appendChild(heading2);
+        row1.appendChild(heading3);
+        thead.appendChild(row1);
+
+        table.appendChild(thead);
+        table.appendChild(tbody);
+        table.id = infoTableId;
+        infoTable.appendChild(table);
+
+        this.#addRow(tbody, "Nose", this.#drawStyle.noseStyle);
+        this.#addRow(tbody, "Torso", this.#drawStyle.boneStyle);
+        this.#addRow(tbody, "Left bones", this.#drawStyle.leftBoneStyle);
+        this.#addRow(tbody, "Right bones", this.#drawStyle.rightBoneStyle);
+        this.#addRow(tbody, "Whole pose", null);
+    }
+
+    #addRow(tbody, bodyPartName, color = null) {
+        let box = MotionsDifferenceRenderer.#createBox(color);
+
+        let row = document.createElement('tr');
+        row.style.textAlign = "center";
+        let rowColumn1 = document.createElement('td');
+        rowColumn1.innerHTML = bodyPartName;
+        let rowColumn2 = document.createElement('td');
+        rowColumn2.appendChild(box);
+        let rowColumn3 = document.createElement('td');
+
+        row.appendChild(rowColumn1);
+        row.appendChild(rowColumn2);
+        row.appendChild(rowColumn3);
+        tbody.appendChild(row);
+    }
+
+    static #createBox(color) {
+        if (color === null) {
+            return document.createTextNode("");
+        }
+
+        let box = document.createElement('div');
+        box.style.height = descriptionBoxSize;
+        box.style.float = "right";
+        box.style.width = descriptionBoxSize;
+        box.style.border = "1px solid black";
+        box.style.backgroundColor = `rgb(${color.r}, ${color.g}, ${color.b})`;
+        return box;
+    }
+
 }
 
 export {MotionsDifferenceRenderer};

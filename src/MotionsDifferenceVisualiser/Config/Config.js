@@ -10,5 +10,7 @@ const timeAlignedMapping = "Super time-aligning where you can see everything";
 
 const descriptionBoxSize = "20";
 
+const infoTableId = "infoTable";
+
 export {mapDescription, sequenceDifferenceDescription, detailDescription, timeAlignedSequenceDifferenceDescription,
-    timeAlignedMapping, descriptionBoxSize};
+    timeAlignedMapping, descriptionBoxSize, infoTableId};

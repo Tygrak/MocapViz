@@ -49,19 +49,18 @@ function load() {
     }
 
     Mocap.loadDataFromFile(dataFileInput.files[0], (sequences) => {
-        console.log(sequences);
         let vp = new VisualizationParts(true, true, true, true, true, true, true);
         let model = modelVicon;
         // let vp = new VisualizationParts(false, false, false, false, false, false, false);
-        let visualizationElement1 = factory.visualizeSequenceDifferences(sequences[1918], sequences[1236], 1400, contextOption, jsonContent, vp, model);
-        document.body.appendChild(visualizationElement1);
+        // let visualizationElement1 = factory.visualizeSequenceDifferences(sequences[1918], sequences[1236], 1400, contextOption, jsonContent, vp, model);
+        // document.body.appendChild(visualizationElement1);
 
         // let visualizationElement = factory.visualizeSequenceDifferences(sequences[1], sequences[2], 1400, contextOption, jsonContent, vp, model);
         // document.body.appendChild(visualizationElement);
-        //
-        // visualizationElement = factory.visualizeSequenceDifferences(sequences[155], sequences[244], 1400, contextOption, jsonContent, vp, model);
-        // document.body.appendChild(visualizationElement);
-        //
+
+        let visualizationElement = factory.visualizeSequenceDifferences(sequences[155], sequences[244], 1400, contextOption, jsonContent, vp, model);
+        document.body.appendChild(visualizationElement);
+
         // visualizationElement = factory.visualizeSequenceDifferences(sequences[435], sequences[257], 1400, contextOption, jsonContent, vp, model);
         // document.body.appendChild(visualizationElement);
         //

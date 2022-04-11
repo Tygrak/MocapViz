@@ -170,7 +170,6 @@ class VisualizationDrawer {
     #onMouseMoveMapping(mouseEvent, dtw, processedLongerSeqFrames, processedShorterSeqFrames, dotCoords1, dotCoords2) {
         let canvasCoords = this.canvas.getBoundingClientRect();
         this.canvasMiddle = canvasCoords.top + (canvasCoords.bottom - canvasCoords.top) / 2 + window.scrollY;
-        // console.log("Page X: " + mouseEvent.pageX + "; Page Y: " + mouseEvent.pageY + "; CanvasMiddle: " + this.canvasMiddle);
 
         const longerFrames = processedLongerSeqFrames.frames;
         const shorterFrames = processedShorterSeqFrames.frames;

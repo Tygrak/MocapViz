@@ -20,7 +20,7 @@ class DTWManager {
             let j = dtw.warpingPath[i].index1
             let k = dtw.warpingPath[i].index2;
             warpingPath.push(new WarpingPathEntity(j, k,
-                DTWManager.#getDistancePerBodyPart(sequence1[j], sequence2[k], indexes),
+                DTWManager.calculateBodyPartDistance(sequence1[j], sequence2[k], indexes),
                 0)
             );
         }
@@ -58,7 +58,7 @@ class DTWManager {
     }
 
     static #compareTwoTimeSeries(m1, m2, matrixNeighbours, jointIndexes, index1, index2) {
-        let euclidDistance = (jointIndexes === -1) ? DTWManager.#getValueFromModels(m1, m2) : DTWManager.#getDistancePerBodyPart(m1, m2, jointIndexes);
+        let euclidDistance = (jointIndexes === -1) ? DTWManager.calculateDistance(m1, m2) : DTWManager.calculateBodyPartDistance(m1, m2, jointIndexes);
         let minSquareEntity = DTWManager.#findLowestSquareValue(matrixNeighbours);
         return new DTWMatrixEntity(euclidDistance + minSquareEntity.cumulativeDistance, euclidDistance, minSquareEntity.getWarpingPath(), index1, index2);
     }
@@ -80,7 +80,7 @@ class DTWManager {
         return -1;
     }
 
-    static #getValueFromModels(m1, m2) {
+    static calculateDistance(m1, m2) {
         let distance = 0;
         for (let i = 0; i < m1.length; i++) {
             distance += DTWManager.getVectorEuclideanDistance(m1[i], m2[i]);
@@ -92,7 +92,7 @@ class DTWManager {
         return Math.pow(v1.x - v2.x, 2) + Math.pow(v1.y - v2.y, 2) + Math.pow(v1.z - v2.z, 2);
     }
 
-    static #getDistancePerBodyPart(m1, m2, jointIndexes) {
+    static calculateBodyPartDistance(m1, m2, jointIndexes) {
         let distance = 0;
         jointIndexes.forEach(function(i) {
             distance += DTWManager.getVectorEuclideanDistance(m1[i], m2[i]);
