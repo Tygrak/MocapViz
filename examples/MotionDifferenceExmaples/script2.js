@@ -2,6 +2,7 @@ import * as Mocap from '../../src/mocap.js';
 import {modelVicon} from "../../src/model.js";
 import * as VS from '../../src/ComparisonVizualization/VisualizationService.js';
 import {VisualizationParts} from "../../src/MotionsDifferenceVisualiser/Entities/VisualizationParts.js";
+import {modelKinect2d} from "../../src/mocap.js";
 
 const sequence1FileInput = document.getElementById("sequence1FileInput");
 const sequence2FileInput = document.getElementById("sequence2FileInput");
@@ -31,7 +32,7 @@ factory.keyframeSelectionAlgorithm = Mocap.KeyframeSelectionAlgorithmEnum.Equidi
 factory.leftBoneStyle = {r: 0, g: 180, b: 0, a: 1};
 factory.opacity = 0.6;
 factory.blurFrameOpacity = 0.17;
-factory.model = modelVicon;
+factory.model = modelKinect2d;
 
 let loaderId = "loader";
 
@@ -54,12 +55,17 @@ function load() {
     let reader = new FileReader();
 
     reader.readAsText(sequence1FileInput.files[0], "utf-8");
-    reader.onload = function(event) {
-        let sequence1 = JSON.parse(reader.result);
+    reader.onload = function(textResult) {
+        let text = textResult.target.result;
+        let split = text.split("#objectKey");
+        let sequences = split.filter((s) => {return s !== "";}).map((s) => s.split("\r\n"));
+        let sequence1 = sequences[0];
         reader.readAsText(sequence2FileInput.files[0], "utf-8");
-        reader.onload = function (event) {
-            let sequence2 = JSON.parse(reader.result);
-
+        reader.onload = function (textResult) {
+            text = textResult.target.result;
+            split = text.split("#objectKey");
+            sequences = split.filter((s) => {return s !== "";}).map((s) => s.split("\r\n"));
+            let sequence2 = sequences[0];
             let visualizationElement = factory.visualizeSequenceDifferences(sequence1, sequence2, 1400, contextOption, jsonContent, vp);
             document.body.appendChild(visualizationElement);
             document.getElementById(loaderId).style.display = "none";

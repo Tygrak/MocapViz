@@ -71,7 +71,7 @@ function loadDataFromFile(dataFile, callback, filterPredicate = null, loadChunkM
         let split = text.split("#objectKey");
         split[0] = last+split[0];
         last = split[split.length-1];
-        let seqs = split.filter((s) => {return s != "";}).map((s) => s.split("\r\n"));
+        let seqs = split.filter((s) => {return s !== "";}).map((s) => s.split("\r\n"));
         if (filterPredicate != null) {
             seqs = seqs.filter(filterPredicate);
         }
