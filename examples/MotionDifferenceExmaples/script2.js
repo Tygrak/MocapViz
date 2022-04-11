@@ -31,6 +31,7 @@ factory.keyframeSelectionAlgorithm = Mocap.KeyframeSelectionAlgorithmEnum.Equidi
 factory.leftBoneStyle = {r: 0, g: 180, b: 0, a: 1};
 factory.opacity = 0.6;
 factory.blurFrameOpacity = 0.17;
+factory.model = modelVicon;
 
 let loaderId = "loader";
 
@@ -49,7 +50,6 @@ function load() {
     }
 
     let vp = new VisualizationParts(true, true, true, true, true, true, true);
-    let model = modelVicon;
 
     let reader = new FileReader();
 
@@ -60,7 +60,7 @@ function load() {
         reader.onload = function (event) {
             let sequence2 = JSON.parse(reader.result);
 
-            let visualizationElement = factory.visualizeSequenceDifferences(sequence1, sequence2, 1400, contextOption, jsonContent, vp, model);
+            let visualizationElement = factory.visualizeSequenceDifferences(sequence1, sequence2, 1400, contextOption, jsonContent, vp);
             document.body.appendChild(visualizationElement);
             document.getElementById(loaderId).style.display = "none";
         }
@@ -76,7 +76,7 @@ function sample() {
     }
 
     Mocap.loadDataFromFile(sampleDataFileInput.files[0], (sequences) => {
-        factory.sampleData(sequences, 10, modelVicon);
+        factory.sampleData(sequences, 10);
         document.getElementById(loaderId).style.display = "none";
     });
 }

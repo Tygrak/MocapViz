@@ -83,8 +83,8 @@ class MotionsDifferenceRenderer {
 
         this.#longerSequenceProcessed = this.#processSequenceForDrawing(this.#longerSequence);
         this.#shorterSequenceProcessed = this.#processSequenceForDrawing(this.#shorterSequence);
-        this.#longerSequencePoses = SequenceManager.getPoseCoordinatesPerSequence(this.#longerSequence);
-        this.#shorterSequencePoses = SequenceManager.getPoseCoordinatesPerSequence(this.#shorterSequence);
+        this.#longerSequencePoses = SequenceManager.getPoseCoordinatesPerSequence(this.#longerSequence, this.#model);
+        this.#shorterSequencePoses = SequenceManager.getPoseCoordinatesPerSequence(this.#shorterSequence, this.#model);
 
         this.#timeAlignedMappingCanvas.width = this.#visualizationWidth;
         this.#timeAlignedMappingCanvas.height = this.#VISUALIZATION_HEIGHT / 3 * 2;
@@ -149,7 +149,7 @@ class MotionsDifferenceRenderer {
             this.#timeAlignedSequenceDifferenceRenderer, this.#NUM_KEYFRAMES, this.#SCENE_WIDTH, this.#drawStyle,
             this.#drawStyleBlur, 0, reducedLongerSequence.length / this.#shorterSequencePoses.length);
 
-        let reducedDtw = DTWManager.calculateDTW(reducedLongerSequence, this.#shorterSequencePoses, -1, this.#dtw.context);
+        let reducedDtw = DTWManager.calculateDTW(reducedLongerSequence, this.#shorterSequencePoses, -1, this.#dtw.context, this.#model);
 
         let longerSequenceDotCoordinates = SequenceDifferenceRenderer.renderDots(this.#timeAlignedSequenceDifferenceRenderer,
             yThird * 2 - 0.35, positions1, reducedLongerSequenceProcessed.frames, reducedDtw,

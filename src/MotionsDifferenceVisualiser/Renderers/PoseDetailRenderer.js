@@ -152,14 +152,10 @@ class PoseDetailRenderer {
         let cell = table.rows[5].cells[2];
         cell.innerHTML = distance;
 
-        let index1 = this.#dtw.warpingPath[index].index1;
-        let index2 = this.#dtw.warpingPath[index].index2;
+        // let index1 = this.#dtw.warpingPath[index].index1;
+        // let index2 = this.#dtw.warpingPath[index].index2;
         // let calculatedDistance = DTWManager.calculateDistance(this.#longerSequencePoses[index1],
         //     this.#shorterSequencePoses[index2]).toFixed(2);
-        console.log("Index1: ");
-        console.log(this.#longerSequencePoses[index1]);
-        console.log("Index2: ");
-        console.log(this.#shorterSequencePoses[index2]);
     }
 }
 
