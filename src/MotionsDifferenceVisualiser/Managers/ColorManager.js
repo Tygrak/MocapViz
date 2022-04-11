@@ -31,7 +31,10 @@ class ColorManager {
     }
 
     static #selectColorByPoseDistance(poseDistance, dtw) {
-        let colorCoefficient = (poseDistance - dtw.lowestDistance) / (dtw.largestDistance - dtw.lowestDistance);
+        let colorCoefficient = 0;
+        if (dtw.largestDistance - dtw.lowestDistance !== 0) {
+            colorCoefficient = (poseDistance - dtw.lowestDistance) / (dtw.largestDistance - dtw.lowestDistance);
+        }
 
         if (colorCoefficient > 1) colorCoefficient = 1;
         if (colorCoefficient < 0) colorCoefficient = 0;

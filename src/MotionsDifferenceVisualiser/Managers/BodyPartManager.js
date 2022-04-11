@@ -8,6 +8,8 @@ class BodyPartManager {
             return BodyPartManager.#getIndexesPerBodyPartModel(bodyPart, Model.bonesVicon);
         } else if (model === Model.modelKinect) {
             return BodyPartManager.#getIndexesPerBodyPartModel(bodyPart, Model.bonesKinect);
+        } else if (model === Model.modelKinect2d) {
+            return  BodyPartManager.#getIndexesPerBodyPartModel(bodyPart, Model.bonesKinect2d);
         }
 
         return null;

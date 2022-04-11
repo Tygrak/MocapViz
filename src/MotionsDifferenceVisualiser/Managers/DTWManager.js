@@ -3,10 +3,12 @@ import {DTWMatrixEntity} from "../Entities/DTWMatrixEntity.js";
 import {MatrixNeighbours} from "../Entities/MatrixNeighbours.js";
 import {DTW} from "../Entities/DTW.js";
 import {WarpingPathEntity} from "../Entities/WarpingPathEntity.js";
+import {modelKinect2d} from "../../model.js";
 
 class DTWManager {
-    static calculateDTW(sequence1, sequence2, jointIndex, context) {
-        let arr = DTWManager.#calculateDTWAlgorithm(sequence1, sequence2, jointIndex);
+    static calculateDTW(sequence1, sequence2, jointIndex, context, model) {
+        let arr = DTWManager.#calculateDTWAlgorithm(sequence1, sequence2, jointIndex, model);
+        console.log(arr);
         return new DTW(arr[arr.length - 1][arr[0].length - 1].cumulativeDistance,
             arr[arr.length - 1][arr[0].length - 1].getWarpingPath(),
             context);
@@ -20,7 +22,7 @@ class DTWManager {
             let j = dtw.warpingPath[i].index1
             let k = dtw.warpingPath[i].index2;
             warpingPath.push(new WarpingPathEntity(j, k,
-                DTWManager.calculateBodyPartDistance(sequence1[j], sequence2[k], indexes),
+                DTWManager.calculateBodyPartDistance(sequence1[j], sequence2[k], indexes, model),
                 0)
             );
         }
@@ -28,7 +30,7 @@ class DTWManager {
         return new DTW(0, warpingPath, context);
     }
 
-    static #calculateDTWAlgorithm(sequence1, sequence2, jointIndexes) {
+    static #calculateDTWAlgorithm(sequence1, sequence2, jointIndexes, model) {
         let sequenceLength1 = sequence1.length + 1;
         let sequenceLength2 = sequence2.length + 1;
 
@@ -50,15 +52,15 @@ class DTWManager {
         for (let i = 1; i < sequenceLength1; i++) {
             for (let j = 1; j < sequenceLength2; j++) {
                 let matrixNeighbours = new MatrixNeighbours(arr[i - 1][j - 1], arr[i][j - 1], arr[i - 1][j]);
-                arr[i][j] = DTWManager.#compareTwoTimeSeries(sequence1[i - 1], sequence2[j - 1], matrixNeighbours, jointIndexes, i - 1, j - 1);
+                arr[i][j] = DTWManager.#compareTwoTimeSeries(sequence1[i - 1], sequence2[j - 1], matrixNeighbours, jointIndexes, i - 1, j - 1, model);
             }
         }
 
         return arr;
     }
 
-    static #compareTwoTimeSeries(m1, m2, matrixNeighbours, jointIndexes, index1, index2) {
-        let euclidDistance = (jointIndexes === -1) ? DTWManager.calculateDistance(m1, m2) : DTWManager.calculateBodyPartDistance(m1, m2, jointIndexes);
+    static #compareTwoTimeSeries(m1, m2, matrixNeighbours, jointIndexes, index1, index2, model) {
+        let euclidDistance = (jointIndexes === -1) ? DTWManager.calculateDistance(m1, m2, model) : DTWManager.calculateBodyPartDistance(m1, m2, jointIndexes, model);
         let minSquareEntity = DTWManager.#findLowestSquareValue(matrixNeighbours);
         return new DTWMatrixEntity(euclidDistance + minSquareEntity.cumulativeDistance, euclidDistance, minSquareEntity.getWarpingPath(), index1, index2);
     }
@@ -80,22 +82,26 @@ class DTWManager {
         return -1;
     }
 
-    static calculateDistance(m1, m2) {
+    static calculateDistance(m1, m2, model) {
         let distance = 0;
         for (let i = 0; i < m1.length; i++) {
-            distance += DTWManager.getVectorEuclideanDistance(m1[i], m2[i]);
+            distance += DTWManager.getVectorEuclideanDistance(m1[i], m2[i], model);
         }
         return Math.sqrt(distance);
     }
 
-    static getVectorEuclideanDistance(v1, v2) {
+    static getVectorEuclideanDistance(v1, v2, model) {
+        if (model === modelKinect2d) {
+            return Math.pow(v1.x - v2.x, 2) + Math.pow(v1.y - v2.y, 2);
+        }
+
         return Math.pow(v1.x - v2.x, 2) + Math.pow(v1.y - v2.y, 2) + Math.pow(v1.z - v2.z, 2);
     }
 
-    static calculateBodyPartDistance(m1, m2, jointIndexes) {
+    static calculateBodyPartDistance(m1, m2, jointIndexes, model) {
         let distance = 0;
         jointIndexes.forEach(function(i) {
-            distance += DTWManager.getVectorEuclideanDistance(m1[i], m2[i]);
+            distance += DTWManager.getVectorEuclideanDistance(m1[i], m2[i], model);
         });
         return Math.sqrt(distance);
     }

@@ -22,10 +22,10 @@ class VisualizationManager {
         let longerSequence = sortedSequences[0];
         let shorterSequence = sortedSequences[1];
 
-        let filteredLongerSequence = SequenceManager.getPoseCoordinatesPerSequence(longerSequence);
-        let filteredShorterSequence = SequenceManager.getPoseCoordinatesPerSequence(shorterSequence);
+        let filteredLongerSequence = SequenceManager.getPoseCoordinatesPerSequence(longerSequence, model);
+        let filteredShorterSequence = SequenceManager.getPoseCoordinatesPerSequence(shorterSequence, model);
 
-        let dtw = DTWManager.calculateDTW(filteredLongerSequence, filteredShorterSequence, -1, this.context);
+        let dtw = DTWManager.calculateDTW(filteredLongerSequence, filteredShorterSequence, -1, this.context, model);
 
         let jointsCount = Core.getSequenceJointsPerFrame(longerSequence);
         let drawer = new MotionsDifferenceRenderer(longerSequence, shorterSequence, dtw, visualizationWidth,

@@ -59,8 +59,8 @@ class SampleManager {
         let bodyParts = [[], [], [], [], []];
 
         samples.forEach(sample => {
-            let sequence1 = SequenceManager.getPoseCoordinatesPerSequence(sample[0]);
-            let sequence2 = SequenceManager.getPoseCoordinatesPerSequence(sample[1]);
+            let sequence1 = SequenceManager.getPoseCoordinatesPerSequence(sample[0], model);
+            let sequence2 = SequenceManager.getPoseCoordinatesPerSequence(sample[1], model);
 
             let dtw = DTWManager.calculateDTW(sequence1, sequence2, -1, new Context(false));
             DTWs.push(dtw.distance);

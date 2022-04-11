@@ -2,6 +2,7 @@ import * as Mocap from '../../src/mocap.js';
 import {modelVicon} from "../../src/model.js";
 import * as VS from '../../src/ComparisonVizualization/VisualizationService.js';
 import {VisualizationParts} from "../../src/MotionsDifferenceVisualiser/Entities/VisualizationParts.js";
+import {modelKinect2d} from "../../src/mocap.js";
 
 const dataFileInput = document.getElementById("dataFileInput");
 const sampleFileInput = document.getElementById('sampleFileInput');
@@ -31,6 +32,7 @@ factory.keyframeSelectionAlgorithm = Mocap.KeyframeSelectionAlgorithmEnum.Equidi
 factory.leftBoneStyle = {r: 0, g: 180, b: 0, a: 1};
 factory.opacity = 0.6;
 factory.blurFrameOpacity = 0.17;
+factory.model = modelKinect2d;
 
 let loaderId = "loader";
 
@@ -50,7 +52,6 @@ function load() {
 
     Mocap.loadDataFromFile(dataFileInput.files[0], (sequences) => {
         let vp = new VisualizationParts(true, true, true, true, true, true, true);
-        let model = modelVicon;
         // let vp = new VisualizationParts(false, false, false, false, false, false, false);
         // let visualizationElement1 = factory.visualizeSequenceDifferences(sequences[1918], sequences[1236], 1400, contextOption, jsonContent, vp, model);
         // document.body.appendChild(visualizationElement1);
@@ -58,7 +59,7 @@ function load() {
         // let visualizationElement = factory.visualizeSequenceDifferences(sequences[1], sequences[2], 1400, contextOption, jsonContent, vp, model);
         // document.body.appendChild(visualizationElement);
 
-        let visualizationElement = factory.visualizeSequenceDifferences(sequences[155], sequences[244], 1400, contextOption, jsonContent, vp, model);
+        let visualizationElement = factory.visualizeSequenceDifferences(sequences[0], sequences[1], 1400, contextOption, jsonContent, vp);
         document.body.appendChild(visualizationElement);
 
         // visualizationElement = factory.visualizeSequenceDifferences(sequences[435], sequences[257], 1400, contextOption, jsonContent, vp, model);
@@ -83,7 +84,7 @@ function sample() {
     }
 
     Mocap.loadDataFromFile(sampleDataFileInput.files[0], (sequences) => {
-        factory.sampleData(sequences, 10, modelVicon);
+        factory.sampleData(sequences, 10);
         document.getElementById(loaderId).style.display = "none";
     });
 }

@@ -1,4 +1,5 @@
 import {SequenceIndexNotFound} from "../Exceptions/SequenceIndexNotFound.js";
+import {modelKinect2d} from "../../model.js";
 
 
 class SequenceManager {
@@ -10,15 +11,26 @@ class SequenceManager {
         return sequences;
     }
 
-    static getPoseCoordinatesPerSequence(sequence) {
+    static getPoseCoordinatesPerSequence(sequence, model) {
         let frames = sequence.map((frame) => {
             return frame.replace(" ", "").split(';').map((joint) => {
                 let xyz = joint.split(',');
+                if (model === modelKinect2d) {
+                    return {x:xyz[0], y:xyz[1]};
+                }
                 return {x:xyz[0], y:xyz[1], z:xyz[2]};
             });
         });
 
-        return frames.filter((f) => {return f.length > 0 && !isNaN(f[0].x) && !isNaN(f[0].y) && !isNaN(f[0].z)});
+        if (model === modelKinect2d) {
+            return frames.filter((f) => {
+                return f.length > 0 && !isNaN(f[0].x) && !isNaN(f[0].y)
+            });
+        }
+
+        return frames.filter((f) => {
+            return f.length > 0 && !isNaN(f[0].x) && !isNaN(f[0].y) && !isNaN(f[0].z)
+        });
     }
 
     static findWarpingPathIndexByLongerSeq(longerSequenceIndex, warpingPath) {

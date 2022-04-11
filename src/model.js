@@ -40,37 +40,6 @@ const bonesKinect2d = [
 ]; //head = 9, origin = 6
 
 const bonesPointCloud = [];
-
-const modelBodyCounts = [
-    {
-        modelType: bonesVicon, values: [
-            {boneType: BoneType.leftLeg, count: 5},
-            {boneType: BoneType.rightLeg, count: 5},
-            {boneType: BoneType.torso, count: 6},
-            {boneType: BoneType.leftHand, count: 7},
-            {boneType: BoneType.rightHand, count: 7}],
-        jointCount: 31
-    },
-    {
-        modelType: bonesKinect, values: [
-            {boneType: BoneType.leftLeg, count: 4},
-            {boneType: BoneType.rightLeg, count: 4},
-            {boneType: BoneType.torso, count: 4},
-            {boneType: BoneType.leftHand, count: 6},
-            {boneType: BoneType.rightHand, count: 6}],
-        jointCount: 25
-    },
-    {
-        modelType: bonesKinect2d, values: [
-            {boneType: BoneType.leftLeg, count: 3},
-            {boneType: BoneType.rightLeg, count: 3},
-            {boneType: BoneType.torso, count: 3},
-            {boneType: BoneType.leftHand, count: 3},
-            {boneType: BoneType.rightHand, count: 3}],
-        jointCount: 16
-    }
-];
-
 /**
  * Contains the needed information about a skeleton model. 
  * The available premade skeleton models are `modelVicon` (created for the HDM05 database), `modelKinect` and `modelKinect2d` (created for the PKU-MMD database).
@@ -451,4 +420,4 @@ const motionSuperCategories = {
     "allCategories":[...Array(153).keys()].map((x) => x+"").slice(22),
 }
 
-export {modelBodyCounts, BoneType, bonesVicon, bonesKinect, bonesKinect2d, bonesPointCloud, SkeletonModel, modelVicon, modelKinect, modelKinect2d, modelPointCloud, jointStyleDefault, boneStyleDefault, leftBoneStyleDefault, rightBoneStyleDefault, noseStyleDefault, blurStyleDefault, motionCategories, motionCategoriesHuman, motionSuperCategories};
+export {BoneType, bonesVicon, bonesKinect, bonesKinect2d, bonesPointCloud, SkeletonModel, modelVicon, modelKinect, modelKinect2d, modelPointCloud, jointStyleDefault, boneStyleDefault, leftBoneStyleDefault, rightBoneStyleDefault, noseStyleDefault, blurStyleDefault, motionCategories, motionCategoriesHuman, motionSuperCategories};

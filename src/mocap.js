@@ -101,18 +101,18 @@ class VisualizationFactory {
 
     visualizeSequenceDifferences(sequence1, sequence2, visualizationWidth = 1500,
                                  contextOption = ContextOption.NO_CONTEXT, defaultContext = "",
-                                 visualizationParts = new VisualizationParts(), model = modelKinect) {
+                                 visualizationParts = new VisualizationParts()) {
         let drawStyle = new Core.MocapDrawStyle(this.model, this.boneRadius, this.jointRadius, this.headRadius, this.boneStyle,
             this.leftBoneStyle, this.rightBoneStyle, this.jointStyle, 1, this.noseStyle, this.noseRadius, this.opacity);
         let drawStyleBlur = new Core.MocapDrawStyle(this.model, this.boneRadius, this.jointRadius, this.headRadius, this.boneStyle,
             this.boneStyle, this.boneStyle, this.jointStyle, 1, this.boneStyle, this.noseRadius, this.blurFrameOpacity);
 
-        return this.visalusationManager.visualiseTwoMotionDifference(sequence1, sequence2, visualizationWidth, model,
+        return this.visalusationManager.visualiseTwoMotionDifference(sequence1, sequence2, visualizationWidth, this.model,
             drawStyle, drawStyleBlur, contextOption, defaultContext, visualizationParts);
     }
 
-    sampleData(sequences, sampleCount, model) {
-        SampleManager.sampleDataSet(sequences, sampleCount, model)
+    sampleData(sequences, sampleCount) {
+        SampleManager.sampleDataSet(sequences, sampleCount, this.model)
     }
 
     downloadBuiltContext() {
