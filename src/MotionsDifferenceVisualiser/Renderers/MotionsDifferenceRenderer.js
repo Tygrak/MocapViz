@@ -49,6 +49,7 @@ class MotionsDifferenceRenderer {
     #model = null;
     #visualizationParts = null;
     #dtwBodyParts = null;
+    #visualizationId = null;
 
     #textDescription = document.createElement("p");
     #longerSequenceMapCanvas = document.createElement("canvas");
@@ -88,6 +89,7 @@ class MotionsDifferenceRenderer {
 
         this.#timeAlignedMappingCanvas.width = this.#visualizationWidth;
         this.#timeAlignedMappingCanvas.height = this.#VISUALIZATION_HEIGHT / 3 * 2;
+        this.#visualizationId = (new Date()).getTime().toString();
     }
 
     fillTextDescription() {
@@ -131,7 +133,7 @@ class MotionsDifferenceRenderer {
         this.#createTable(this.#infoTable);
         let poseDetailRenderer = new PoseDetailRenderer(this.#sequenceDetailRenderer, this.#sequenceDifferenceRenderer, this.#dtw, this.#dtwBodyParts,
             JSON.parse(JSON.stringify(this.#longerSequenceProcessed)), JSON.parse(JSON.stringify(this.#shorterSequenceProcessed)), this.#longerSequencePoses, this.#shorterSequencePoses,
-            this.#longerSequenceDotCoordinates, this.#shorterSequenceDotCoordinates, this.#drawStyle, this.#POSE_CIRCLE_RADIUS, this.#DETAIL_POSE_POSITION_COLOR);
+            this.#longerSequenceDotCoordinates, this.#shorterSequenceDotCoordinates, this.#drawStyle, this.#POSE_CIRCLE_RADIUS, this.#DETAIL_POSE_POSITION_COLOR, this.#getInfoTableId());
 
         this.#sequenceDifferenceCanvas.onmousemove = (event) => poseDetailRenderer.onMouseMoveMapping(event);
     }
@@ -245,7 +247,7 @@ class MotionsDifferenceRenderer {
 
         table.appendChild(thead);
         table.appendChild(tbody);
-        table.id = infoTableId;
+        table.id = this.#getInfoTableId();
         infoTable.appendChild(table);
 
         this.#addRow(tbody, "Nose", this.#drawStyle.noseStyle);
@@ -253,6 +255,10 @@ class MotionsDifferenceRenderer {
         this.#addRow(tbody, "Left bones", this.#drawStyle.leftBoneStyle);
         this.#addRow(tbody, "Right bones", this.#drawStyle.rightBoneStyle);
         this.#addRow(tbody, "Whole pose", null);
+    }
+
+    #getInfoTableId() {
+        return infoTableId + this.#visualizationId;
     }
 
     #addRow(tbody, bodyPartName, color = null) {
@@ -285,7 +291,6 @@ class MotionsDifferenceRenderer {
         box.style.backgroundColor = `rgb(${color.r}, ${color.g}, ${color.b})`;
         return box;
     }
-
 }
 
 export {MotionsDifferenceRenderer};

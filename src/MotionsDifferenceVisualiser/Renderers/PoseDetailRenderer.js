@@ -5,7 +5,6 @@ import {SequenceDifferenceRenderer} from "./SequenceDifferenceRenderer.js";
 import {ColoredPose} from "../Entities/ColoredPose.js";
 import {SequenceManager} from "../Managers/SequenceManager.js";
 import {infoTableId} from "../Config/Config.js";
-import {DTWManager} from "../Managers/DTWManager.js";
 
 class PoseDetailRenderer {
     #FIRST_DETAIL_X_SHIFT = 2.5;
@@ -25,10 +24,11 @@ class PoseDetailRenderer {
     #drawStyle = null;
     #circleRadius = 0.1;
     #circleDetailColor = null;
+    #infoTableId = null;
 
     constructor(detailRenderer, sequenceDifferenceRenderer, dtw, bodyPartsDtw, processedLongerSequence,
                 processedShorterSequence, longerSequencePoses, shorterSequencePoses, longerSequenceDotCoordinates,
-                shorterSequenceDotCoordinates, drawStyle, circleRadius, circleDetailColor) {
+                shorterSequenceDotCoordinates, drawStyle, circleRadius, circleDetailColor, infoTableId) {
         this.#sequenceDetailRenderer = detailRenderer;
         this.#sequenceDifferenceRenderer = sequenceDifferenceRenderer;
         this.#dtw = dtw;
@@ -42,6 +42,7 @@ class PoseDetailRenderer {
         this.#drawStyle = drawStyle;
         this.#circleRadius = circleRadius;
         this.#circleDetailColor = circleDetailColor;
+        this.#infoTableId = infoTableId;
     }
 
     onMouseMoveMapping(mouseEvent) {
@@ -136,7 +137,7 @@ class PoseDetailRenderer {
     }
 
     #updateTable(index) {
-        let table = document.getElementById(infoTableId);
+        let table = document.getElementById(this.#infoTableId);
 
         if (this.#bodyPartsDtw !== null) {
             for (let i = 0; i < this.#bodyPartsDtw.length; i ++) {

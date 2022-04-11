@@ -32,7 +32,7 @@ factory.keyframeSelectionAlgorithm = Mocap.KeyframeSelectionAlgorithmEnum.Equidi
 factory.leftBoneStyle = {r: 0, g: 180, b: 0, a: 1};
 factory.opacity = 0.6;
 factory.blurFrameOpacity = 0.17;
-factory.model = modelKinect2d;
+factory.model = modelVicon;
 
 let loaderId = "loader";
 
