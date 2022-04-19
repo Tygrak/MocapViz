@@ -94,7 +94,7 @@ class MotionsDifferenceRenderer {
 
     fillTextDescription() {
         TextDescriptionRenderer.render(this.#textDescription, this.#longerSequence, this.#shorterSequence,
-            this.#dtw.distance, this.#drawStyle, this.#dtw.context.dtwDistanceAverage);
+            this.#dtw);
     }
 
     fillMapCanvases() {
@@ -252,8 +252,10 @@ class MotionsDifferenceRenderer {
 
         this.#addRow(tbody, "Nose", this.#drawStyle.noseStyle);
         this.#addRow(tbody, "Torso", this.#drawStyle.boneStyle);
-        this.#addRow(tbody, "Left bones", this.#drawStyle.leftBoneStyle);
-        this.#addRow(tbody, "Right bones", this.#drawStyle.rightBoneStyle);
+        this.#addRow(tbody, "Left hand", this.#drawStyle.leftBoneStyle);
+        this.#addRow(tbody, "Right hand", this.#drawStyle.rightBoneStyle);
+        this.#addRow(tbody, "Left leg", this.#drawStyle.leftBoneStyle);
+        this.#addRow(tbody, "Right leg", this.#drawStyle.rightBoneStyle);
         this.#addRow(tbody, "Whole pose", null);
     }
 

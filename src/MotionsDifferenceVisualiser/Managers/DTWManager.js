@@ -8,7 +8,6 @@ import {modelKinect2d} from "../../model.js";
 class DTWManager {
     static calculateDTW(sequence1, sequence2, jointIndex, context, model) {
         let arr = DTWManager.#calculateDTWAlgorithm(sequence1, sequence2, jointIndex, model);
-        console.log(arr);
         return new DTW(arr[arr.length - 1][arr[0].length - 1].cumulativeDistance,
             arr[arr.length - 1][arr[0].length - 1].getWarpingPath(),
             context);

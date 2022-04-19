@@ -1,16 +1,17 @@
 import {CategoryManager} from "../Managers/CategoryManager.js";
 
 class TextDescriptionRenderer {
-    static render(textElement, longerSequence, shorterSequence, dtwDistance, drawStyle, dtwDistanceAverage = 0) {
+    static render(textElement, longerSequence, shorterSequence, dtw) {
         let category1 = CategoryManager.getSequenceCategory(longerSequence);
         let category2 = CategoryManager.getSequenceCategory(shorterSequence);
 
-        TextDescriptionRenderer.#addText(textElement, "DTW value: " + dtwDistance);
+        TextDescriptionRenderer.#addText(textElement, "DTW distance: " + dtw.distance);
+        TextDescriptionRenderer.#addText(textElement, "DTW distance / DTW warping path length: " + dtw.distance / dtw.warpingPath.length);
         TextDescriptionRenderer.#addText(textElement, "Longer sequence category: " + category1);
         TextDescriptionRenderer.#addText(textElement, "Shorter sequence category: " + category2);
 
-        if (dtwDistanceAverage !== 0) {
-            textElement.appendChild(document.createTextNode("Average of DTW distance: " + dtwDistanceAverage));
+        if (dtw.context.dtwDistanceAverage !== 0) {
+            textElement.appendChild(document.createTextNode("Average of DTW distance: " + dtw.context.dtwDistanceAverage));
         }
     }
 

@@ -144,13 +144,13 @@ class PoseDetailRenderer {
                 let dtw = this.#bodyPartsDtw[i][0];
                 let distance = dtw.warpingPath[index].poseDistance.toFixed(2);
 
-                let cell = table.rows[i + 1].cells[2];
+                let cell = table.rows[i + 2].cells[2];
                 cell.innerHTML = distance;
             }
         }
 
         let distance = this.#dtw.warpingPath[index].poseDistance.toFixed(2);
-        let cell = table.rows[5].cells[2];
+        let cell = table.rows[7].cells[2];
         cell.innerHTML = distance;
 
         // let index1 = this.#dtw.warpingPath[index].index1;
