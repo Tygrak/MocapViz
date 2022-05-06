@@ -1,12 +1,12 @@
-const mapDescription = "Super maps where you can see everything";
+const mapDescription = "Maps -  visualizing motion in space";
 
-const sequenceDifferenceDescription = "Super canvas where you can see everything";
+const sequenceDifferenceDescription = "Mapping - visualizing pose mapping";
 
-const detailDescription = "Super detail where you can see everything";
+const detailDescription = "Detail - visualizing two mapped poses in detail from mapping above the detail - poses are selected by a mouse cursor";
 
-const timeAlignedSequenceDifferenceDescription = "Super time-aligning where you can see everything";
+const timeAlignedSequenceDifferenceDescription = "Time alignment 1 - visualizing time aligned mapped motions";
 
-const timeAlignedMapping = "Super time-aligning where you can see everything";
+const timeAlignedMapping = "Time alignment 2 - Colors: first pose is: blue - delayed, red - accelerated, yellow - on time";
 
 const descriptionBoxSize = "20";
 
