@@ -2,7 +2,7 @@ import * as Mocap from '../../src/mocap.js';
 import {modelVicon} from "../../src/model.js";
 import * as VS from '../../src/ComparisonVizualization/VisualizationService.js';
 import {VisualizationParts} from "../../src/MotionsDifferenceVisualiser/Entities/VisualizationParts.js";
-import {modelKinect2d} from "../../src/mocap.js";
+import {modelKinect, modelKinect2d} from "../../src/mocap.js";
 
 const sequence1FileInput = document.getElementById("sequence1FileInput");
 const sequence2FileInput = document.getElementById("sequence2FileInput");
@@ -24,6 +24,9 @@ downloadContextButton.onclick = downloadContext;
 clearContextButton.onclick = clearContext;
 
 let jsonContent = "";
+
+let visualizations = document.createElement('div');
+document.body.appendChild(visualizations);
 
 let factory = new Mocap.VisualizationFactory();
 factory.numKeyframes = 8;
@@ -67,7 +70,7 @@ function load() {
             sequences = split.filter((s) => {return s !== "";}).map((s) => s.split("\n"));
             let sequence2 = sequences[0];
             let visualizationElement = factory.visualizeSequenceDifferences(sequence1, sequence2, 1400, contextOption, jsonContent, vp);
-            document.body.appendChild(visualizationElement);
+            document.body.insertAdjacentHTML("afterbegin", visualizationElement);
             document.getElementById(loaderId).style.display = "none";
         }
     }

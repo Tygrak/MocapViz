@@ -25,6 +25,9 @@ clearContextButton.onclick = clearContext;
 
 let jsonContent = "";
 
+let visualizations = document.createElement('div');
+document.body.appendChild(visualizations);
+
 let factory = new Mocap.VisualizationFactory();
 factory.numKeyframes = 8;
 factory.numZoomedKeyframes = 10;
@@ -52,24 +55,9 @@ function load() {
 
     Mocap.loadDataFromFile(dataFileInput.files[0], (sequences) => {
         let vp = new VisualizationParts(true, true, true, true, true, true, true);
-        // let vp = new VisualizationParts(false, false, false, false, false, false, false);
-        // let visualizationElement1 = factory.visualizeSequenceDifferences(sequences[1918], sequences[1236], 1400, contextOption, jsonContent, vp, model);
-        // document.body.appendChild(visualizationElement1);
-
-        // let visualizationElement = factory.visualizeSequenceDifferences(sequences[1], sequences[2], 1400, contextOption, jsonContent, vp, model);
-        // document.body.appendChild(visualizationElement);
 
         let visualizationElement = factory.visualizeSequenceDifferences(sequences[0], sequences[1], 1400, contextOption, jsonContent, vp);
-        document.body.appendChild(visualizationElement);
-
-        // visualizationElement = factory.visualizeSequenceDifferences(sequences[435], sequences[257], 1400, contextOption, jsonContent, vp, model);
-        // document.body.appendChild(visualizationElement);
-        //
-        // visualizationElement = factory.visualizeSequenceDifferences(sequences[57], sequences[867], 1400, contextOption, jsonContent, vp, model);
-        // document.body.appendChild(visualizationElement);
-        //
-        // visualizationElement = factory.visualizeSequenceDifferences(sequences[1918], sequences[1236], 1400, contextOption, jsonContent, vp, model);
-        // document.body.appendChild(visualizationElement);
+        document.body.insertAdjacentHTML("afterbegin", visualizationElement);
 
         document.getElementById(loaderId).style.display = "none";
     });
@@ -84,7 +72,7 @@ function sample() {
     }
 
     Mocap.loadDataFromFile(sampleDataFileInput.files[0], (sequences) => {
-        factory.sampleData(sequences, 10);
+        factory.sampleData(sequences, 100);
         document.getElementById(loaderId).style.display = "none";
     });
 }
